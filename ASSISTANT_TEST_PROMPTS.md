@@ -1,6 +1,6 @@
-# 🧪 50 Clinical Test Prompts for Medfolio Health Assistant
+# 🧪 50 Clinical Test Prompts for Curewell Health Assistant
 
-Use these 50 curated clinical prompts to thoroughly test and validate every capability of the **Medfolio Master Clinical Assistant** — including OCR prescription analysis, autonomous triage tools, interaction radar, missed dose safety protocols, and emergency handoffs.
+Use these 50 curated clinical prompts to thoroughly test and validate every capability of the **Curewell Master Clinical Assistant** — including OCR prescription analysis, autonomous triage tools, interaction radar, missed dose safety protocols, and emergency handoffs.
 
 ---
 

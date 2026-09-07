@@ -1,5 +1,5 @@
 /**
- * Pure Light Theme Provider for Medfolio.
+ * Pure Light Theme Provider for Curewell.
  *
  * Enforces the pristine, patient-first Clinical Light palette across the app.
  * Dark theme is abolished per medical design guidelines.
@@ -10,7 +10,7 @@ import { createContext, useContext, useEffect, useMemo, ReactNode } from 'react'
 export type ThemePreference = 'light';
 export type ResolvedTheme = 'light';
 
-export const THEME_STORAGE_KEY = 'medfolio_theme';
+export const THEME_STORAGE_KEY = 'curewell_theme';
 
 interface ThemeContextValue {
   preference: 'light';

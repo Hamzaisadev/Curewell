@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* ---------- Raw palette ----------
      These are the pigments. Screens should not reach for them directly — they

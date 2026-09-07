@@ -78,7 +78,7 @@ const DEV_TEST_USER: User = {
   user_metadata: { full_name: 'Test Patient' },
   aud: 'authenticated',
   created_at: new Date().toISOString(),
-  email: 'test.patient@medfolio.dev',
+  email: 'test.patient@curewell.dev',
   role: 'authenticated',
   updated_at: new Date().toISOString(),
 } as User;

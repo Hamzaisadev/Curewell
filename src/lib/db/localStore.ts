@@ -3,11 +3,18 @@
  * when remote Supabase instance lacks migrations or is offline.
  */
 
-const STORAGE_PREFIX = 'medfolio_local_';
+const STORAGE_PREFIX = 'curewell_local_';
+const LEGACY_STORAGE_PREFIX = 'medfolio_local_';
 
 export function getLocalItems<T>(table: string): T[] {
   try {
-    const raw = localStorage.getItem(STORAGE_PREFIX + table);
+    let raw = localStorage.getItem(STORAGE_PREFIX + table);
+    if (!raw) {
+      raw = localStorage.getItem(LEGACY_STORAGE_PREFIX + table);
+      if (raw) {
+        localStorage.setItem(STORAGE_PREFIX + table, raw);
+      }
+    }
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];

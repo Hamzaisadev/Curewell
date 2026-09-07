@@ -80,7 +80,8 @@ export async function extractLabReport(
  * medical content persisted in localStorage indefinitely and could not be
  * corrected by a prompt or model change.
  */
-const EXPLAIN_CACHE_PREFIX = 'medfolio_med_expl_v2_';
+const EXPLAIN_CACHE_PREFIX = 'curewell_med_expl_v2_';
+const LEGACY_EXPLAIN_CACHE_PREFIX = 'medfolio_med_expl_v2_';
 const EXPLAIN_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 interface CachedExplanation {
@@ -94,7 +95,9 @@ function explainCacheKey(medicineName: string): string {
 
 function readExplainCache(medicineName: string): ExplainMedicineResponse | null {
   try {
-    const raw = localStorage.getItem(explainCacheKey(medicineName));
+    const raw =
+      localStorage.getItem(explainCacheKey(medicineName)) ||
+      localStorage.getItem(`${LEGACY_EXPLAIN_CACHE_PREFIX}${medicineName.toLowerCase().trim()}`);
     if (!raw) return null;
 
     const cached = JSON.parse(raw) as CachedExplanation;

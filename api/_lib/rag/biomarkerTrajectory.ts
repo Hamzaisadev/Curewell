@@ -1,5 +1,5 @@
 /**
- * Longitudinal Lab Biomarker Trajectory & Predictive Trend Engine for Medfolio RAG.
+ * Longitudinal Lab Biomarker Trajectory & Predictive Trend Engine for Curewell RAG.
  * Evaluates chronological biomarker progressions (delta, velocity, clinical significance)
  * to detect organ strain, glycemic drift, and therapeutic responses over time.
  */

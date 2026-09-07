@@ -1,5 +1,5 @@
-// Medfolio PWA Service Worker
-const CACHE_NAME = 'medfolio-v2';
+// Curewell PWA Service Worker
+const CACHE_NAME = 'curewell-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
         const cached = (await caches.match('/index.html')) || (await caches.match('/'));
         return (
           cached ||
-          new Response('<!DOCTYPE html><html><body><h1>Offline</h1><p>Reconnect to load Medfolio.</p></body></html>', {
+          new Response('<!DOCTYPE html><html><body><h1>Offline</h1><p>Reconnect to load Curewell.</p></body></html>', {
             status: 503,
             headers: { 'Content-Type': 'text/html; charset=utf-8' },
           })

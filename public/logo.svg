@@ -1,25 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" fill="none">
   <defs>
-    <linearGradient id="brand-grad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#0d9488" />
-      <stop offset="100%" stop-color="#0f766e" />
+    <linearGradient id="curewell-brand-grad" x1="2" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#0F766E" />
     </linearGradient>
-    <linearGradient id="dot-grad" x1="20" y1="20" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#2dd4bf" />
-      <stop offset="100%" stop-color="#14b8a6" />
+    <linearGradient id="curewell-dot-grad" x1="12" y1="22" x2="32" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5EEAD4" />
+      <stop offset="50%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#2DD4BF" />
     </linearGradient>
+    <filter id="curewell-logo-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0F766E" flood-opacity="0.25" />
+    </filter>
   </defs>
 
   <!-- Mark Icon -->
   <g transform="translate(2, 2)">
-    <rect x="2" y="2" width="40" height="40" rx="10" fill="url(#brand-grad)" />
-    <path d="M10 8C10 5.79086 11.7909 4 14 4H30C32.2091 4 34 5.79086 34 8V36C34 38.2091 32.2091 40 30 40H14C11.7909 40 10 38.2091 10 36V8Z" fill="white" fill-opacity="0.12" />
-    <path d="M22 12V32M12 22H32" stroke="white" stroke-width="4" stroke-linecap="round" />
-    <circle cx="22" cy="22" r="2.2" fill="url(#dot-grad)" />
+    <rect x="2" y="2" width="40" height="40" rx="12" fill="url(#curewell-brand-grad)" filter="url(#curewell-logo-shadow)" />
+    <rect x="3.5" y="3.5" width="37" height="37" rx="10.5" stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="1" />
+    <path d="M22 12V32M12 22H32" stroke="white" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="22" cy="22" r="3" fill="url(#curewell-dot-grad)" />
+    <circle cx="22" cy="22" r="1.3" fill="#0F766E" />
   </g>
 
   <!-- Wordmark Text -->
-  <text x="56" y="30" font-family="'Inter Variable', 'Inter', system-ui, sans-serif" font-size="22" font-weight="700" fill="#0f172a" letter-spacing="-0.03em">
-    Med<tspan fill="#0d9488">folio</tspan>
+  <text x="54" y="31" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="23" font-weight="800" fill="#0F172A" letter-spacing="-0.035em">
+    Cure<tspan fill="#0D9488">well</tspan>
   </text>
 </svg>

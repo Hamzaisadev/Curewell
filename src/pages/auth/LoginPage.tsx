@@ -137,7 +137,7 @@ export function LoginPage() {
               <div className="flex justify-center mb-2">
                 <Logo size="lg" />
               </div>
-              <h1 className="text-2xl font-black text-content tracking-tight">Sign In to Medfolio</h1>
+              <h1 className="text-2xl font-black text-content tracking-tight">Sign In to Curewell</h1>
               <p className="text-xs text-content-muted">
                 Access your prescriptions, doses, and diagnostic reports
               </p>

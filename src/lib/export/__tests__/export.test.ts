@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   validateExportDocument,
-  MedfolioExportDocument,
+  CurewellExportDocument,
   EXPORT_FORMAT_IDENTIFIER,
+  LEGACY_EXPORT_FORMAT_IDENTIFIER,
   CURRENT_EXPORT_VERSION,
 } from '../index';
 
 describe('export and import validation (src/lib/export/index.ts)', () => {
-  const sampleDocument: MedfolioExportDocument = {
+  const sampleDocument: CurewellExportDocument = {
     format: EXPORT_FORMAT_IDENTIFIER,
     version: CURRENT_EXPORT_VERSION,
     exported_at: '2026-08-15T09:00:00Z',
@@ -126,6 +127,11 @@ describe('export and import validation (src/lib/export/index.ts)', () => {
     const res2 = validateExportDocument(wrongVersion);
     expect(res2.success).toBe(false);
     expect(res2.error).toContain("at 'version'");
+
+    // Verifies backwards compatibility for legacy Medfolio export documents
+    const legacyDoc = { ...sampleDocument, format: LEGACY_EXPORT_FORMAT_IDENTIFIER };
+    const res3 = validateExportDocument(legacyDoc);
+    expect(res3.success).toBe(true);
   });
 
   it('rejects malformed records and pinpoints the bad field path', () => {

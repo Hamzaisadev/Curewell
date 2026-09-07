@@ -305,7 +305,7 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
 
   // 3. Tool: Caregiver 1-Tap WhatsApp Dispatch
   if (action.type === 'caregiver_brief') {
-    const rawMsg = action.data.caregiver_message || 'Medfolio Health Update: Medicines taken on time today.';
+    const rawMsg = action.data.caregiver_message || 'Curewell Health Update: Medicines taken on time today.';
     const waUrl = `https://wa.me/?text=${encodeURIComponent(rawMsg)}`;
 
     return (
@@ -721,10 +721,12 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
           note: pharmacy ? `Scanned bill from ${pharmacy}` : undefined,
         };
 
-        const existing = localStorage.getItem('medfolio_health_expenses_v1');
+        const existing =
+          localStorage.getItem('curewell_health_expenses_v1') ||
+          localStorage.getItem('medfolio_health_expenses_v1');
         const list = existing ? JSON.parse(existing) : [];
         list.unshift(newExpense);
-        localStorage.setItem('medfolio_health_expenses_v1', JSON.stringify(list));
+        localStorage.setItem('curewell_health_expenses_v1', JSON.stringify(list));
 
         setIsDone(true);
         setToastMsg(`Saved ${currency} ${amount.toLocaleString()} to Medical Expense Tracker!`);

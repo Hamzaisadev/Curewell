@@ -5,7 +5,8 @@
  * another's doses (the previous single global key mixed them together).
  */
 
-const PREFIX = 'medfolio_pill_inventory_v2_';
+const PREFIX = 'curewell_pill_inventory_v2_';
+const LEGACY_PREFIX = 'medfolio_pill_inventory_v2_';
 
 export type PillInventory = Record<string, number>;
 
@@ -15,7 +16,9 @@ export function inventoryKey(profileId: string): string {
 
 export function readInventory(profileId: string): PillInventory {
   try {
-    const raw = localStorage.getItem(inventoryKey(profileId));
+    const raw =
+      localStorage.getItem(inventoryKey(profileId)) ||
+      localStorage.getItem(`${LEGACY_PREFIX}${profileId}`);
     const parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === 'object' ? (parsed as PillInventory) : {};
   } catch {

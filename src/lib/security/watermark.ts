@@ -64,9 +64,9 @@ export async function generateWatermarkMetadata(
     documentId,
     issuedAt: new Date().toISOString(),
     checksum,
-    issuer: 'Medfolio Health Record Export',
+    issuer: 'Curewell Health Record Export',
     // Route registered in src/routes.tsx as /share/verify.
     verificationUrl: `${origin}/share/verify?${params.toString()}`,
-    securityStamp: `MED-${shortHash}`,
+    securityStamp: `CW-${shortHash}`,
   };
 }

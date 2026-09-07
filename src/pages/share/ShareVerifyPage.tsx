@@ -20,7 +20,7 @@ export function ShareVerifyPage() {
         <div className="space-y-1.5 text-center">
           <h1 className="text-lg font-bold text-ink-900">Document Integrity Check</h1>
           <p className="text-xs text-ink-600 leading-relaxed">
-            Every Medfolio export carries a SHA-256 stamp so you can tell whether two copies of a
+            Every Curewell export carries a SHA-256 stamp so you can tell whether two copies of a
             document are identical.
           </p>
         </div>
@@ -34,7 +34,7 @@ export function ShareVerifyPage() {
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="font-semibold text-ink-700">Stamp</dt>
-                <dd className="font-mono text-ink-900">MED-{hash}</dd>
+                <dd className="font-mono text-ink-900">CW-{hash}</dd>
               </div>
             </dl>
 
@@ -51,7 +51,7 @@ export function ShareVerifyPage() {
         ) : (
           <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 leading-relaxed">
             This verification link is incomplete or malformed. Open the exact link printed on the
-            document, or ask the patient to re-export it from Medfolio.
+            document, or ask the patient to re-export it from Curewell.
           </div>
         )}
       </div>

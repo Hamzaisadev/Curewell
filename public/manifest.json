@@ -1,6 +1,6 @@
 {
-  "name": "Medfolio — Personal Health & Prescription Records",
-  "short_name": "Medfolio",
+  "name": "Curewell — Personal Health & Prescription Records",
+  "short_name": "Curewell",
   "description": "Personal medical records, prescription digitization, dose reminders, and lab report tracking.",
   "start_url": "/",
   "display": "standalone",

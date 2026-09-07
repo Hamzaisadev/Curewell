@@ -164,12 +164,12 @@ describe('qrGenerator', () => {
   });
 
   it('round-trips a realistic share URL', () => {
-    const url = 'https://medfolio.app/share/8Jf2kLmQ9pZaW3vR7tYbN1xC5dE0hGsU6iOjPqAr';
+    const url = 'https://curewell.app/share/8Jf2kLmQ9pZaW3vR7tYbN1xC5dE0hGsU6iOjPqAr';
     expect(roundTrip(url)).toBe(url);
   });
 
   it('round-trips a payload long enough to need a higher version', () => {
-    const url = `https://medfolio.example.com/share/${'a'.repeat(120)}`;
+    const url = `https://curewell.example.com/share/${'a'.repeat(120)}`;
     expect(roundTrip(url)).toBe(url);
   });
 
@@ -210,7 +210,7 @@ describe('qrGenerator', () => {
   });
 
   it('returns an inline data URL, never a remote service', () => {
-    const url = generateQrSvgUrl('https://medfolio.app/share/abc123def456ghi789');
+    const url = generateQrSvgUrl('https://curewell.app/share/abc123def456ghi789');
     expect(url.startsWith('data:image/svg+xml;base64,')).toBe(true);
     expect(url).not.toContain('http://');
     expect(url.slice('data:image/svg+xml;base64,'.length)).not.toContain('qrserver');

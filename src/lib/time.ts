@@ -1,5 +1,5 @@
 /**
- * Time and Date Utilities for Medfolio.
+ * Time and Date Utilities for Curewell.
  *
  * CRITICAL RULE:
  * Pakistan is UTC+05:00 with no daylight saving.

@@ -317,11 +317,11 @@ export function LandingPage() {
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 shrink-0" aria-label="Medfolio Home">
+          <Link to="/" className="flex items-center gap-2.5 shrink-0" aria-label="Curewell Home">
             <div className="w-8 h-8 rounded-xl bg-linear-to-br from-teal-600 via-teal-700 to-emerald-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-sm font-black">M</span>
+              <span className="text-white text-sm font-black">C</span>
             </div>
-            <span className="text-lg font-black tracking-tight text-ink-900">Medfolio</span>
+            <span className="text-lg font-black tracking-tight text-ink-900">Curewell</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -822,7 +822,7 @@ export function LandingPage() {
             The Shifa AI Clinical Intelligence Suite
           </h2>
           <p className="text-sm sm:text-base text-ink-600 mt-4 max-w-2xl mx-auto">
-            Explore the four major clinical modules that power Medfolio's intelligent patient co-pilot.
+            Explore the four major clinical modules that power Curewell's intelligent patient co-pilot.
           </p>
         </div>
 
@@ -1146,7 +1146,7 @@ export function LandingPage() {
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-wider">Capability</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-wider text-rose-400">Generic Chatbots</th>
                 <th className="py-4 px-4 font-bold uppercase text-[10px] tracking-wider text-teal-400 bg-teal-950/40 rounded-t-xl">
-                  Shifa AI on Medfolio
+                  Shifa AI on Curewell
                 </th>
               </tr>
             </thead>
@@ -1211,7 +1211,7 @@ export function LandingPage() {
               </span>
             </h2>
             <p className="text-sm sm:text-base text-ink-300 mt-6 leading-relaxed">
-              Medfolio is a clinical organizer and patient assistance platform. We empower patients and doctors with
+              Curewell is a clinical organizer and patient assistance platform. We empower patients and doctors with
               organized, verified data — we are <strong>not a diagnostic agent</strong> and do not prescribe treatments.
             </p>
           </div>
@@ -1226,7 +1226,7 @@ export function LandingPage() {
                   <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0">
                     <HeartPulseIcon className="w-5 h-5 text-teal-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">How Medfolio Assists You</h3>
+                  <h3 className="text-xl font-bold text-white tracking-tight">How Curewell Assists You</h3>
                 </div>
 
                 <ul className="space-y-4 text-xs sm:text-sm text-ink-300">
@@ -1260,7 +1260,7 @@ export function LandingPage() {
                   STRICT MEDICAL DISCLAIMER
                 </span>
                 <p className="text-xs text-ink-200 font-medium leading-relaxed">
-                  Medfolio is an assistive tool. Always consult a certified healthcare professional before making
+                  Curewell is an assistive tool. Always consult a certified healthcare professional before making
                   medical decisions or modifying medications.
                 </p>
               </div>
@@ -1611,9 +1611,9 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-linear-to-br from-teal-600 to-emerald-500 flex items-center justify-center">
-              <span className="text-white text-xs font-black">M</span>
+              <span className="text-white text-xs font-black">C</span>
             </div>
-            <span className="text-sm font-bold text-ink-300">Medfolio Health OS with Shifa AI</span>
+            <span className="text-sm font-bold text-ink-300">Curewell Health OS with Shifa AI</span>
           </div>
 
           <div className="flex items-center gap-6 text-xs text-ink-400">
@@ -1626,7 +1626,7 @@ export function LandingPage() {
           </div>
 
           <p className="text-xs text-ink-500">
-            © {new Date().getFullYear()} Medfolio. Built with clinical precision.
+            © {new Date().getFullYear()} Curewell. Built with clinical precision.
           </p>
         </div>
       </footer>

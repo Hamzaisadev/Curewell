@@ -1734,11 +1734,11 @@ export function AssistantPage() {
             open={showSafetyModal}
             onOpenChange={setShowSafetyModal}
             title="Clinical Safety & Oversight"
-            description="Guidelines governing Medfolio's health assistant."
+            description="Guidelines governing Curewell's health assistant."
           >
             <div className="space-y-3.5 text-xs sm:text-sm text-content-muted leading-relaxed">
               <p>
-                Medfolio's health assistant assists you in understanding prescriptions, organizing daily dose schedules, and reviewing lab results.
+                Curewell's health assistant assists you in understanding prescriptions, organizing daily dose schedules, and reviewing lab results.
               </p>
               <div className="p-3.5 bg-surface-sunken border border-line rounded-xl space-y-1">
                 <span className="font-bold text-content block text-xs sm:text-sm">Core Principles:</span>

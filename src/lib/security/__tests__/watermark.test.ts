@@ -36,19 +36,19 @@ describe('Security & Watermark Engine', () => {
   });
 
   it('builds verification metadata against an injected origin', async () => {
-    const meta = await generateWatermarkMetadata('doc-1', 'payload', 'https://medfolio.test');
+    const meta = await generateWatermarkMetadata('doc-1', 'payload', 'https://curewell.test');
 
     expect(meta.documentId).toBe('doc-1');
     expect(meta.checksum).toMatch(/^[0-9a-f]{64}$/);
-    expect(meta.securityStamp).toBe(`MED-${meta.checksum.slice(0, 12).toUpperCase()}`);
+    expect(meta.securityStamp).toBe(`CW-${meta.checksum.slice(0, 12).toUpperCase()}`);
     expect(meta.verificationUrl).toBe(
-      `https://medfolio.test/share/verify?doc=doc-1&hash=${meta.checksum.slice(0, 12).toUpperCase()}`
+      `https://curewell.test/share/verify?doc=doc-1&hash=${meta.checksum.slice(0, 12).toUpperCase()}`
     );
     expect(Date.parse(meta.issuedAt)).not.toBeNaN();
   });
 
   it('url-encodes document ids in the verification link', async () => {
-    const meta = await generateWatermarkMetadata('doc 1&x=2', 'payload', 'https://medfolio.test');
+    const meta = await generateWatermarkMetadata('doc 1&x=2', 'payload', 'https://curewell.test');
     expect(meta.verificationUrl).toContain('doc=doc+1%26x%3D2');
   });
 });

@@ -11,12 +11,14 @@ export interface HealthExpenseItem {
 }
 
 export function getExpenseStorageKey(profileId: string): string {
-  return `medfolio_health_expenses_v1_${profileId || 'default'}`;
+  return `curewell_health_expenses_v1_${profileId || 'default'}`;
 }
 
 export function listHealthExpenses(profileId: string): HealthExpenseItem[] {
   try {
-    const raw = localStorage.getItem(getExpenseStorageKey(profileId));
+    const primaryKey = getExpenseStorageKey(profileId);
+    const legacyKey = `medfolio_health_expenses_v1_${profileId || 'default'}`;
+    const raw = localStorage.getItem(primaryKey) || localStorage.getItem(legacyKey);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];

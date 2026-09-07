@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Medfolio — Medical Records & Prescription Manager</title>
+    <title>Curewell — Medical Records & Prescription Manager</title>
     <meta name="description" content="Personal medical records, prescription digitization, dose reminders, and lab report tracking." />
     
     <!-- PWA & Mobile Meta Tags -->
@@ -13,13 +13,14 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Medfolio" />
+    <meta name="apple-mobile-web-app-title" content="Curewell" />
     <link rel="apple-touch-icon" href="/logo.svg" />
 
     <script>
       (function () {
         try {
           // Permanently clear any stored dark mode preference and guarantee light theme
+          localStorage.removeItem('curewell_theme');
           localStorage.removeItem('medfolio_theme');
           document.documentElement.classList.remove('dark');
         } catch (e) {

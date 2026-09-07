@@ -353,7 +353,7 @@ export function SymptomTriagePage() {
   // Copy Summary for Doctor
   const handleCopyDoctorSummary = () => {
     const lines = [
-      `*MEDFOLIO HEALTH SYMPTOM SUMMARY*`,
+      `*CUREWELL HEALTH SYMPTOM SUMMARY*`,
       `Patient: ${profile?.full_name || 'Patient'} | Date: ${today}`,
       `Status: ${triageAssessment.badgeLabel}`,
       ``,
@@ -366,7 +366,7 @@ export function SymptomTriagePage() {
         ? `• Prescription Cross-Check: ${medicationCorrelations.map((m) => `${m.medName} (${m.suspectedLink})`).join('; ')}`
         : '',
       ``,
-      `Generated via Medfolio Health Assistant`,
+      `Generated via Curewell Health Assistant`,
     ].filter(Boolean);
 
     const formatted = lines.join('\n');

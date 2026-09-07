@@ -195,7 +195,7 @@ export function SecondOpinionPage() {
           <div className="flex items-center justify-between pb-4 border-b-2 border-teal-900">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-black text-teal-950 tracking-tight">MEDFOLIO</span>
+                <span className="text-lg font-black text-teal-950 tracking-tight">CUREWELL</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-teal-100 text-teal-950">
                   CLINICAL SECOND-OPINION DOSSIER
                 </span>
@@ -356,7 +356,7 @@ export function SecondOpinionPage() {
 
           {/* Footer Security Stamp */}
           <div className="pt-6 border-t border-ink-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-ink-400 font-mono">
-            <span>Official Clinical Dossier • Medfolio v2 Health OS</span>
+            <span>Official Clinical Dossier • Curewell Health OS</span>
             <span>Tamper-evident verification hash: {watermark?.checksum.slice(0, 24)}...</span>
           </div>
         </div>

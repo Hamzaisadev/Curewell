@@ -43,8 +43,8 @@ export function TopBar() {
   if (isAuthPage) {
     return (
       <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/90 backdrop-blur-md print:hidden">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center rounded-[var(--radius-sm)]" aria-label="Medfolio home">
+        <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6 md:px-8">
+          <Link to="/" className="flex items-center rounded-[var(--radius-sm)]" aria-label="Curewell home">
             <Logo size="md" />
           </Link>
           <Link
@@ -66,11 +66,11 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/90 backdrop-blur-md print:hidden">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-2 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-2 px-4 sm:px-6 md:px-8">
         <Link
           to="/"
           className="flex items-center shrink-0 rounded-[var(--radius-sm)]"
-          aria-label="Medfolio home"
+          aria-label="Curewell home"
         >
           <Logo size="md" />
         </Link>

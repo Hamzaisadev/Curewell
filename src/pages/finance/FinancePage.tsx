@@ -44,6 +44,10 @@ const CATEGORY_STYLES: Record<HealthExpenseItem['category'], { bar: string; icon
 };
 
 function getExpenseStorageKey(profileId: string): string {
+  return `curewell_health_expenses_v1_${profileId || 'default'}`;
+}
+
+function getLegacyExpenseStorageKey(profileId: string): string {
   return `medfolio_health_expenses_v1_${profileId || 'default'}`;
 }
 
@@ -54,7 +58,9 @@ export function FinancePage() {
 
   const [expenses, setExpenses] = useState<HealthExpenseItem[]>(() => {
     try {
-      const saved = localStorage.getItem(getExpenseStorageKey(profile?.id || ''));
+      const saved =
+        localStorage.getItem(getExpenseStorageKey(profile?.id || '')) ||
+        localStorage.getItem(getLegacyExpenseStorageKey(profile?.id || ''));
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];

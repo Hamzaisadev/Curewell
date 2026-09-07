@@ -17,12 +17,12 @@ describe('timeBuckets (src/domain/timeBuckets.ts)', () => {
     // 16:59 (1019 min) -> afternoon
     expect(bucketOf(1019)).toBe('afternoon');
 
-    // 17:00 (1020 min) -> evening
-    expect(bucketOf(1020)).toBe('evening');
-    // 19:30 (1170 min) -> evening
-    expect(bucketOf(1170)).toBe('evening');
-    // 20:59 (1259 min) -> evening
-    expect(bucketOf(1259)).toBe('evening');
+    // 17:00 (1020 min) -> night
+    expect(bucketOf(1020)).toBe('night');
+    // 19:30 (1170 min) -> night
+    expect(bucketOf(1170)).toBe('night');
+    // 20:59 (1259 min) -> night
+    expect(bucketOf(1259)).toBe('night');
 
     // 21:00 (1260 min) -> night
     expect(bucketOf(1260)).toBe('night');
@@ -35,10 +35,9 @@ describe('timeBuckets (src/domain/timeBuckets.ts)', () => {
   });
 
   it('exhaustively partitions all 1,440 minutes into exactly one bucket', () => {
-    const validBuckets = new Set<Bucket>(['morning', 'afternoon', 'evening', 'night']);
+    const validBuckets = new Set<Bucket>(['morning', 'afternoon', 'night']);
     let morningCount = 0;
     let afternoonCount = 0;
-    let eveningCount = 0;
     let nightCount = 0;
 
     for (let minute = 0; minute < 1440; minute++) {
@@ -47,7 +46,6 @@ describe('timeBuckets (src/domain/timeBuckets.ts)', () => {
 
       if (bucket === 'morning') morningCount++;
       if (bucket === 'afternoon') afternoonCount++;
-      if (bucket === 'evening') eveningCount++;
       if (bucket === 'night') nightCount++;
     }
 
@@ -55,12 +53,10 @@ describe('timeBuckets (src/domain/timeBuckets.ts)', () => {
     expect(morningCount).toBe(420);
     // afternoon: 720 to 1019 = 300 minutes
     expect(afternoonCount).toBe(300);
-    // evening: 1020 to 1259 = 240 minutes
-    expect(eveningCount).toBe(240);
-    // night: (1440 - 1260) + 300 = 180 + 300 = 480 minutes
-    expect(nightCount).toBe(480);
+    // night: (1440 - 1020) + 300 = 420 + 300 = 720 minutes
+    expect(nightCount).toBe(720);
 
     // Sum must equal total minutes in a day
-    expect(morningCount + afternoonCount + eveningCount + nightCount).toBe(1440);
+    expect(morningCount + afternoonCount + nightCount).toBe(1440);
   });
 });

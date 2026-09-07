@@ -7,7 +7,7 @@ export interface IconProps extends SVGProps<SVGSVGElement> {
 }
 
 /**
- * Shared icon frame for Medfolio.
+ * Shared icon frame for Curewell.
  *
  * Every icon is a 24x24 stroked outline drawn in `currentColor`, so icons inherit
  * text colour and adapt to light/medical theme tokens without ad-hoc overrides.

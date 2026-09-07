@@ -258,7 +258,7 @@ export function PublicShareView() {
         )}
 
         <div className="pt-4 border-t border-ink-100 text-[11px] text-ink-400 text-center">
-          Generated via Medfolio Patient Record System
+          Generated via Curewell Patient Record System
         </div>
       </div>
     </div>

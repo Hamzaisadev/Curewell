@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const EXPORT_FORMAT_IDENTIFIER = 'medfolio.export';
+export const EXPORT_FORMAT_IDENTIFIER = 'curewell.export';
+export const LEGACY_EXPORT_FORMAT_IDENTIFIER = 'medfolio.export';
 export const CURRENT_EXPORT_VERSION = 1;
 
 export const profileExportSchema = z.object({
@@ -153,8 +154,8 @@ export const imageExportSchema = z.object({
   data_base64: z.string().min(1),
 });
 
-export const medfolioExportDocumentSchema = z.object({
-  format: z.literal(EXPORT_FORMAT_IDENTIFIER),
+export const curewellExportDocumentSchema = z.object({
+  format: z.union([z.literal('curewell.export'), z.literal('medfolio.export')]),
   version: z.literal(CURRENT_EXPORT_VERSION),
   exported_at: z.string(),
   app_timezone: z.literal('Asia/Karachi'),
@@ -170,18 +171,20 @@ export const medfolioExportDocumentSchema = z.object({
   images: z.array(imageExportSchema).default([]),
 });
 
-export type MedfolioExportDocument = z.infer<typeof medfolioExportDocumentSchema>;
+export const medfolioExportDocumentSchema = curewellExportDocumentSchema;
+export type CurewellExportDocument = z.infer<typeof curewellExportDocumentSchema>;
+export type MedfolioExportDocument = CurewellExportDocument;
 
 /**
- * Validates an unknown JSON payload against the Medfolio Export specification.
+ * Validates an unknown JSON payload against the Curewell Export specification.
  * Returns formatted errors if validation fails.
  */
 export function validateExportDocument(data: unknown): {
   success: boolean;
-  data?: MedfolioExportDocument;
+  data?: CurewellExportDocument;
   error?: string;
 } {
-  const result = medfolioExportDocumentSchema.safeParse(data);
+  const result = curewellExportDocumentSchema.safeParse(data);
   if (!result.success) {
     const firstIssue = result.error.issues[0];
     const pathStr = firstIssue ? firstIssue.path.join('.') : 'root';

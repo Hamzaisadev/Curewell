@@ -30,7 +30,7 @@ import {
   EXPORT_FORMAT_IDENTIFIER,
   CURRENT_EXPORT_VERSION,
   validateExportDocument,
-  type MedfolioExportDocument,
+  type CurewellExportDocument,
 } from '../../lib/export';
 import {
   EXTRACTION_DISCLAIMER,
@@ -159,9 +159,9 @@ export function SettingsPage() {
     }
 
     // Actually sends one, rather than only showing a toast that claims it did.
-    const shown = await sendLocalNotification('Medfolio reminder test', {
+    const shown = await sendLocalNotification('Curewell reminder test', {
       body: 'Dose reminders will look like this.',
-      tag: 'medfolio-test',
+      tag: 'curewell-test',
     });
     setToastMessage(
       shown ? 'Test notification sent.' : 'Your browser would not display the notification.'
@@ -209,7 +209,7 @@ export function SettingsPage() {
         testOrdersRepo.listTestOrders(effectiveProfileId),
       ]);
 
-      const exportDoc: MedfolioExportDocument = {
+      const exportDoc: CurewellExportDocument = {
         format: EXPORT_FORMAT_IDENTIFIER,
         version: CURRENT_EXPORT_VERSION,
         exported_at: new Date().toISOString(),
@@ -333,7 +333,7 @@ export function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `medfolio-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `curewell-export-${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
       setToastMessage('Data exported successfully.');
@@ -545,7 +545,7 @@ export function SettingsPage() {
                 previously they were local state that nothing ever consumed. */}
             <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-ink-100">
               <span className="text-xs text-ink-500">
-                Reminders run while Medfolio is open in your browser.
+                Reminders run while Curewell is open in your browser.
               </span>
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={handleTestNotification}>

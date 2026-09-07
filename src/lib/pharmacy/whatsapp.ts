@@ -23,11 +23,14 @@ export interface MedicationOrderRequest {
   instructions?: string | null;
 }
 
-const PHARMACY_STORAGE_KEY = 'medfolio_preferred_pharmacy_v1';
+const PHARMACY_STORAGE_KEY = 'curewell_preferred_pharmacy_v1';
+const LEGACY_PHARMACY_STORAGE_KEY = 'medfolio_preferred_pharmacy_v1';
 
 export function getPreferredPharmacy(profileId: string = 'default'): PharmacyContact {
   try {
-    const raw = localStorage.getItem(`${PHARMACY_STORAGE_KEY}_${profileId}`);
+    const raw =
+      localStorage.getItem(`${PHARMACY_STORAGE_KEY}_${profileId}`) ||
+      localStorage.getItem(`${LEGACY_PHARMACY_STORAGE_KEY}_${profileId}`);
     if (raw) return JSON.parse(raw);
   } catch {
     // fallback
@@ -66,7 +69,7 @@ export function generateWhatsAppOrderUrl({
   const medicineLabel = [medicineName, strength].filter(Boolean).join(' ');
 
   const lines = [
-    `*Hello${pharmacyName ? ' ' + pharmacyName : ''}, I would like to order medicine via Medfolio:*`,
+    `*Hello${pharmacyName ? ' ' + pharmacyName : ''}, I would like to order medicine via Curewell:*`,
     ``,
     `💊 *Medicine:* ${medicineLabel}`,
     doseAmount ? `📋 *Dosage:* ${doseAmount}` : '',

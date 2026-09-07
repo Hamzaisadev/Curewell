@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CUREWELL — Intelligent Personal Health Vault & Clinical Co-Pilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070d1e;
+      --bg-surface: #0f192f;
+      --bg-card: #15223e;
+      --bg-card-hover: #1c2c50;
+      --border-subtle: #1e3156;
+      --border-accent: rgba(6, 182, 212, 0.4);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --teal: #14b8a6;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Presentation Canvas */
+    .deck-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 20%, rgba(6, 182, 212, 0.08) 0%, rgba(7, 13, 30, 0.98) 70%);
+    }
+
+    .slide {
+      position: absolute;
+      width: 94vw;
+      max-width: 1440px;
+      height: 88vh;
+      max-height: 810px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 44px 56px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(6, 182, 212, 0.05);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97) translateY(12px);
+      transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      z-index: 10;
+    }
+
+    /* Header Bar */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 16px;
+    }
+
+    .header-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .pill-badge {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .pill-badge.green {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: var(--emerald);
+    }
+
+    .pill-badge.amber {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: var(--amber);
+    }
+
+    .slide-title {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .slide-subtitle {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--cyan);
+      letter-spacing: -0.01em;
+    }
+
+    .slide-logo-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Content Area */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Card Grids */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      height: 100%;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      height: 100%;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      height: 100%;
+    }
+
+    .grid-2-1 {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 28px;
+      height: 100%;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .card.highlight-cyan {
+      border-top: 3px solid var(--cyan);
+    }
+
+    .card.highlight-emerald {
+      border-top: 3px solid var(--emerald);
+    }
+
+    .card.highlight-amber {
+      border-top: 3px solid var(--amber);
+    }
+
+    .card.highlight-rose {
+      border-top: 3px solid var(--rose);
+    }
+
+    .card-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 10px;
+      line-height: 1.3;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .bullet-list li {
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .bullet-list li::before {
+      content: "•";
+      color: var(--cyan);
+      font-weight: bold;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* Footer */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    /* HUD Controls */
+    .hud-controls {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(15, 25, 47, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 18px;
+      border-radius: 9999px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+    }
+
+    .hud-btn {
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .hud-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--cyan);
+    }
+
+    .hud-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 0 8px;
+    }
+
+    .progress-bar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 1000;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), var(--cyan), var(--emerald));
+      width: 6.25%;
+      transition: width 0.3s ease;
+    }
+
+    /* Special Layout Styles */
+    .title-slide-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      padding: 20px 30px;
+    }
+
+    .title-logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 16px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 9999px;
+      color: var(--emerald);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      margin-bottom: 24px;
+      width: fit-content;
+    }
+
+    .title-hero {
+      font-size: 64px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.03em;
+    }
+
+    .title-subhero {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 24px;
+      letter-spacing: -0.01em;
+    }
+
+    .title-summary {
+      font-size: 19px;
+      color: var(--text-muted);
+      max-width: 820px;
+      line-height: 1.6;
+      margin-bottom: 44px;
+    }
+
+    .title-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      max-width: 860px;
+    }
+
+    .meta-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .meta-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* Simulation & Diagram Elements */
+    .schedule-sim {
+      background: #0b1329;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sim-dose-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #131f3b;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border-left: 3px solid var(--cyan);
+    }
+
+    .sim-dose-row.taken {
+      border-left-color: var(--emerald);
+    }
+
+    .sim-dose-row.warning {
+      border-left-color: var(--amber);
+    }
+
+    .sim-time {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+
+    .sim-drug {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .sim-status {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .status-taken {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--emerald);
+    }
+
+    .status-scheduled {
+      background: rgba(6, 182, 212, 0.2);
+      color: var(--cyan);
+    }
+
+    .status-alert {
+      background: rgba(244, 63, 94, 0.2);
+      color: var(--rose);
+    }
+
+    /* Chart Simulation */
+    .chart-container {
+      background: #0b1329;
+      border-radius: 10px;
+      padding: 14px;
+      border: 1px solid var(--border-subtle);
+      margin-top: 12px;
+    }
+
+    .stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Navigation drawer overlay */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .drawer-overlay.active {
+      display: flex;
+    }
+
+    .drawer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      max-width: 1200px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .thumb-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .thumb-card:hover, .thumb-card.active {
+      border-color: var(--cyan);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .thumb-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--cyan);
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .thumb-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.3;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        overflow: visible;
+        background: white;
+        color: black;
+      }
+      .hud-controls, .progress-bar-container, .drawer-overlay {
+        display: none !important;
+      }
+      .slide {
+        position: relative !important;
+        opacity: 1 !important;
+        transform: none !important;
+        page-break-after: always;
+        width: 100% !important;
+        height: 100vh !important;
+        max-width: none !important;
+        max-height: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: #0f192f !important;
+        color: white !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="deck-container">
+
+    <!-- ==========================================
+         SLIDE 1: Title Slide
+         ========================================== -->
+    <section class="slide active" id="slide-1">
+      <div class="title-slide-container">
+        <div class="title-logo-badge">
+          <span>●</span> CLINICAL AI & HEALTHCARE INNOVATION
+        </div>
+        <h1 class="title-hero">CUREWELL</h1>
+        <h2 class="title-subhero">Your Intelligent Personal Health Vault & Clinical Co-Pilot</h2>
+        <p class="title-summary">
+          Bridging the gap between paper prescriptions, lab reports, and medication safety through context-grounded AI intelligence, meal-aware dose adherence, and zero-trust doctor sharing.
+        </p>
+
+        <div class="title-meta-grid">
+          <div class="meta-box">
+            <div class="meta-label">PRESENTER</div>
+            <div class="meta-val">Hamza</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 3px;">Lead Architect & Developer</div>
+          </div>
+          <div class="meta-box">
+            <div class="meta-label">PROJECT RELEASE</div>
+            <div class="meta-val" style="color: var(--emerald);">CUREWELL v2</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 3px;">Production-Ready Clinical PWA</div>
+          </div>
+          <div class="meta-box">
+            <div class="meta-label">AI CO-PILOT ENGINE</div>
+            <div class="meta-val" style="color: var(--cyan);">Shifa AI</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 3px;">13-Table Grounded Medical RAG</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>CUREWELL v2 Presentation</span>
+        <span class="slide-counter">01 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 2: The Problem
+         ========================================== -->
+    <section class="slide" id="slide-2">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge amber">Problem Statement</div>
+          <h2 class="slide-title">The Problem</h2>
+          <div class="slide-subtitle">Personal Health Management is Fragmented and High-Risk</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 02</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-rose">
+            <div class="card-tag" style="color: var(--rose);">CRITICAL CHALLENGE 01</div>
+            <div class="card-title">📄 Paper Chaos</div>
+            <p class="card-desc">Handwritten prescriptions get lost, ruined, faded on thermal paper, or remain completely illegible.</p>
+            <ul class="bullet-list">
+              <li>Over 30% of physical prescriptions are misplaced within 6 months</li>
+              <li>Handwriting misinterpretation causes severe dosing errors</li>
+              <li>No centralized digital audit trail across outpatient clinics</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">CRITICAL CHALLENGE 02</div>
+            <div class="card-title">💊 Polypharmacy Hazards</div>
+            <p class="card-desc">Patients taking multiple brand names with identical active molecules face accidental overdose.</p>
+            <ul class="bullet-list">
+              <li>Unintentional double-dosing of NSAIDs, Metformin, or Statins</li>
+              <li>Dangerous drug-to-drug interactions remain unnoticed</li>
+              <li>Disjointed care from different prescribing doctors</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">CRITICAL CHALLENGE 03</div>
+            <div class="card-title">⏱️ Rushed Consultations</div>
+            <p class="card-desc">Patients struggle to recall symptoms, dosages, and history in hurried 5-minute doctor visits.</p>
+            <ul class="bullet-list">
+              <li>50% of critical clinical history is forgotten under consultation stress</li>
+              <li>Valuable appointment time wasted trying to recall past treatments</li>
+              <li>Patients leave without asking critical follow-up questions</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">CRITICAL CHALLENGE 04</div>
+            <div class="card-title">📊 Scattered Diagnostic Data</div>
+            <p class="card-desc">Isolated lab sheets fail to reveal longitudinal biomarker trends over months and years.</p>
+            <ul class="bullet-list">
+              <li>Incompatible formats across different diagnostic testing labs</li>
+              <li>Silent metabolic degradation goes undetected until emergencies</li>
+              <li>No visual reference ranges or unified patient timeline</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Patient Safety & Healthcare Continuity Risks</span>
+        <span class="slide-counter">02 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 3: The Solution — CUREWELL
+         ========================================== -->
+    <section class="slide" id="slide-3">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge green">Core Architecture</div>
+          <h2 class="slide-title">The Solution — CUREWELL</h2>
+          <div class="slide-subtitle">A Unified, Privacy-First Clinical Companion</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 03</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">PILLAR 01 // VISION INGESTION</div>
+            <div class="card-title">⚡ Digitize Instantly</div>
+            <p class="card-desc">State-of-the-art multi-modal Vision AI extracts handwritten prescriptions and lab reports in seconds.</p>
+            <ul class="bullet-list">
+              <li>Automated optical recognition of drug names & dosages</li>
+              <li>Interactive human-in-the-loop validation modal</li>
+              <li>Converts physical paper into structured SQL health records</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">PILLAR 02 // TIMED ADHERENCE</div>
+            <div class="card-title">⏰ Daily Adherence</div>
+            <p class="card-desc">Meal-timed medication scheduling with seamless one-tap dose logging and streak tracking.</p>
+            <ul class="bullet-list">
+              <li>Smart buckets: Morning, Afternoon, Evening, Bedtime</li>
+              <li>Before / After meal contextual compliance cues</li>
+              <li>Taken, Skipped, Snoozed with adherence analytics</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">PILLAR 03 // PRIVATE AI ASSISTANT</div>
+            <div class="card-title">🧠 Grounded Intelligence</div>
+            <p class="card-desc">Shifa AI answers health questions strictly and exclusively from YOUR validated clinical vault.</p>
+            <ul class="bullet-list">
+              <li>Strict RAG architecture with zero generic web hallucinations</li>
+              <li>Deterministic molecular safety and duplicate checking</li>
+              <li>Multilingual interaction: English, Urdu (اردو), and Roman Urdu</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">PILLAR 04 // CLINICAL SHARING</div>
+            <div class="card-title">📋 Doctor-Ready</div>
+            <p class="card-desc">One-click comprehensive clinical dossiers and zero-trust PIN-protected QR code sharing.</p>
+            <ul class="bullet-list">
+              <li>1-Page A4 clinical summary formatted for 60-second doctor review</li>
+              <li>Time-limited sharing (24h / 7d / 30d) with instant revoke switch</li>
+              <li>No doctor account or app installation required</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Integrated Personal Health Ecosystem</span>
+        <span class="slide-counter">03 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 4: Features Overview
+         ========================================== -->
+    <section class="slide" id="slide-4">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Feature Matrix</div>
+          <h2 class="slide-title">Features Overview</h2>
+          <div class="slide-subtitle">Complete End-to-End Health Management Suite</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 04</div>
+      </div>
+      <div class="slide-body" style="gap: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+          <div class="card highlight-cyan" style="padding: 18px;">
+            <div class="card-title" style="font-size: 16px;">📸 AI Prescription Extractor</div>
+            <p class="card-desc" style="font-size: 12.5px; margin-bottom: 8px;">Converts doctor handwriting into structured dosages and meal-aware daily routine buckets.</p>
+            <div class="stat-badge" style="background: rgba(6,182,212,0.15); color: var(--cyan);">Vision OCR + Verification</div>
+          </div>
+
+          <div class="card highlight-teal" style="padding: 18px;">
+            <div class="card-title" style="font-size: 16px;">🧪 AI Lab Report Extractor</div>
+            <p class="card-desc" style="font-size: 12.5px; margin-bottom: 8px;">Parses CBC, HbA1c, Lipids, LFT & RFT with longitudinal trendline charts and reference ranges.</p>
+            <div class="stat-badge" style="background: rgba(20,184,166,0.15); color: var(--teal);">Longitudinal Telemetry</div>
+          </div>
+
+          <div class="card highlight-emerald" style="padding: 18px;">
+            <div class="card-title" style="font-size: 16px;">🩺 Symptom & Vitals Journal</div>
+            <p class="card-desc" style="font-size: 12.5px; margin-bottom: 8px;">Tracks BP, Blood Sugar, SpO2, Heart Rate, and triggers instant on-device Red-Flag emergency screening.</p>
+            <div class="stat-badge" style="background: rgba(16,185,129,0.15); color: var(--emerald);">Deterministic Triage</div>
+          </div>
+
+          <div class="card highlight-amber" style="padding: 18px;">
+            <div class="card-title" style="font-size: 16px;">📋 1-Click Doctor Brief</div>
+            <p class="card-desc" style="font-size: 12.5px; margin-bottom: 8px;">1-Page A4 clinical summary and PIN-protected temporary QR links with patient instant revocation.</p>
+            <div class="stat-badge" style="background: rgba(245,158,11,0.15); color: var(--amber);">Zero-Trust Sharing</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+          <div class="card highlight-cyan" style="padding: 20px;">
+            <div class="card-title" style="font-size: 17px;">🤖 Shifa AI Assistant</div>
+            <p class="card-desc" style="font-size: 13px; margin-bottom: 8px;">Context-grounded medical RAG co-pilot with zero hallucinations, sig decoding, and Roman Urdu fluency.</p>
+            <div class="stat-badge" style="background: rgba(6,182,212,0.15); color: var(--cyan);">13 Personal Tables Grounding</div>
+          </div>
+
+          <div class="card highlight-teal" style="padding: 20px;">
+            <div class="card-title" style="font-size: 17px;">💊 Active & PRN Cabinet</div>
+            <p class="card-desc" style="font-size: 13px; margin-bottom: 8px;">Separate management for chronic daily regimens vs as-needed rescue drugs with smart refill warnings.</p>
+            <div class="stat-badge" style="background: rgba(20,184,166,0.15); color: var(--teal);">Predictive Stock Refills</div>
+          </div>
+
+          <div class="card highlight-emerald" style="padding: 20px;">
+            <div class="card-title" style="font-size: 17px;">💰 Medical Finance Tracker</div>
+            <p class="card-desc" style="font-size: 13px; margin-bottom: 8px;">Tracks doctor fees, diagnostic lab charges, pharmacy expenses, and monthly healthcare budgeting.</p>
+            <div class="stat-badge" style="background: rgba(16,185,129,0.15); color: var(--emerald);">Out-of-Pocket Analytics</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Unified Architecture Supporting Patient & Physician Workflows</span>
+        <span class="slide-counter">04 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 5: Feature 1 — AI Prescription Extractor & Smart Scheduling
+         ========================================== -->
+    <section class="slide" id="slide-5">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Feature Deep Dive 01</div>
+          <h2 class="slide-title">Feature 1 — AI Prescription Extractor & Smart Scheduling</h2>
+          <div class="slide-subtitle">From Doctor's Handwriting to Structured Daily Routine</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 05</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2-1">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">INGESTION & PARSING PIPELINE</div>
+            <div class="card-title">5-Stage Structured Workflow</div>
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 14px;">1. Camera / Upload Ingestion</div>
+                <div style="font-size: 12.5px; color: var(--text-muted);">Snap any handwritten prescription, clinic paper, or hospital discharge note via mobile or desktop.</div>
+              </div>
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 14px;">2. Multi-Modal Vision AI Extraction</div>
+                <div style="font-size: 12.5px; color: var(--text-muted);">Automatically detects drug names, strengths (e.g. 500mg), dosage forms, frequency, and duration.</div>
+              </div>
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 14px;">3. Human-in-the-Loop Verification</div>
+                <div style="font-size: 12.5px; color: var(--text-muted);">Patients review, adjust, and validate extracted medications before committing them to the vault.</div>
+              </div>
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 14px;">4. Meal-Aware Daily Buckets</div>
+                <div style="font-size: 12.5px; color: var(--text-muted);">Automatically maps doses into Morning, Afternoon, Evening, Bedtime with explicit before/after meal timing.</div>
+              </div>
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 14px;">5. 1-Tap Adherence Telemetry</div>
+                <div style="font-size: 12.5px; color: var(--text-muted);">Mark doses as Taken, Skipped, or Snoozed with live compliance streaks and compliance analytics.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card highlight-emerald" style="justify-content: space-between;">
+            <div>
+              <div class="card-tag" style="color: var(--emerald);">LIVE SCHEDULE SIMULATION</div>
+              <div class="card-title">Today's Regimen</div>
+              <div class="schedule-sim" style="margin-top: 12px;">
+                <div class="sim-dose-row taken">
+                  <div>
+                    <div class="sim-time">08:00 AM • MORNING [AFTER MEAL]</div>
+                    <div class="sim-drug">Metformin 500mg (1 Tab)</div>
+                  </div>
+                  <span class="sim-status status-taken">TAKEN ✓</span>
+                </div>
+
+                <div class="sim-dose-row">
+                  <div>
+                    <div class="sim-time">01:30 PM • AFTERNOON [WITH WATER]</div>
+                    <div class="sim-drug">Lisinopril 10mg (1 Tab)</div>
+                  </div>
+                  <span class="sim-status status-scheduled">SCHEDULED</span>
+                </div>
+
+                <div class="sim-dose-row">
+                  <div>
+                    <div class="sim-time">08:00 PM • EVENING [AFTER MEAL]</div>
+                    <div class="sim-drug">Atorvastatin 20mg (1 Tab)</div>
+                  </div>
+                  <span class="sim-status status-scheduled">SCHEDULED</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 11px; color: var(--emerald); font-weight: 700;">LIVE COMPLIANCE</div>
+                <div style="font-size: 14px; font-weight: 800; color: #fff;">94% 7-Day Adherence Streak</div>
+              </div>
+              <div style="font-size: 24px; font-weight: 900; color: var(--emerald);">🔥 14d</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Preventing Missed Doses and Medication Confusion</span>
+        <span class="slide-counter">05 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 6: Feature 2 — AI Lab Report Extractor & Biomarker Trends
+         ========================================== -->
+    <section class="slide" id="slide-6">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Feature Deep Dive 02</div>
+          <h2 class="slide-title">Feature 2 — AI Lab Report Extractor & Biomarker Trends</h2>
+          <div class="slide-subtitle">Transforming Static PDFs into Dynamic Health Insights</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 06</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">SUPPORTED PANELS</div>
+            <div class="card-title">Multi-Panel Extraction</div>
+            <p class="card-desc">Upload PDF or image lab reports across comprehensive diagnostic test batteries.</p>
+            <ul class="bullet-list">
+              <li>Complete Blood Count (CBC, Platelets, Hb)</li>
+              <li>HbA1c & Fasting / Random Glucose</li>
+              <li>Lipid Profile (Total Chol, LDL, HDL, Trig)</li>
+              <li>Renal RFT (Creatinine, BUN, eGFR)</li>
+              <li>Liver LFT (ALT, AST, Bilirubin)</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">TELEMETRY VISUALIZATION</div>
+            <div class="card-title">Longitudinal Trendlines</div>
+            <p class="card-desc">Interactive charts track biomarker trajectories across months and years.</p>
+            <ul class="bullet-list">
+              <li>Spot gradual metabolic deterioration early</li>
+              <li>Directly measure medication efficacy over time</li>
+              <li>Correlate diet/lifestyle changes with numbers</li>
+              <li>Unified historical graphs for doctor reviews</li>
+            </ul>
+            <div class="chart-container" style="margin-top: auto;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                <span style="color: var(--cyan); font-weight: 700;">HbA1c Trend</span>
+                <span style="color: var(--emerald); font-weight: 700;">7.8% → 6.4% ↓</span>
+              </div>
+              <svg width="100%" height="42" viewBox="0 0 200 42">
+                <polyline fill="none" stroke="#06b6d4" stroke-width="2.5" points="10,36 60,30 110,24 160,14 190,8"/>
+                <circle cx="10" cy="36" r="3.5" fill="#f43f5e" />
+                <circle cx="60" cy="30" r="3.5" fill="#f59e0b" />
+                <circle cx="110" cy="24" r="3.5" fill="#06b6d4" />
+                <circle cx="160" cy="14" r="3.5" fill="#10b981" />
+                <circle cx="190" cy="8" r="3.5" fill="#10b981" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">CLINICAL GUARDRAILS</div>
+            <div class="card-title">Clinical Reference Ranges</div>
+            <p class="card-desc">Visual color cues instantly demystify medical numerical lab outputs.</p>
+            <ul class="bullet-list">
+              <li><span style="color: var(--emerald); font-weight: 700;">Normal / Optimal</span>: Safely within targets</li>
+              <li><span style="color: var(--amber); font-weight: 700;">Elevated / Borderline</span>: Requires monitoring</li>
+              <li><span style="color: var(--rose); font-weight: 700;">Critical / High Alert</span>: Immediate attention</li>
+              <li>Tailored for patient age, gender & conditions</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">DATA NORMALIZATION</div>
+            <div class="card-title">Multi-Lab Comparison</div>
+            <p class="card-desc">Consolidates results from different hospitals and diagnostic labs into a single timeline.</p>
+            <ul class="bullet-list">
+              <li>Automatic unit normalization (mg/dL vs mmol/L)</li>
+              <li>No more lost paper report files or binders</li>
+              <li>Search any specific biomarker instantly</li>
+              <li>Export-ready for physician consultations</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>From Static Lab Printouts to Actionable Longitudinal Health Telemetry</span>
+        <span class="slide-counter">06 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 7: Feature 3 — AI Symptom Checker & Vitals Journal
+         ========================================== -->
+    <section class="slide" id="slide-7">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Feature Deep Dive 03</div>
+          <h2 class="slide-title">Feature 3 — AI Symptom Checker & Vitals Journal</h2>
+          <div class="slide-subtitle">Continuous Health Telemetry with Safety Screening</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 07</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">TELEMETRY TRACKING</div>
+            <div class="card-title">Vitals Logging</div>
+            <p class="card-desc">Rapid daily capture of core physiological metrics with contextual tags.</p>
+            <ul class="bullet-list">
+              <li>Blood Pressure (Systolic / Diastolic)</li>
+              <li>Blood Glucose (Fasting & 2h Post-Meal)</li>
+              <li>SpO2 Blood Oxygen Saturation (%)</li>
+              <li>Resting Heart Rate & Body Weight</li>
+              <li>Contextual tags (pre/post exercise, stressed)</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">CONTEXTUAL LOGGING</div>
+            <div class="card-title">Symptom Journal</div>
+            <p class="card-desc">Rich clinical diary documenting onset, progression, and potential triggers.</p>
+            <ul class="bullet-list">
+              <li>Visual severity scale (1 to 10 slider)</li>
+              <li>Onset duration and anatomical location</li>
+              <li>Environmental, dietary & medication triggers</li>
+              <li>Correlates episodes directly with vitals spikes</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">CLINICAL CORRELATION</div>
+            <div class="card-title">AI-Assisted Triage</div>
+            <p class="card-desc">Evaluates logged symptoms against personal medical and medication history.</p>
+            <ul class="bullet-list">
+              <li>Checks for known adverse drug reactions (ADRs)</li>
+              <li>Contextualized by existing chronic diagnoses</li>
+              <li>Generates evidence-backed self-care guidance</li>
+              <li>Recommends appropriate urgency for clinic visit</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-rose">
+            <div class="card-tag" style="color: var(--rose);">SAFETY PROTOCOL</div>
+            <div class="card-title">🚨 Red-Flag Alerts</div>
+            <p class="card-desc">Instant, deterministic on-device screening for emergency biomarker crises.</p>
+            <ul class="bullet-list">
+              <li>Hypertensive Crisis (BP > 180/120 mmHg)</li>
+              <li>Severe Hypoglycemia (&lt; 54 mg/dL)</li>
+              <li>Hypoxemia Detection (SpO2 &lt; 90%)</li>
+              <li>1-Tap Emergency Call & Caretaker notification</li>
+            </ul>
+            <div style="margin-top: auto; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.35); padding: 10px; border-radius: 8px; font-size: 11px; color: #ff8a9e; font-weight: 600;">
+              Deterministic safety rules bypass LLM delay for instant life-critical response.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Continuous Patient Telemetry with Deterministic Emergency Safeguards</span>
+        <span class="slide-counter">07 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 8: Feature 4 — 1-Click Doctor Brief & Secure QR Sharing
+         ========================================== -->
+    <section class="slide" id="slide-8">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Feature Deep Dive 04</div>
+          <h2 class="slide-title">Feature 4 — 1-Click Doctor Brief & Secure QR Sharing</h2>
+          <div class="slide-subtitle">Eliminating Rushed Consultations and Paper Folders</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 08</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">A4 CLINICAL SUMMARY</div>
+            <div class="card-title">1-Page A4 Health Dossier</div>
+            <p class="card-desc">Generates a concise, high-density clinical summary designed specifically for a physician's 60-second glance.</p>
+            <div style="background: #091124; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+                <span style="font-weight: 700; color: #fff; font-size: 13px;">Active Medications</span>
+                <span style="color: var(--emerald); font-size: 11px; font-weight: 700;">Verified Adherence: 94%</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">Exact molecules, dosages, schedule buckets & brand names.</div>
+
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+                <span style="font-weight: 700; color: #fff; font-size: 13px;">Allergies & Contraindications</span>
+                <span style="color: var(--rose); font-size: 11px; font-weight: 700;">HIGH-PRIORITY BANNER</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">Immediate visual callouts (e.g. Penicillin, Sulfa drugs).</div>
+
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+                <span style="font-weight: 700; color: #fff; font-size: 13px;">Recent Out-of-Range Lab Values</span>
+                <span style="color: var(--amber); font-size: 11px; font-weight: 700;">Biomarker Flags</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">Highlighted abnormal values from the past 90 days.</div>
+
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-weight: 700; color: #fff; font-size: 13px;">Shifa AI Prepared Questions</span>
+                <span style="color: var(--cyan); font-size: 11px; font-weight: 700;">Consultation Prep</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);">Auto-generated questions tailored to symptoms and vitals.</div>
+            </div>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">ZERO-TRUST PRIVACY</div>
+            <div class="card-title">PIN-Protected QR Sharing</div>
+            <p class="card-desc">Share time-limited read-only access with consulting physicians without compromising account credentials.</p>
+            <ul class="bullet-list" style="margin-bottom: 16px;">
+              <li><strong>Time-Limited Expiry:</strong> Configure access for 24 Hours, 7 Days, or 30 Days</li>
+              <li><strong>4-Digit PIN Security:</strong> Doctor enters a patient-provided PIN to decrypt records</li>
+              <li><strong>Instant Revocation:</strong> 1-Tap 'Kill Switch' revokes doctor access immediately</li>
+              <li><strong>Zero Installation:</strong> Works instantly on any mobile browser or clinic desktop</li>
+            </ul>
+
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 16px; margin-top: auto;">
+              <div style="background: white; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2">
+                  <rect x="2" y="2" width="8" height="8" rx="1"/>
+                  <rect x="14" y="2" width="8" height="8" rx="1"/>
+                  <rect x="2" y="14" width="8" height="8" rx="1"/>
+                  <rect x="14" y="14" width="4" height="4"/>
+                  <rect x="18" y="18" width="4" height="4"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight: 800; font-size: 14px; color: #fff;">PIN: 8492 • Valid for 23h 48m</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Doctor receives read-only summary • Audit logged</div>
+                <div style="font-size: 11px; color: var(--rose); font-weight: 700; margin-top: 4px; cursor: pointer;">[ Revoke Access Now ]</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Empowering Patients with Total Sovereign Control Over Medical Sharing</span>
+        <span class="slide-counter">08 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 9: Feature 5 (Part 1) — Shifa AI: Clinical Co-Pilot
+         ========================================== -->
+    <section class="slide" id="slide-9">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Clinical AI Engine</div>
+          <h2 class="slide-title">Feature 5 (Part 1) — Shifa AI: Clinical Co-Pilot</h2>
+          <div class="slide-subtitle">Why Shifa AI is Different from Generic Chatbots</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 09</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">GROUNDED RAG</div>
+            <div class="card-title">Strict Medical RAG</div>
+            <p class="card-desc">Shifa AI does NOT browse random web medical forums or generate speculative medical theories.</p>
+            <ul class="bullet-list">
+              <li>Retrieval-Augmented Generation rooted strictly in patient facts</li>
+              <li>Deterministic domain rules enforce clinical guardrails</li>
+              <li>Peer-reviewed clinical evidence base for medication actions</li>
+              <li>Completely distinct from generic hallucinating chatbots</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">PERSONALIZED CONTEXT</div>
+            <div class="card-title">13 Personal Tables</div>
+            <p class="card-desc">Reads strictly from YOUR validated clinical tables and vitals telemetry data.</p>
+            <ul class="bullet-list">
+              <li>Active & historical prescriptions</li>
+              <li>Longitudinal lab panel telemetry</li>
+              <li>Vitals trends (BP, Glucose, SpO2)</li>
+              <li>Documented allergies & contraindications</li>
+              <li>Physician consultation notes & history</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">VERIFIABILITY</div>
+            <div class="card-title">Zero Hallucinations</div>
+            <p class="card-desc">If a clinical fact is absent from your verified records, Shifa explicitly states it.</p>
+            <ul class="bullet-list">
+              <li>Refuses to invent dosage figures or diagnose symptoms blindly</li>
+              <li>Explicitly identifies missing clinical tests and prompts doctor check</li>
+              <li>Every answer includes source record attribution</li>
+              <li>Guarantees clinically defensible safety</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">PRIVACY SHIELD</div>
+            <div class="card-title">Patient Data Isolation</div>
+            <p class="card-desc">Your medical queries are private, encrypted, and never used to train public foundation models.</p>
+            <ul class="bullet-list">
+              <li>PostgreSQL Row-Level Security (RLS) tenant isolation</li>
+              <li>Ephemeral session memory with prompt sanitization</li>
+              <li>Zero data monetization or external marketing telemetry</li>
+              <li>Compliant with modern digital privacy protocols</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Grounded Clinical Intelligence with Provable Safety Boundaries</span>
+        <span class="slide-counter">09 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 10: Feature 5 (Part 2) — Shifa AI Intelligence & Safety Engine
+         ========================================== -->
+    <section class="slide" id="slide-10">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Safety & Localization</div>
+          <h2 class="slide-title">Feature 5 (Part 2) — Shifa AI Intelligence & Safety Engine</h2>
+          <div class="slide-subtitle">Deep Clinical Verification & Multilingual Accessibility</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 10</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-rose">
+            <div class="card-tag" style="color: var(--rose);">PREVENTING TOXICITY</div>
+            <div class="card-title">Sentinel Drug Safety</div>
+            <p class="card-desc">Detects brand duplicates sharing identical active molecules to prevent accidental overdose.</p>
+            <ul class="bullet-list">
+              <li>Identifies when "Glucophage" & "Neodipar" are both Metformin</li>
+              <li>Flags cumulative daily active ingredient ceilings</li>
+              <li>Cross-references known drug-to-drug interactions</li>
+              <li>Alerts if an acute drug conflicts with chronic kidney/liver status</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">LATIN DECODER</div>
+            <div class="card-title">Medical Sig Translation</div>
+            <p class="card-desc">Converts cryptic doctor shorthand into plain, actionable lifestyle schedules.</p>
+            <ul class="bullet-list">
+              <li><strong>OD / BD / TDS:</strong> Once, twice, or 3 times daily</li>
+              <li><strong>AC / PC:</strong> Before meals vs after meals</li>
+              <li><strong>PRN:</strong> As-needed for acute symptom flare-ups</li>
+              <li><strong>HS:</strong> At bedtime with full glass of water</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">REGIONAL INCLUSIVITY</div>
+            <div class="card-title">Multilingual Support</div>
+            <p class="card-desc">Natural conversational interaction in English, Urdu (اردو), and Roman Urdu.</p>
+            <ul class="bullet-list">
+              <li>Speaks Urdu with proper medical Nastaliq rendering</li>
+              <li>Full support for conversational Roman Urdu (e.g. "Dawa kab leni hai?")</li>
+              <li>Bridges critical language barriers for elderly relatives</li>
+              <li>Ensures elderly patients fully understand instructions</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">PATIENT CLARITY</div>
+            <div class="card-title">Jargon Simplification</div>
+            <p class="card-desc">Explains complex lab numbers and Latin diagnostic terminology in plain language.</p>
+            <ul class="bullet-list">
+              <li>Explains what eGFR, ALT, and HbA1c actually indicate</li>
+              <li>Answers "Why did my doctor prescribe this medication?"</li>
+              <li>Alleviates medical panic with clear, objective clarity</li>
+              <li>Prepares patients to ask informed questions</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Bilingual Health Literacy & Real-Time Molecule Collision Detection</span>
+        <span class="slide-counter">10 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 11: Feature 6 — Medicine Cabinet & Medical Finance Tracker
+         ========================================== -->
+    <section class="slide" id="slide-11">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Operations & Logistics</div>
+          <h2 class="slide-title">Feature 6 — Medicine Cabinet & Medical Finance Tracker</h2>
+          <div class="slide-subtitle">Managing Supplies and Healthcare Out-of-Pocket Costs</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 11</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">INVENTORY SEGREGATION</div>
+            <div class="card-title">Active & PRN Cabinet</div>
+            <p class="card-desc">Distinct management for daily chronic medications vs as-needed rescue supplies.</p>
+            <ul class="bullet-list">
+              <li>Chronic daily regimens (Hypertension, Diabetes, Thyroid)</li>
+              <li>PRN rescue inventory (Inhalers, EpiPens, Painkillers)</li>
+              <li>Batch numbers, manufacturer details & storage rules</li>
+              <li>Prevents mixing up acute and long-term medications</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">STOCK PROJECTIONS</div>
+            <div class="card-title">Pill Count & Refills</div>
+            <p class="card-desc">Automatic dose decrement with proactive predictive refill warnings.</p>
+            <ul class="bullet-list">
+              <li>Live inventory counts auto-decrease with logged doses</li>
+              <li>Calculates exact days of medication supply remaining</li>
+              <li>Alerts 3 to 5 days before stock reaches empty</li>
+              <li>Generates pharmacy shopping list in one click</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">LEDGER</div>
+            <div class="card-title">Expense Tracking</div>
+            <p class="card-desc">Log and categorize every rupee / dollar spent on personal and family healthcare.</p>
+            <ul class="bullet-list">
+              <li>Physician and specialist consultation fees</li>
+              <li>Diagnostic lab testing and imaging charges</li>
+              <li>Pharmacy prescription purchases and refills</li>
+              <li>Insurance claim submission and reimbursement tags</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">FINANCIAL INSIGHTS</div>
+            <div class="card-title">Financial Analytics</div>
+            <p class="card-desc">Visual monthly healthcare budget breakdowns and spending trendlines.</p>
+            <ul class="bullet-list">
+              <li>Monthly cost trend charts across categories</li>
+              <li>Identifies recurring high-cost brand-name drugs</li>
+              <li>Recommends generic molecule alternatives to save money</li>
+              <li>1-Click export for tax, insurance, or family accounting</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Preventing Stockouts and Demystifying Out-of-Pocket Healthcare Costs</span>
+        <span class="slide-counter">11 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 12: Technical Architecture & Stack
+         ========================================== -->
+    <section class="slide" id="slide-12">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">System Engineering</div>
+          <h2 class="slide-title">Technical Architecture & Stack</h2>
+          <div class="slide-subtitle">Built for Reliability, Performance, Security, and Offline Resiliency</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 12</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">CLIENT LAYER</div>
+            <div class="card-title">Frontend & PWA</div>
+            <p class="card-desc">Blazing fast reactive application built for mobile accessibility and responsiveness.</p>
+            <ul class="bullet-list">
+              <li><strong>Framework:</strong> React 18 + TypeScript + Vite</li>
+              <li><strong>Styling:</strong> Tailwind CSS + Lucide React Icons</li>
+              <li><strong>Offline PWA:</strong> Service Worker caching daily schedule & contacts</li>
+              <li><strong>Local Store:</strong> IndexedDB for zero-latency offline logging</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">DATA & CLOUD</div>
+            <div class="card-title">Supabase & Postgres</div>
+            <p class="card-desc">Robust relational persistence layer with sub-100ms global query execution.</p>
+            <ul class="bullet-list">
+              <li><strong>Database:</strong> PostgreSQL 15 with strict relational integrity</li>
+              <li><strong>Edge Compute:</strong> Deno Edge Functions for serverless tasks</li>
+              <li><strong>Storage:</strong> Encrypted Supabase buckets for prescription scans</li>
+              <li><strong>Real-Time:</strong> Live WebSocket synchronization</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">DEFENSE & SECURITY</div>
+            <div class="card-title">Zero-Trust Privacy</div>
+            <p class="card-desc">Cryptographic data protection guaranteeing complete patient medical isolation.</p>
+            <ul class="bullet-list">
+              <li><strong>Isolation:</strong> Row-Level Security (RLS) tenant boundaries</li>
+              <li><strong>Encryption:</strong> 256-bit AES database encryption at rest</li>
+              <li><strong>Ephemeral Sharing:</strong> PIN-hashed temporary access tokens</li>
+              <li><strong>Compliance:</strong> Zero public LLM data ingestion</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">AI & RAG ENGINE</div>
+            <div class="card-title">Vision OCR & Shifa</div>
+            <p class="card-desc">Multi-modal pipeline for clinical handwriting and contextual patient intelligence.</p>
+            <ul class="bullet-list">
+              <li>Multi-modal Vision OCR for clinical scripts</li>
+              <li>Deterministic schema parsing & validation</li>
+              <li>13-Table SQL Grounded RAG architecture</li>
+              <li>Multi-lingual NLP (English & Urdu Nastaliq)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Production-Grade Stack with 100% Offline-First Availability</span>
+        <span class="slide-counter">12 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 13: Frequently Asked Questions (Pre-Empting Judges)
+         ========================================== -->
+    <section class="slide" id="slide-13">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge amber">Judge Defense</div>
+          <h2 class="slide-title">Frequently Asked Questions (Pre-Empting Judges)</h2>
+          <div class="slide-subtitle">Key Design Decisions, Safety Guardrails, and Robustness</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 13</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="card highlight-cyan" style="gap: 12px;">
+            <div class="card-tag" style="color: var(--cyan);">SAFETY & ACCURACY</div>
+            <div class="card-title" style="font-size: 17px;">Q: How does CUREWELL prevent dangerous AI hallucinations?</div>
+            <div style="background: #091124; border-radius: 10px; padding: 14px; border: 1px solid var(--border-subtle); font-size: 13px; line-height: 1.5; color: #cbd5e1;">
+              <strong style="color: var(--cyan);">A:</strong> Shifa AI is governed by deterministic domain rules and strict multi-source RAG grounded only in verified patient tables.
+              <ul class="bullet-list" style="margin-top: 10px;">
+                <li>Mandatory human-in-the-loop review before any prescription enters active schedule</li>
+                <li>Hard-coded pharmaceutical ceiling limits</li>
+                <li>Model explicitly declines queries when patient data is absent rather than guessing</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card highlight-emerald" style="gap: 12px;">
+            <div class="card-tag" style="color: var(--emerald);">OFFLINE AVAILABILITY</div>
+            <div class="card-title" style="font-size: 17px;">Q: Can patients use CUREWELL during internet outages?</div>
+            <div style="background: #091124; border-radius: 10px; padding: 14px; border: 1px solid var(--border-subtle); font-size: 13px; line-height: 1.5; color: #cbd5e1;">
+              <strong style="color: var(--emerald);">A:</strong> Yes, CUREWELL is an offline-first Progressive Web App (PWA).
+              <ul class="bullet-list" style="margin-top: 10px;">
+                <li>Active doses, emergency contacts, and active prescriptions are cached locally in IndexedDB</li>
+                <li>Patients can mark doses Taken/Skipped completely offline</li>
+                <li>Changes automatically sync with Supabase when connectivity returns</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card highlight-amber" style="gap: 12px;">
+            <div class="card-tag" style="color: var(--amber);">PRIVACY & COMPLIANCE</div>
+            <div class="card-title" style="font-size: 17px;">Q: How is patient health privacy guaranteed?</div>
+            <div style="background: #091124; border-radius: 10px; padding: 14px; border: 1px solid var(--border-subtle); font-size: 13px; line-height: 1.5; color: #cbd5e1;">
+              <strong style="color: var(--amber);">A:</strong> Data is protected by Supabase Row-Level Security (RLS) tenant isolation.
+              <ul class="bullet-list" style="margin-top: 10px;">
+                <li>No patient data is ever sold or used to train public foundation models</li>
+                <li>Doctor share links auto-expire via cryptographic hashes</li>
+                <li>Patients maintain 1-click immediate revocation rights at any time</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Addressing Clinical Defensibility, Offline Access, and Data Sovereignty</span>
+        <span class="slide-counter">13 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 14: Target Audience & Real-World Use Cases
+         ========================================== -->
+    <section class="slide" id="slide-14">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge green">Market Impact</div>
+          <h2 class="slide-title">Target Audience & Real-World Use Cases</h2>
+          <div class="slide-subtitle">Who Benefits Most from CUREWELL?</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">USER COHORT 01</div>
+            <div class="card-title">Chronic Care Patients</div>
+            <p class="card-desc">Individuals managing complex, multi-drug regimens for chronic conditions.</p>
+            <ul class="bullet-list">
+              <li>Type 2 Diabetes, Hypertension & Cardiac care</li>
+              <li>Eliminates confusion between multiple daily tablets</li>
+              <li>Tracks blood pressure and sugar response curves</li>
+              <li>Significantly improves long-term clinical outcomes</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">USER COHORT 02</div>
+            <div class="card-title">Family Caregivers</div>
+            <p class="card-desc">Managing medication, refills, and clinic visits for aging parents or children.</p>
+            <ul class="bullet-list">
+              <li>Dose logging confirmations provide family peace of mind</li>
+              <li>Refill alerts prevent elderly parents running out of heart meds</li>
+              <li>Roman Urdu interface simplifies interactions for elders</li>
+              <li>Centralizes scattered prescriptions in one vault</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">USER COHORT 03</div>
+            <div class="card-title">Frequent Clinic Visitors</div>
+            <p class="card-desc">Patients seeking second opinions across diverse hospital networks.</p>
+            <ul class="bullet-list">
+              <li>No more carrying bulky physical binders of old test papers</li>
+              <li>1-Page Doctor Brief gives physicians immediate clarity</li>
+              <li>PIN-protected QR code sharing for rapid second opinions</li>
+              <li>Maximizes the value of expensive specialist consultations</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">USER COHORT 04</div>
+            <div class="card-title">Health-Conscious Users</div>
+            <p class="card-desc">Proactive individuals tracking personal biomarkers and preventive metrics.</p>
+            <ul class="bullet-list">
+              <li>Maintains a permanent digital timeline of personal labs</li>
+              <li>Monitors cholesterol, HbA1c, and vitals year over year</li>
+              <li>Tracks healthcare expenditure and pharmacy spending</li>
+              <li>Guarantees 100% personal data ownership</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Serving High-Need Chronic Patients, Families, and Preventive Care Advocates</span>
+        <span class="slide-counter">14 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 15: Future Roadmap
+         ========================================== -->
+    <section class="slide" id="slide-15">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge">Strategic Vision</div>
+          <h2 class="slide-title">Future Roadmap</h2>
+          <div class="slide-subtitle">What's Coming Next for CUREWELL</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 15</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-4">
+          <div class="card highlight-cyan">
+            <div class="card-tag" style="color: var(--cyan);">MILESTONE 01 // Q1</div>
+            <div class="card-title">👥 Caretaker & Family</div>
+            <p class="card-desc">Multi-profile family switching and granular caregiver permission delegation.</p>
+            <ul class="bullet-list">
+              <li>Seamless toggle between parent, spouse & child profiles</li>
+              <li>Configurable roles (Read-Only Viewer vs Dose Administrator)</li>
+              <li>Automated push notifications for missed family doses</li>
+              <li>Comprehensive family adherence dashboard</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-teal">
+            <div class="card-tag" style="color: var(--teal);">MILESTONE 02 // Q2</div>
+            <div class="card-title">⌚ Wearable IoT Sync</div>
+            <p class="card-desc">Continuous automatic vitals telemetry synchronization with consumer wearables.</p>
+            <ul class="bullet-list">
+              <li>Apple Health & Google Health Connect native integration</li>
+              <li>Direct Bluetooth sync with BP cuffs & glucometers</li>
+              <li>Continuous background heart rate and SpO2 telemetry</li>
+              <li>Automated arrhythmia and anomaly triage triggers</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-emerald">
+            <div class="card-tag" style="color: var(--emerald);">MILESTONE 03 // Q3</div>
+            <div class="card-title">🚚 Pharmacy Refills</div>
+            <p class="card-desc">1-Click automated prescription fulfillment and doorstep medication delivery.</p>
+            <ul class="bullet-list">
+              <li>Direct API connection to licensed partner pharmacy networks</li>
+              <li>Automated prescription verification and dispatch</li>
+              <li>Doorstep delivery tracking with cold-chain monitoring</li>
+              <li>Real-time price comparison for generic equivalents</li>
+            </ul>
+          </div>
+
+          <div class="card highlight-amber">
+            <div class="card-tag" style="color: var(--amber);">MILESTONE 04 // Q4</div>
+            <div class="card-title">👨‍⚕️ Clinician Portal</div>
+            <p class="card-desc">Secure bidirectional communication bridge between certified doctors and patients.</p>
+            <ul class="bullet-list">
+              <li>Doctors push verified digital prescriptions straight to vault</li>
+              <li>Secure asynchronous doctor-patient messaging</li>
+              <li>Interoperable HL7 / FHIR export for hospital EHR systems</li>
+              <li>Specialist referral exchange and second opinion hub</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>From Personal Health Vault to a Connected Healthcare Ecosystem</span>
+        <span class="slide-counter">15 / 16</span>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 16: Conclusion & Thank You
+         ========================================== -->
+    <section class="slide" id="slide-16">
+      <div class="slide-header">
+        <div class="header-titles">
+          <div class="pill-badge green">Summary & Action</div>
+          <h2 class="slide-title">Conclusion & Thank You</h2>
+          <div class="slide-subtitle">Empowering Patients with Ownership of Their Health</div>
+        </div>
+        <div class="slide-logo-tag">CUREWELL // 16</div>
+      </div>
+      <div class="slide-body" style="justify-content: space-between;">
+        <div class="card highlight-emerald" style="padding: 28px;">
+          <div class="card-title" style="font-size: 26px; color: #fff; margin-bottom: 16px;">
+            Transforming Everyday Healthcare Through Intelligent Technology
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: var(--emerald); font-size: 18px; font-weight: bold;">✔</span>
+                <span style="font-size: 15px; color: #cbd5e1;">Bridging the gap between paper prescriptions, lab reports, and medication safety.</span>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: var(--emerald); font-size: 18px; font-weight: bold;">✔</span>
+                <span style="font-size: 15px; color: #cbd5e1;">Never lose a prescription or miss a dose again with meal-timed adherence.</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: var(--emerald); font-size: 18px; font-weight: bold;">✔</span>
+                <span style="font-size: 15px; color: #cbd5e1;">Zero-hallucination Shifa AI answering questions in English, Urdu & Roman Urdu.</span>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: var(--emerald); font-size: 18px; font-weight: bold;">✔</span>
+                <span style="font-size: 15px; color: #cbd5e1;">Zero-trust 1-page clinical briefings with instant PIN-protected QR code sharing.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 14px; padding: 22px 28px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 18px; font-weight: 800; color: #ffffff;">Live Demo & Q&A Ready</div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Explore CUREWELL v2 in action • Try Shifa AI • Review Prescription Ingestion</div>
+            <div style="font-size: 13px; color: var(--cyan); margin-top: 6px; font-family: 'JetBrains Mono', monospace;">GitHub / Website: https://github.com/Hamzaisadev/CUREWELL</div>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <button onclick="window.print()" style="padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; font-size: 13px;">Print / Export PDF</button>
+            <button onclick="goToSlide(1)" style="padding: 10px 24px; background: var(--cyan); border: none; border-radius: 8px; color: #000; font-weight: 700; cursor: pointer; font-size: 13px;">Back to Start</button>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>CUREWELL v2 • Thank You</span>
+        <span class="slide-counter">16 / 16</span>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- HUD Floating Controls -->
+  <div class="hud-controls">
+    <button class="hud-btn" onclick="prevSlide()" title="Previous Slide (←)">❮</button>
+    <div class="hud-pill" id="hudCounter">01 / 16</div>
+    <button class="hud-btn" onclick="nextSlide()" title="Next Slide (→ or Space)">❯</button>
+    <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.2); margin: 0 4px;"></div>
+    <button class="hud-btn" onclick="toggleDrawer()" title="Slide Overview (O)">☷</button>
+    <button class="hud-btn" onclick="toggleFullScreen()" title="Fullscreen (F)">⛶</button>
+    <button class="hud-btn" onclick="window.print()" title="Export / Print to PDF (P)">⎙</button>
+  </div>
+
+  <!-- Slide Jump Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()">
+    <div class="drawer-grid" onclick="event.stopPropagation()">
+      <div class="thumb-card" onclick="goToSlide(1); toggleDrawer()">
+        <div class="thumb-num">SLIDE 01</div>
+        <div class="thumb-title">CUREWELL — Title & Overview</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(2); toggleDrawer()">
+        <div class="thumb-num">SLIDE 02</div>
+        <div class="thumb-title">The Problem — Fragmented Health</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(3); toggleDrawer()">
+        <div class="thumb-num">SLIDE 03</div>
+        <div class="thumb-title">The Solution — CUREWELL Pillars</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(4); toggleDrawer()">
+        <div class="thumb-num">SLIDE 04</div>
+        <div class="thumb-title">Features Overview — Platform Suite</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(5); toggleDrawer()">
+        <div class="thumb-num">SLIDE 05</div>
+        <div class="thumb-title">Feature 1 — AI Rx Extractor & Schedule</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(6); toggleDrawer()">
+        <div class="thumb-num">SLIDE 06</div>
+        <div class="thumb-title">Feature 2 — AI Lab Reports & Trends</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(7); toggleDrawer()">
+        <div class="thumb-num">SLIDE 07</div>
+        <div class="thumb-title">Feature 3 — Symptom & Vitals Journal</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(8); toggleDrawer()">
+        <div class="thumb-num">SLIDE 08</div>
+        <div class="thumb-title">Feature 4 — 1-Click Brief & QR Share</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(9); toggleDrawer()">
+        <div class="thumb-num">SLIDE 09</div>
+        <div class="thumb-title">Feature 5 (Part 1) — Shifa AI Architecture</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(10); toggleDrawer()">
+        <div class="thumb-num">SLIDE 10</div>
+        <div class="thumb-title">Feature 5 (Part 2) — Drug Safety & Urdu</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(11); toggleDrawer()">
+        <div class="thumb-num">SLIDE 11</div>
+        <div class="thumb-title">Feature 6 — Cabinet & Medical Finance</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(12); toggleDrawer()">
+        <div class="thumb-num">SLIDE 12</div>
+        <div class="thumb-title">Technical Architecture & Stack</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(13); toggleDrawer()">
+        <div class="thumb-num">SLIDE 13</div>
+        <div class="thumb-title">Judge FAQs & Safety Defense</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(14); toggleDrawer()">
+        <div class="thumb-num">SLIDE 14</div>
+        <div class="thumb-title">Target Audience & Market Impact</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(15); toggleDrawer()">
+        <div class="thumb-num">SLIDE 15</div>
+        <div class="thumb-title">Future Strategic Roadmap</div>
+      </div>
+      <div class="thumb-card" onclick="goToSlide(16); toggleDrawer()">
+        <div class="thumb-num">SLIDE 16</div>
+        <div class="thumb-title">Conclusion & Live Demo Q&A</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 16;
+
+    function updateSlide() {
+      document.querySelectorAll('.slide').forEach((slide, idx) => {
+        if (idx + 1 === currentSlide) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      const formatted = String(currentSlide).padStart(2, '0');
+      document.getElementById('hudCounter').textContent = `${formatted} / ${totalSlides}`;
+      document.getElementById('progressBar').style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+      // Update thumbnail active state
+      document.querySelectorAll('.thumb-card').forEach((card, idx) => {
+        if (idx + 1 === currentSlide) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function goToSlide(num) {
+      if (num >= 1 && num <= totalSlides) {
+        currentSlide = num;
+        updateSlide();
+      }
+    }
+
+    function toggleDrawer() {
+      const drawer = document.getElementById('drawerOverlay');
+      drawer.classList.toggle('active');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.error(err);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        goToSlide(1);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        goToSlide(totalSlides);
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      } else if (e.key === 'o' || e.key === 'O') {
+        toggleDrawer();
+      } else if (e.key === 'p' || e.key === 'P') {
+        window.print();
+      } else if (e.key === 'Escape') {
+        const drawer = document.getElementById('drawerOverlay');
+        if (drawer.classList.contains('active')) {
+          drawer.classList.remove('active');
+        }
+      }
+    });
+
+    // Touch support for mobile swipe
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, false);
+
+    document.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 50) {
+        nextSlide();
+      }
+      if (touchEndX - touchStartX > 50) {
+        prevSlide();
+      }
+    }, false);
+
+    updateSlide();
+  </script>
+</body>
+</html>
+

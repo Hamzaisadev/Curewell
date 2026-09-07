@@ -13,6 +13,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+if (typeof window !== 'undefined') {
+  try {
+    const oldToken = localStorage.getItem('medfolio-auth-token');
+    if (oldToken && !localStorage.getItem('curewell-auth-token')) {
+      localStorage.setItem('curewell-auth-token', oldToken);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -20,7 +31,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     // Unique storage key prevents session collisions when multiple Supabase
     // apps run on localhost during development.
-    storageKey: 'medfolio-auth-token',
+    storageKey: 'curewell-auth-token',
     // PKCE flow is more secure for SPAs — it avoids exposing tokens in URL
     // fragments and works correctly with email confirmation redirects.
     flowType: 'pkce',

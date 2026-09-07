@@ -94,7 +94,7 @@ export function NotFoundPage() {
 
       {/* Minimal Footer */}
       <footer className="max-w-4xl w-full mx-auto text-center py-2 text-[11px] text-ink-400 border-t border-ink-200/60">
-        Medfolio • Personal Health Record & Timetable
+        Curewell • Personal Health Record & Timetable
       </footer>
     </div>
   );

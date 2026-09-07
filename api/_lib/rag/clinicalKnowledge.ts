@@ -1,5 +1,5 @@
 /**
- * Curated Clinical Pharmacology, Generic Molecule Registry & Diagnostic Biomarker Knowledge Corpus for Medfolio RAG.
+ * Curated Clinical Pharmacology, Generic Molecule Registry & Diagnostic Biomarker Knowledge Corpus for Curewell RAG.
  * Grounded in BNF, WHO, FDA, and international clinical guidelines.
  */
 

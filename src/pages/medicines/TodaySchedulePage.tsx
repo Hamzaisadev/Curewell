@@ -42,7 +42,7 @@ import {
   minutesInAppTz,
 } from '../../lib/time';
 import { bucketOf, Bucket, BUCKET_ORDER } from '../../domain/timeBuckets';
-import { deriveStatusOnRead } from '../../domain/adherence';
+import { deriveStatusOnRead, calculateAdherenceStreak } from '../../domain/adherence';
 import { defaultDoseTimes, parseFrequency } from '../../domain/frequency';
 import { buildSchedule } from '../../domain/schedule';
 import { computeEndDate } from '../../domain/duration';
@@ -137,6 +137,7 @@ export function TodaySchedulePage() {
   const { user, profile } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(todayInAppTz());
   const [doses, setDoses] = useState<Dose[]>([]);
+  const [streakDoses, setStreakDoses] = useState<Dose[]>([]);
   const [medicinesMap, setMedicinesMap] = useState<Record<string, Medicine>>({});
   const [inventory, setInventory] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -161,18 +162,21 @@ export function TodaySchedulePage() {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const [fetchedDoses, fetchedMeds] = await Promise.all([
+        const today = todayInAppTz();
+        const streakFrom = addDaysAppTz(today, -60);
+        const [fetchedDoses, fetchedMeds, rangeDoses] = await Promise.all([
           dosesRepo.listDosesForDate(effectiveProfileId, dateStr),
           medicinesRepo.listMedicines(effectiveProfileId),
+          dosesRepo.listDosesForRange(effectiveProfileId, streakFrom, today),
         ]);
 
         const map: Record<string, Medicine> = {};
         for (const m of fetchedMeds) map[m.id] = m;
         setMedicinesMap(map);
+        setStreakDoses(rangeDoses);
 
         setInventory(readInventory(effectiveProfileId));
 
-        const today = todayInAppTz();
         if (fetchedDoses.length === 0 && fetchedMeds.length > 0 && dateStr >= today) {
           const created = await topUpScheduleFor(
             fetchedMeds,
@@ -347,7 +351,6 @@ export function TodaySchedulePage() {
   const buckets: Record<Bucket, Dose[]> = {
     morning: [],
     afternoon: [],
-    evening: [],
     night: [],
   };
   for (const d of filteredDoses) {
@@ -392,6 +395,23 @@ export function TodaySchedulePage() {
     }
     return count;
   }, [doses, inventory]);
+
+  const streakDays = useMemo(() => {
+    return calculateAdherenceStreak(
+      streakDoses.map((d) => ({
+        id: d.id,
+        medicine_id: d.medicine_id,
+        scheduled_date: d.scheduled_date,
+        scheduled_minutes: d.scheduled_minutes,
+        status: d.status,
+        taken_at: d.taken_at,
+        is_prn:
+          medicinesMap[d.medicine_id]?.frequency_code === 'PRN' ||
+          medicinesMap[d.medicine_id]?.frequency_code === 'SOS',
+      })),
+      new Date()
+    );
+  }, [streakDoses, medicinesMap]);
 
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -700,8 +720,8 @@ export function TodaySchedulePage() {
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-56 w-full rounded-3xl" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[0, 1, 2, 3].map((i) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[0, 1, 2].map((i) => (
                 <Skeleton key={i} className="h-64 w-full rounded-3xl" />
               ))}
             </div>
@@ -846,22 +866,35 @@ export function TodaySchedulePage() {
                 </div>
 
                 {/* Streak Box */}
-                <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 shadow-2xs flex flex-col justify-between">
+                <div className="p-5 rounded-3xl bg-surface-raised border border-line shadow-2xs flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 uppercase flex items-center gap-1">
-                      <Flame size={13} className="text-amber-600 fill-amber-600" />
+                    <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+                      <Flame size={13} className="text-amber-500 fill-amber-500" />
                       Active Streak
                     </span>
-                    <div className="text-3xl font-black text-amber-950 dark:text-amber-100 mt-1">
-                      {takenCount > 0 ? `${takenCount} Doses` : 'Today'}
+                    <div className="text-3xl font-black text-content mt-1">
+                      {streakDays > 0 ? `${streakDays} Days` : takenCount > 0 ? `${takenCount} Taken` : '0 Days'}
                     </div>
-                    <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold mt-0.5">
-                      {adherencePercent >= 80 ? 'Optimal Adherence' : 'Active Plan'}
+                    <p className="text-xs text-content-muted font-medium mt-0.5">
+                      {streakDays > 0 ? `${streakDays}-day streak active` : 'Log doses to build streak'}
                     </p>
                   </div>
-                  <span className="text-[10px] font-bold text-amber-900 dark:text-amber-300 bg-amber-500/20 px-2.5 py-1 rounded-lg self-start">
-                    {adherencePercent === 100 ? 'Gold Tier ⭐' : 'In Progress'}
-                  </span>
+                  <div className="mt-3">
+                    <span
+                      className={clsx(
+                        'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border',
+                        streakDays > 0
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-surface-sunken text-content-subtle border-line'
+                      )}
+                    >
+                      {takenCount === totalCount && totalCount > 0
+                        ? 'Goal Met 🎯'
+                        : streakDays > 0
+                          ? `${streakDays}d Streak 🔥`
+                          : 'In Progress'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Cabinet Stock Health Widget (Full Width below stats) */}
@@ -911,8 +944,8 @@ export function TodaySchedulePage() {
               </div>
             </div>
 
-            {/* Bento Grid Bottom Tier: 4 Daypart Bento Blocks */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            {/* Bento Grid Bottom Tier: 3 Daypart Bento Blocks */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
               {BUCKET_ORDER.map((key) => {
                 const slot = SLOT_META[key];
                 const bucketDoses = buckets[key];

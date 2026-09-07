@@ -12,7 +12,8 @@
  */
 
 const TOKEN_BYTES = 32;
-const LOCAL_TOKEN_KEY = 'medfolio_share_tokens_v1';
+const LOCAL_TOKEN_KEY = 'curewell_share_tokens_v1';
+const LEGACY_LOCAL_TOKEN_KEY = 'medfolio_share_tokens_v1';
 
 function toBase64Url(bytes: Uint8Array): string {
   let binary = '';
@@ -68,7 +69,7 @@ export function forgetShareToken(shareId: string): void {
 
 function readLocalTokens(): Record<string, string> {
   try {
-    const raw = localStorage.getItem(LOCAL_TOKEN_KEY);
+    const raw = localStorage.getItem(LOCAL_TOKEN_KEY) || localStorage.getItem(LEGACY_LOCAL_TOKEN_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {};
   } catch {

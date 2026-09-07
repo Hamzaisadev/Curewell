@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { Bucket } from '../../domain/timeBuckets';
 import { BUCKET_DEFINITIONS } from '../../domain/timeBuckets';
 import type { MealRelation } from '../../domain/mealRelation';
-import { SunriseIcon, SunIcon, SunsetIcon, MoonIcon, MealIcon, ClockIcon, InfoIcon } from './icons';
+import { SunriseIcon, SunIcon, MoonIcon, MealIcon, ClockIcon, InfoIcon } from './icons';
 
 /**
  * Presentation metadata for time-of-day buckets.
@@ -15,7 +15,7 @@ export interface SlotMeta {
   key: Bucket;
   label: string;
   timeRange: string;
-  tone: 'morning' | 'afternoon' | 'evening' | 'night';
+  tone: 'morning' | 'afternoon' | 'night';
   icon: (size: number) => ReactNode;
   /** Tailwind classes for a tinted surface in this slot's colour. */
   surface: string;
@@ -43,16 +43,6 @@ export const SLOT_META: Record<Bucket, SlotMeta> = {
     surface: 'bg-slot-afternoon-bg',
     text: 'text-slot-afternoon-text',
     border: 'border-slot-afternoon-border',
-  },
-  evening: {
-    key: 'evening',
-    label: BUCKET_DEFINITIONS.evening.label,
-    timeRange: BUCKET_DEFINITIONS.evening.timeRange,
-    tone: 'evening',
-    icon: (size) => <SunsetIcon size={size} />,
-    surface: 'bg-slot-evening-bg',
-    text: 'text-slot-evening-text',
-    border: 'border-slot-evening-border',
   },
   night: {
     key: 'night',

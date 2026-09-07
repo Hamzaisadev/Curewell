@@ -5,15 +5,14 @@ interface LogoProps {
 }
 
 /**
- * The mark keeps its brand teal in both themes — a logo that changes colour
- * stops being a logo. Only the wordmark's accent syllable is themed, because
- * brand-600 on a dark surface falls below the contrast floor.
+ * Curewell brand mark and wordmark.
+ * The mark maintains clinical teal & health mint accents across both themes.
  */
 export function Logo({ className = '', variant = 'full', size = 'md' }: LogoProps) {
   const sizeMap = {
-    sm: { height: 28, markWidth: 28, fullWidth: 120 },
-    md: { height: 36, markWidth: 36, fullWidth: 150 },
-    lg: { height: 48, markWidth: 48, fullWidth: 190 },
+    sm: { height: 28, markWidth: 28, fullWidth: 124 },
+    md: { height: 36, markWidth: 36, fullWidth: 154 },
+    lg: { height: 48, markWidth: 48, fullWidth: 198 },
   };
 
   const { height, markWidth, fullWidth } = sizeMap[size];
@@ -28,26 +27,35 @@ export function Logo({ className = '', variant = 'full', size = 'md' }: LogoProp
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
-        aria-label="Medfolio"
+        aria-label="Curewell"
       >
         <defs>
-          <linearGradient id="logo-bg-grad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="var(--color-brand-500)" />
-            <stop offset="100%" stopColor="var(--color-brand-700)" />
+          <linearGradient id="curewell-mark-bg" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#0D9488" />
+            <stop offset="100%" stopColor="#0F766E" />
           </linearGradient>
-          <linearGradient id="logo-dot-grad" x1="20" y1="20" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="var(--color-brand-300)" />
-            <stop offset="100%" stopColor="#ffffff" />
+          <linearGradient id="curewell-pulse-grad" x1="14" y1="24" x2="34" y2="24" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#5EEAD4" />
+            <stop offset="50%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#2DD4BF" />
           </linearGradient>
+          <filter id="curewell-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#0F766E" floodOpacity="0.25" />
+          </filter>
         </defs>
-        <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#logo-bg-grad)" />
+        <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#curewell-mark-bg)" filter="url(#curewell-glow)" />
+        <rect x="5.5" y="5.5" width="37" height="37" rx="10.5" stroke="#FFFFFF" strokeOpacity="0.18" strokeWidth="1" />
+        
+        {/* Harmonious Medical Cross & Vitality Center */}
         <path
-          d="M12 10C12 7.79086 13.7909 6 16 6H32C34.2091 6 36 7.79086 36 10V38C36 40.2091 34.2091 42 32 42H16C13.7909 42 12 40.2091 12 38V10Z"
-          fill="#ffffff"
-          fillOpacity="0.12"
+          d="M24 13V35M13 24H35"
+          stroke="#FFFFFF"
+          strokeWidth="4.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <path d="M24 14V34M14 24H34" stroke="#ffffff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="24" cy="24" r="2.5" fill="url(#logo-dot-grad)" />
+        <circle cx="24" cy="24" r="3.2" fill="url(#curewell-pulse-grad)" />
+        <circle cx="24" cy="24" r="1.4" fill="#0F766E" />
       </svg>
     );
   }
@@ -61,38 +69,45 @@ export function Logo({ className = '', variant = 'full', size = 'md' }: LogoProp
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Medfolio"
+      aria-label="Curewell"
     >
       <defs>
-        <linearGradient id="full-bg-grad" x1="2" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--color-brand-500)" />
-          <stop offset="100%" stopColor="var(--color-brand-700)" />
+        <linearGradient id="curewell-full-bg" x1="2" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#0D9488" />
+          <stop offset="100%" stopColor="#0F766E" />
         </linearGradient>
-        <linearGradient id="full-dot-grad" x1="18" y1="18" x2="26" y2="26" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--color-brand-300)" />
-          <stop offset="100%" stopColor="#ffffff" />
+        <linearGradient id="curewell-full-pulse" x1="12" y1="22" x2="32" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#5EEAD4" />
+          <stop offset="50%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#2DD4BF" />
         </linearGradient>
+        <filter id="curewell-full-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#0F766E" floodOpacity="0.22" />
+        </filter>
       </defs>
       <g transform="translate(2, 2)">
-        <rect x="2" y="2" width="40" height="40" rx="12" fill="url(#full-bg-grad)" />
+        <rect x="2" y="2" width="40" height="40" rx="12" fill="url(#curewell-full-bg)" filter="url(#curewell-full-glow)" />
+        <rect x="3.5" y="3.5" width="37" height="37" rx="10.5" stroke="#FFFFFF" strokeOpacity="0.18" strokeWidth="1" />
         <path
-          d="M10 8C10 5.79086 11.7909 4 14 4H30C32.2091 4 34 5.79086 34 8V36C34 38.2091 32.2091 40 30 40H14C11.7909 40 10 38.2091 10 36V8Z"
-          fill="#ffffff"
-          fillOpacity="0.12"
+          d="M22 12V32M12 22H32"
+          stroke="#FFFFFF"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <path d="M22 13V31M13 22H31" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
-        <circle cx="22" cy="22" r="2.2" fill="url(#full-dot-grad)" />
+        <circle cx="22" cy="22" r="3" fill="url(#curewell-full-pulse)" />
+        <circle cx="22" cy="22" r="1.3" fill="#0F766E" />
       </g>
       <text
-        x="56"
+        x="54"
         y="31"
         fontFamily="'Inter Variable', 'Inter', system-ui, sans-serif"
         fontSize="23"
-        fontWeight="700"
+        fontWeight="800"
         fill="currentColor"
-        letterSpacing="-0.03em"
+        letterSpacing="-0.035em"
       >
-        Med<tspan fill="var(--accent)">folio</tspan>
+        Cure<tspan fill="var(--color-brand-600, #0D9488)">well</tspan>
       </text>
     </svg>
   );

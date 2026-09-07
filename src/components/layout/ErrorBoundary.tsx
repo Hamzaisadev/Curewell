@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleCopyDiagnostics = async () => {
     const report = [
-      '### Medfolio crash report',
+      '### Curewell crash report',
       `- Timestamp: ${new Date().toISOString()}`,
       `- Page URL: ${window.location.href}`,
       `- User agent: ${navigator.userAgent}`,
