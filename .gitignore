@@ -68,3 +68,16 @@ temp/
 # Deployment & Service caches
 .vercel/
 .turbo/
+
+# Internal documentation, prompts & design specifications
+ASSISTANT_TEST_PROMPTS.md
+DESIGN.md
+*DESIGN*.md
+CLOUDB.md
+*CLOUDB*.md
+*PROMPT*.md
+*PROMPTS*.md
+PROMPT_MDS/
+prompt_mds/
+REBUILD/
+docs/

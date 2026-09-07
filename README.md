@@ -78,10 +78,10 @@ Curewell runs seamlessly in modern web browsers as a progressive web app (PWA) a
 
 ```bash
 # Clone the repository
-git clone https://github.com/Hamzaisadev/Medfolio.git
+git clone https://github.com/Hamzaisadev/Curewell.git
 
 # Enter project directory
-cd "Medfolio v2"
+cd Curewell
 
 # Install dependencies
 npm install
