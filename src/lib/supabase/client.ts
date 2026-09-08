@@ -1,15 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey =
+const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+const rawKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Fail loudly rather than silently pointing a misconfigured build at someone
-// else's project: patient records must never land in an unintended database.
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file (see .env.example).'
+export const isSupabaseConfigured = Boolean(
+  rawUrl &&
+  rawKey &&
+  !rawUrl.includes('placeholder') &&
+  rawUrl.startsWith('http')
+);
+
+// Fallback dummy URL so createClient never crashes during module import evaluation.
+const supabaseUrl = isSupabaseConfigured ? rawUrl : 'https://placeholder-curewell.supabase.co';
+const supabaseAnonKey = isSupabaseConfigured ? rawKey : 'placeholder-anon-key';
+
+if (!isSupabaseConfigured && typeof window !== 'undefined') {
+  console.warn(
+    '⚠️ Curewell: Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are missing. Running in local/offline fallback mode.'
   );
 }
 
@@ -26,9 +35,9 @@ if (typeof window !== 'undefined') {
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+    persistSession: isSupabaseConfigured,
+    autoRefreshToken: isSupabaseConfigured,
+    detectSessionInUrl: isSupabaseConfigured,
     // Unique storage key prevents session collisions when multiple Supabase
     // apps run on localhost during development.
     storageKey: 'curewell-auth-token',

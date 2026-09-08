@@ -30,7 +30,34 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <noscript>
+        <div style="font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;background:#F8FAFC;color:#0F172A;">
+          <div>
+            <h1 style="font-size:20px;font-weight:700;margin-bottom:8px;">JavaScript is required</h1>
+            <p style="font-size:14px;color:#64748B;">Please enable JavaScript in your browser to run Curewell.</p>
+          </div>
+        </div>
+      </noscript>
+    </div>
+    <script>
+      window.addEventListener('error', function(e) {
+        var root = document.getElementById('root');
+        if (root && (!root.children || root.children.length === 0 || (root.children.length === 1 && root.children[0].tagName === 'NOSCRIPT'))) {
+          root.innerHTML = '<div style="font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:#F8FAFC;color:#0F172A;">' +
+            '<div style="max-width:480px;background:#fff;padding:32px;border-radius:16px;border:1px solid #E2E8F0;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);text-align:center;">' +
+              '<div style="width:44px;height:44px;border-radius:12px;background:#FEF2F2;border:1px solid #FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;font-size:22px;">⚠️</div>' +
+              '<h2 style="font-size:18px;font-weight:800;margin:0 0 8px 0;letter-spacing:-0.02em;">Initialization Check</h2>' +
+              '<p style="font-size:13px;color:#64748B;line-height:1.5;margin:0 0 16px 0;">' + (e.message || 'An issue occurred during startup.') + '</p>' +
+              '<div style="background:#F1F5F9;padding:12px 14px;border-radius:10px;font-size:12px;color:#334155;margin-bottom:20px;text-align:left;line-height:1.5;">' +
+                '<strong>Vercel Setup Tip:</strong> In your Vercel Dashboard, go to <em>Settings ➔ Environment Variables</em> and ensure your <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> keys are added, then trigger a redeploy.' +
+              '</div>' +
+              '<button onclick="window.location.reload()" style="background:#0D9488;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">Reload Application</button>' +
+            '</div>' +
+          '</div>';
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

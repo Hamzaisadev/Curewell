@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-import { supabase } from '../supabase/client';
+import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { profilesRepo } from '../db';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import type { Tables } from '../supabase/types';
@@ -162,21 +162,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (!isSupabaseConfigured) {
+      // In deployments without Supabase env vars, unlock loading so landing page renders
+      setIsLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     // 1. Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (!mounted) return;
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      if (initialSession?.user) {
-        fetchProfile(initialSession.user).finally(() => {
-          if (mounted) setIsLoading(false);
-        });
-      } else {
-        setIsLoading(false);
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: initialSession } }) => {
+        if (!mounted) return;
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        if (initialSession?.user) {
+          fetchProfile(initialSession.user).finally(() => {
+            if (mounted) setIsLoading(false);
+          });
+        } else {
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Auth getSession failed:', err);
+        if (mounted) setIsLoading(false);
+      });
 
     // 2. Listen to auth state changes
     const {
