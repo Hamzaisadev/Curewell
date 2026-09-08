@@ -32,23 +32,45 @@ import {
 /* ─── Intersection Observer Hook ─── */
 function useInView(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(
+    () => typeof window === 'undefined' || typeof IntersectionObserver === 'undefined'
+  );
+
   useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true);
+      return;
+    }
+
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry && entry.isIntersecting) {
-          setIsVisible(true);
-          obs.unobserve(el);
-        }
-      },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
+
+    // Safety fallback: guarantee content becomes visible after a short delay
+    const fallbackTimer = setTimeout(() => setIsVisible(true), 1200);
+
+    try {
+      const obs = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry && entry.isIntersecting) {
+            setIsVisible(true);
+            clearTimeout(fallbackTimer);
+            obs.unobserve(el);
+          }
+        },
+        { threshold }
+      );
+      obs.observe(el);
+      return () => {
+        clearTimeout(fallbackTimer);
+        obs.disconnect();
+      };
+    } catch {
+      clearTimeout(fallbackTimer);
+      setIsVisible(true);
+    }
   }, [threshold]);
+
   return { ref, isVisible };
 }
 

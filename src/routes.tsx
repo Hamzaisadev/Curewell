@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
 import { AppShell } from './components/layout/AppShell';
 import { Skeleton, SkeletonMetricCard, SkeletonCardItem } from './components/ui/Skeleton';
 import { useAuth } from './lib/auth/AuthContext';
@@ -150,16 +149,8 @@ export function AppRoutes() {
 
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-          className="w-full flex-1 flex flex-col"
-        >
-          <Routes location={location} key={location.pathname}>
+      <div className="w-full flex-1 flex flex-col">
+        <Routes location={location} key={location.pathname}>
         {/* Auth */}
         <Route
           path="/login"
@@ -407,8 +398,7 @@ export function AppRoutes() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      </motion.div>
-      </AnimatePresence>
+      </div>
     </Suspense>
   );
 }
