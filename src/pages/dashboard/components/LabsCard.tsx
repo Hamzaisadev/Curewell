@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { reportsRepo } from '../../../lib/db';
 import { listResultsForReport, type ReportResult } from '../../../lib/db/reports';
-import { LabFlaskIcon, ChevronRightIcon } from '../../../components/ui/icons';
+import { LabFlaskIcon } from '../../../components/ui/icons';
 
 interface DisplayBiomarker {
   id: string;
@@ -85,10 +85,6 @@ export function LabsCard() {
     });
   }, [results]);
 
-  const issuesCount = useMemo(() => {
-    return results.filter((r) => r.range_status === 'below' || r.range_status === 'above').length;
-  }, [results]);
-
   return (
     <div className="h-full bg-surface rounded-3xl border border-line p-5 sm:p-6 shadow-card hover:shadow-raise transition-all duration-200 flex flex-col justify-between">
       <div>
@@ -146,7 +142,7 @@ export function LabsCard() {
                   }}
                 >
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-sky-300 dark:from-sky-500 dark:to-teal-400 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 via-brand-500 to-teal-400 transition-all duration-500"
                     style={{ width: `${item.percentage}%` }}
                   />
                 </div>
@@ -171,37 +167,6 @@ export function LabsCard() {
         )}
       </div>
 
-      {/* ── Bottom AI Assistant Banner ──────────────────────────────── */}
-      <div className="rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-800/40 p-3.5 flex items-center justify-between gap-3 mt-4">
-        <div className="min-w-0">
-          <h3 className="text-xs font-bold text-sky-900 dark:text-sky-200">
-            Clinical Health Summary
-          </h3>
-          <p className="text-2xs text-sky-800/80 dark:text-sky-300/80 mt-0.5 leading-snug">
-            {issuesCount > 0 ? (
-              <>
-                The assistant has identified{' '}
-                <span className="font-bold underline text-sky-950 dark:text-sky-100">
-                  {issuesCount} {issuesCount === 1 ? 'issue' : 'issues'}
-                </span>{' '}
-                that necessitate medical attention.
-              </>
-            ) : biomarkers.length > 0 ? (
-              'All tested biomarkers are currently within typical reference ranges.'
-            ) : (
-              'Upload your reports to generate automated biomarker tracking.'
-            )}
-          </p>
-        </div>
-
-        <Link
-          to="/reports"
-          className="w-8 h-8 rounded-full bg-white dark:bg-ink-800 shadow-sm border border-line/60 flex items-center justify-center text-content-muted hover:text-content hover:scale-105 transition-all shrink-0"
-          aria-label="Open lab reports"
-        >
-          <ChevronRightIcon size={16} />
-        </Link>
-      </div>
     </div>
   );
 }

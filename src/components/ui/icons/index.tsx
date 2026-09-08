@@ -57,12 +57,7 @@ export function PrescriptionIcon(props: IconProps) {
 }
 
 export function MedicineIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <line x1="5.64" y1="5.64" x2="18.36" y2="18.36" />
-    </Icon>
-  );
+  return <CapsuleIcon {...props} />;
 }
 
 export function TabletIcon(props: IconProps) {
