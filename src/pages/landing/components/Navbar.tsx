@@ -18,8 +18,8 @@ export function Navbar() {
     <nav
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-white/95 backdrop-blur-md border-b border-ink-200 shadow-xs'
-          : 'bg-white/70 backdrop-blur-sm border-b border-transparent'
+          ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs'
+          : 'bg-white/80 backdrop-blur-sm border-b border-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,17 +30,17 @@ export function Navbar() {
               <span className="text-base font-black tracking-tighter">C</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-black tracking-tight text-ink-900 leading-tight">
+              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 leading-tight">
                 Curewell
               </span>
-              <span className="text-[10px] font-bold text-teal-700 tracking-wider uppercase">
-                Clinical Health Vault
+              <span className="text-[10px] font-mono font-bold text-teal-700 tracking-widest uppercase">
+                CLINICAL HEALTH VAULT
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center gap-8 text-sm font-semibold text-ink-600">
+          <div className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#bento-vault" className="hover:text-teal-800 transition-colors">
               Health Vault
             </a>
@@ -66,7 +66,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             <Link
               to="/login"
-              className="text-sm font-bold text-ink-700 hover:text-teal-900 px-3 py-2 transition-colors"
+              className="text-sm font-bold text-slate-700 hover:text-teal-900 px-3 py-2 transition-colors"
             >
               Sign In
             </Link>
@@ -82,7 +82,7 @@ export function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 rounded-xl text-ink-700 hover:bg-ink-100 transition-colors focus:outline-hidden"
+            className="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors focus:outline-hidden"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -98,18 +98,18 @@ export function Navbar() {
 
       {/* Mobile Drawer Menu */}
       {mobileOpen && (
-        <div className="lg:hidden bg-white border-b border-ink-200 px-4 pt-2 pb-6 space-y-3 shadow-lg">
+        <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-6 space-y-3 shadow-lg">
           <a
             href="#bento-vault"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-800 hover:bg-ink-50 hover:text-teal-800"
+            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:text-teal-800"
           >
             Health Vault
           </a>
           <a
             href="#problem-solution"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-800 hover:bg-ink-50 hover:text-teal-800"
+            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:text-teal-800"
           >
             The Reality
           </a>
@@ -123,34 +123,34 @@ export function Navbar() {
           <a
             href="#vitals"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-800 hover:bg-ink-50 hover:text-teal-800"
+            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:text-teal-800"
           >
             Vitals Radar
           </a>
           <a
             href="#security"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-800 hover:bg-ink-50 hover:text-teal-800"
+            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:text-teal-800"
           >
             Privacy Vault
           </a>
           <a
             href="#faq"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-800 hover:bg-ink-50 hover:text-teal-800"
+            className="block px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:text-teal-800"
           >
             FAQ
           </a>
-          <div className="pt-3 border-t border-ink-100 flex flex-col gap-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             <Link
               to="/login"
-              className="text-center w-full py-2.5 text-sm font-bold text-ink-800 rounded-xl border border-ink-200"
+              className="text-center w-full py-2.5 text-sm font-bold text-slate-800 rounded-xl border border-slate-200 hover:bg-slate-50"
             >
               Sign In
             </Link>
             <Link
               to="/signup"
-              className="text-center w-full py-2.5 text-sm font-bold text-white bg-teal-700 rounded-xl"
+              className="text-center w-full py-2.5 text-sm font-bold text-white bg-teal-700 rounded-xl hover:bg-teal-800"
             >
               Get Started Free
             </Link>

@@ -13,7 +13,7 @@ import { Footer } from './components/Footer';
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-ink-900 overflow-x-hidden selection:bg-teal-700 selection:text-white">
+    <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden selection:bg-teal-100 selection:text-teal-900 font-sans">
       {/* 1. Header Navigation */}
       <Navbar />
 

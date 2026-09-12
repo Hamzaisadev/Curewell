@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { motion } from 'motion/react';
 import {
   SparklesIcon,
   ShieldIcon,
@@ -123,45 +124,47 @@ export function ShifaAiClinicalTerminal() {
   );
 
   return (
-    <section id="shifa-ai" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-ink-950 text-white relative overflow-hidden border-b border-ink-800">
-      {/* Blueprint Grid Lines */}
+    <section id="shifa-ai" className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-slate-50/70 text-slate-900 relative overflow-hidden border-b border-slate-200">
+      {/* Millimeter Blueprint Grid Pattern */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-20"
+        className="absolute inset-0 pointer-events-none opacity-25"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px)
+            linear-gradient(to right, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(148, 163, 184, 0.25) 1px, transparent 1px)
           `,
-          backgroundSize: '32px 32px',
+          backgroundSize: '28px 28px',
         }}
       />
 
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Column: Explainer & Scenario Switcher */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-teal-950 border border-teal-500/40 text-teal-300 text-xs font-mono uppercase tracking-widest">
-              <SparklesIcon size={14} className="text-teal-400" />
-              INTELLIGENT CLINICAL CO-PILOT
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:col-span-5 space-y-5"
+          >
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
+              <SparklesIcon size={14} className="text-teal-700" />
+              <span>Clinical Co-Pilot</span>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              Meet <span className="text-teal-400">Shifa AI</span>.
-              <br />
-              Zero Hallucinations.
-              <br />
-              100% Record-Grounded.
+            <h2 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
+              Meet Shifa AI.
             </h2>
 
-            <p className="text-sm sm:text-base text-ink-300 leading-relaxed">
-              Unlike generic public chatbots that guess medical facts, <strong>Shifa AI</strong> is the clinical intelligence layer embedded directly inside your Curewell vault. It reads only your verified records — connecting glucose logs, blood pressure, lab reports, and medication timings without making things up.
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+              An intelligent clinical layer grounded strictly in your verified records. It cross-checks blood pressure, glucose logs, lab trajectories, and medication schedules without guessing.
             </p>
 
             {/* Scenario Selector */}
             <div className="space-y-2.5 pt-2">
-              <p className="text-xs font-mono font-bold uppercase tracking-wider text-ink-400">
-                Select a live scenario to test:
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Interactive Scenarios:
               </p>
               {TERMINAL_SCENARIOS.map((scenario) => {
                 const isActive = selectedScenario.id === scenario.id;
@@ -169,30 +172,30 @@ export function ShifaAiClinicalTerminal() {
                   <button
                     key={scenario.id}
                     onClick={() => setSelectedScenario(scenario)}
-                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between shadow-2xs ${
                       isActive
-                        ? 'bg-teal-950 border-teal-500 shadow-md'
-                        : 'bg-ink-900 border-ink-800 hover:border-ink-700 hover:bg-ink-900/90'
+                        ? 'bg-teal-50/80 border-teal-600 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                          isActive ? 'bg-teal-500 text-ink-950' : 'bg-ink-800 text-ink-300'
+                          isActive ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         {scenario.icon}
                       </div>
                       <div>
-                        <p className={`text-xs font-bold ${isActive ? 'text-white' : 'text-ink-200'}`}>
+                        <p className={`text-xs font-bold ${isActive ? 'text-teal-950' : 'text-slate-800'}`}>
                           {scenario.label}
                         </p>
-                        <p className="text-[11px] text-ink-400 line-clamp-1">{scenario.userPrompt}</p>
+                        <p className="text-[11px] text-slate-500 line-clamp-1">{scenario.userPrompt}</p>
                       </div>
                     </div>
                     <span
-                      className={`text-[9px] font-mono font-black uppercase px-2 py-0.5 rounded shrink-0 ${
-                        isActive ? 'bg-teal-400 text-teal-950' : 'bg-ink-800 text-ink-400'
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded shrink-0 ${
+                        isActive ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {scenario.badge}
@@ -202,43 +205,49 @@ export function ShifaAiClinicalTerminal() {
               })}
             </div>
 
-            <div className="pt-2 flex items-center gap-3 text-xs text-ink-400 font-mono">
-              <ShieldIcon size={16} className="text-teal-400" />
-              <span>Deterministic Retrieval • No Random Guesses</span>
+            <div className="pt-1 flex items-center gap-2 text-xs text-slate-500">
+              <ShieldIcon size={14} className="text-teal-700" />
+              <span>Deterministic record retrieval • Zero silent commits</span>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Right Column: Interactive Terminal Box */}
-          <div className="lg:col-span-7">
-            <div className="bg-ink-900 rounded-3xl border border-ink-800 shadow-2xl overflow-hidden">
+          {/* Right Column: High-Contrast Terminal Box */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="lg:col-span-7"
+          >
+            <div className="bg-slate-950 rounded-3xl border border-slate-800 shadow-xl overflow-hidden text-white">
               {/* Terminal Title Bar */}
-              <div className="px-5 py-4 border-b border-ink-800 bg-ink-950 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-3 h-3 rounded-full bg-rose-500" />
-                  <span className="w-3 h-3 rounded-full bg-amber-500" />
-                  <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="ml-2 text-xs font-mono font-bold text-ink-300">
-                    SHIFA_CLINICAL_TERMINAL
+              <div className="px-5 py-3.5 border-b border-slate-800 bg-slate-900 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span className="ml-2 text-xs font-mono font-medium text-slate-300">
+                    shifa-clinical-terminal
                   </span>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/40 text-emerald-400">
-                  RECORD_CONNECTED
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-medium">
+                  Connected
                 </span>
               </div>
 
               {/* Chat Simulation Area */}
-              <div className="p-5 sm:p-7 space-y-4 bg-ink-950/80 min-h-[440px]">
+              <div className="p-5 sm:p-7 space-y-4 bg-slate-950 min-h-[440px]">
                 {/* User Message */}
                 <div className="flex justify-end">
-                  <div className="bg-teal-700 text-white rounded-2xl rounded-br-xs px-4 py-3 max-w-[400px] text-xs sm:text-sm font-medium shadow-xs">
+                  <div className="bg-teal-700 text-white rounded-2xl rounded-br-xs px-4 py-3 max-w-[400px] text-xs leading-relaxed font-medium">
                     {selectedScenario.userPrompt}
                   </div>
                 </div>
 
                 {/* AI Grounded Response */}
                 <div className="flex justify-start">
-                  <div className="bg-ink-900 border border-ink-800 text-ink-100 rounded-2xl rounded-bl-xs p-5 max-w-[500px] space-y-3.5 shadow-md">
-                    <p className="text-xs sm:text-sm leading-relaxed text-ink-200">
+                  <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl rounded-bl-xs p-4 sm:p-5 max-w-[500px] space-y-3 shadow-md">
+                    <p className="text-xs sm:text-sm leading-relaxed text-slate-200">
                       {selectedScenario.aiResponse}
                     </p>
 
@@ -246,36 +255,36 @@ export function ShifaAiClinicalTerminal() {
                     <div
                       className={`p-3.5 rounded-xl border space-y-1 ${
                         selectedScenario.highlightType === 'alert'
-                          ? 'bg-rose-950/40 border-rose-600/50 text-rose-200'
+                          ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
                           : selectedScenario.highlightType === 'trajectory'
-                          ? 'bg-cyan-950/40 border-cyan-600/50 text-cyan-200'
+                          ? 'bg-cyan-950/40 border-cyan-500/40 text-cyan-200'
                           : selectedScenario.highlightType === 'info'
-                          ? 'bg-purple-950/40 border-purple-600/50 text-purple-200'
-                          : 'bg-teal-950/40 border-teal-600/50 text-teal-200'
+                          ? 'bg-purple-950/40 border-purple-500/40 text-purple-200'
+                          : 'bg-teal-950/40 border-teal-500/40 text-teal-200'
                       }`}
                     >
-                      <div className="flex items-center gap-1.5 text-xs font-bold font-mono">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold">
                         <ActivityIcon size={14} />
                         <span>{selectedScenario.highlightTitle}</span>
                       </div>
-                      <p className="text-[11px] text-ink-300 leading-relaxed font-sans">
+                      <p className="text-xs text-slate-300 leading-relaxed">
                         {selectedScenario.highlightDesc}
                       </p>
                     </div>
 
                     {/* Verified Record Citations */}
-                    <div className="pt-2 border-t border-ink-800 space-y-1.5">
-                      <p className="text-[9px] font-mono font-black uppercase tracking-wider text-ink-400">
-                        Verified Sources in Your Vault:
+                    <div className="pt-2 border-t border-slate-800 space-y-1">
+                      <p className="text-[10px] uppercase font-semibold text-slate-400">
+                        Verified Sources in Vault:
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedScenario.sources.map((src, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-0.5 rounded bg-ink-950 border border-ink-800 text-[10px] font-mono text-ink-300 flex items-center gap-1"
+                            className="px-2 py-0.5 rounded bg-black/50 border border-slate-800 text-[10px] text-slate-300 flex items-center gap-1"
                           >
                             <span className={src.color}>{src.name}</span>
-                            <span className="text-ink-500">[{src.tag}]</span>
+                            <span className="text-slate-500">[{src.tag}]</span>
                           </span>
                         ))}
                       </div>
@@ -285,16 +294,16 @@ export function ShifaAiClinicalTerminal() {
 
                 {/* Follow-up Action Suggestions */}
                 <div className="pt-2 space-y-1.5">
-                  <p className="text-[10px] font-mono uppercase text-ink-500">
-                    Clinical Action Suggestions:
+                  <p className="text-[10px] uppercase font-semibold text-slate-500">
+                    Suggested Actions:
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedScenario.suggestedActions.map((action, idx) => (
                       <span
                         key={idx}
-                        className="px-3 py-1 rounded-xl bg-ink-900 border border-ink-800 text-xs font-medium text-ink-300 hover:text-teal-300 hover:border-teal-500/40 transition-colors cursor-pointer flex items-center gap-1.5"
+                        className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 hover:text-teal-300 transition-colors cursor-pointer flex items-center gap-1.5"
                       >
-                        <SparklesIcon size={12} className="text-teal-400" />
+                        <SparklesIcon size={11} className="text-teal-400" />
                         {action}
                       </span>
                     ))}
@@ -302,7 +311,7 @@ export function ShifaAiClinicalTerminal() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </div>

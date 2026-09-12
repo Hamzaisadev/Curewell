@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { ChevronDownIcon } from '../../../components/ui/icons';
 
 export function FaqSection() {
@@ -32,52 +33,64 @@ export function FaqSection() {
   ];
 
   return (
-    <section id="faq" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-ink-50/60 border-b border-ink-200">
+    <section id="faq" className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-white text-slate-900 border-b border-slate-200">
       <div className="max-w-4xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-16">
-          <p className="text-xs font-mono font-bold uppercase tracking-widest text-teal-800 mb-2">
-            FREQUENTLY ASKED QUESTIONS
+        {/* Section Header with Motion */}
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-14 sm:mb-18"
+        >
+          <p className="text-xs font-semibold uppercase tracking-widest text-teal-700 mb-2">
+            FAQ
           </p>
-          <h2 className="text-3xl sm:text-5xl font-black text-ink-950 tracking-tight leading-tight">
-            Common Patient Questions.
+          <h2 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
+            Common questions.
           </h2>
-          <p className="text-base sm:text-lg text-ink-600 mt-4 leading-relaxed">
-            Everything you need to know about Curewell's clinical safety boundaries, data privacy, and offline capabilities.
+          <p className="text-base sm:text-lg text-slate-600 mt-2.5 leading-relaxed font-normal">
+            Everything you need to know about privacy, accuracy, and emergency access.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Accordion List */}
-        <div className="space-y-3">
+        {/* Accordion List with Motion */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="space-y-3.5"
+        >
           {faqs.map((faq, idx) => {
             const isOpen = openIndex === idx;
             return (
               <div
                 key={idx}
-                className="rounded-2xl bg-white border border-ink-200 overflow-hidden shadow-xs transition-colors"
+                className="rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden shadow-2xs transition-colors hover:border-slate-300"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
-                  className="w-full text-left p-5 sm:p-6 flex items-center justify-between gap-4 font-bold text-ink-900 text-sm sm:text-base hover:text-teal-800 transition-colors"
+                  className="w-full text-left p-6 flex items-center justify-between gap-4 font-bold text-slate-900 text-base sm:text-lg transition-colors hover:text-teal-800"
                 >
                   <span>{faq.q}</span>
                   <ChevronDownIcon
-                    size={18}
-                    className={`shrink-0 transition-transform duration-200 text-ink-500 ${
+                    size={20}
+                    className={`shrink-0 transition-transform duration-200 text-slate-400 ${
                       isOpen ? 'rotate-180 text-teal-700' : ''
                     }`}
                   />
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 sm:px-6 pb-6 pt-1 text-xs sm:text-sm text-ink-600 leading-relaxed border-t border-ink-100/70">
+                  <div className="px-6 pb-6 pt-1 text-sm sm:text-base text-slate-600 leading-relaxed border-t border-slate-200/60">
                     {faq.a}
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
