@@ -61,6 +61,7 @@ Thumbs.db
 
 # Scratch & Temporary
 scratch/
+.scratch/
 tmp/
 temp/
 .temp/
@@ -80,4 +81,3 @@ CLOUDB.md
 PROMPT_MDS/
 prompt_mds/
 REBUILD/
-docs/
