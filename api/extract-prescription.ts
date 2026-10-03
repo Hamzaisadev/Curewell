@@ -1,12 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { verifyAuthToken } from './_lib/auth';
-import { checkRateLimit } from './_lib/rateLimit';
-import { generateStructured } from './_lib/gemini';
-import { readJsonBody, sendError, sendJson } from './_lib/http';
+import { verifyAuthToken } from './_lib/auth.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
+import { generateStructured } from './_lib/gemini.js';
+import { readJsonBody, sendError, sendJson } from './_lib/http.js';
 import {
   extractPrescriptionRequestSchema,
   extractPrescriptionResponseSchema,
-} from './_lib/schemas';
+} from './_lib/schemas.js';
 
 const SYSTEM_INSTRUCTION = `You read photographs of medical prescriptions, including handwritten and typed ones from South Asia (Pakistan, India, Bangladesh) and globally.
 Extract what is written and return clean JSON matching the schema.

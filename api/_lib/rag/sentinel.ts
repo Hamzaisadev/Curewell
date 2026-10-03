@@ -1,4 +1,4 @@
-import { GENERIC_MOLECULE_REGISTRY, type GenericMoleculeInfo } from './clinicalKnowledge';
+import { GENERIC_MOLECULE_REGISTRY, type GenericMoleculeInfo } from './clinicalKnowledge.js';
 
 export interface SentinelAlert {
   type: 'duplicate_generic' | 'cumulative_overdose' | 'class_overlap';

@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { getGeminiClient, withModelFallback } from './_lib/gemini';
-import { checkRateLimit } from './_lib/rateLimit';
-import { verifyAuthToken } from './_lib/auth';
-import { readJsonBody, sendError, sendJson } from './_lib/http';
-import { executeClinicalRag } from './_lib/rag/retrieval';
+import { getGeminiClient, withModelFallback } from './_lib/gemini.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
+import { verifyAuthToken } from './_lib/auth.js';
+import { readJsonBody, sendError, sendJson } from './_lib/http.js';
+import { executeClinicalRag } from './_lib/rag/retrieval.js';
 import { z } from 'zod';
 
 const chatRequestSchema = z.object({

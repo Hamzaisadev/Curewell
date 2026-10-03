@@ -2,12 +2,12 @@ import {
   DRUG_KNOWLEDGE_CORPUS,
   BIOMARKER_KNOWLEDGE_CORPUS,
   GENERIC_MOLECULE_REGISTRY,
-} from './clinicalKnowledge';
-import { analyzeSafetySentinel, type SentinelAlert } from './sentinel';
+} from './clinicalKnowledge.js';
+import { analyzeSafetySentinel, type SentinelAlert } from './sentinel.js';
 import {
   analyzeBiomarkerTrajectories,
   type BiomarkerTrajectoryItem,
-} from './biomarkerTrajectory';
+} from './biomarkerTrajectory.js';
 
 export interface RetrievedCitation {
   source: string;

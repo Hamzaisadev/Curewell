@@ -1,12 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { verifyAuthToken } from './_lib/auth';
-import { checkRateLimit } from './_lib/rateLimit';
-import { generateStructured } from './_lib/gemini';
-import { readJsonBody, sendError, sendJson } from './_lib/http';
+import { verifyAuthToken } from './_lib/auth.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
+import { generateStructured } from './_lib/gemini.js';
+import { readJsonBody, sendError, sendJson } from './_lib/http.js';
 import {
   explainMedicineRequestSchema,
   explainMedicineResponseSchema,
-} from './_lib/schemas';
+} from './_lib/schemas.js';
 
 const SYSTEM_INSTRUCTION = `You explain medications to patients in plain language.
 Never give medical advice, make diagnostic claims, or tell the patient to change their dose.
