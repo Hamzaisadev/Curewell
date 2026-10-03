@@ -41,7 +41,7 @@
   /* ---------- Type ----------
      One family. Self-hosted with @fontsource — never block first paint on a
      font CDN. */
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter Variable", "Noto Nastaliq Urdu", "Gulzar", "Jameel Noori Nastaleeq", "Urdu Typesetting", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Scaled up for the patient-first direction: 17px body, and `2xs` (12px) is a
@@ -142,6 +142,9 @@
   --color-slot-night-bg:         var(--slot-night-bg);
   --color-slot-night-border:     var(--slot-night-border);
   --color-slot-night-text:       var(--slot-night-text);
+  --color-slot-bedtime-bg:       var(--slot-bedtime-bg);
+  --color-slot-bedtime-border:   var(--slot-bedtime-border);
+  --color-slot-bedtime-text:     var(--slot-bedtime-text);
 
   /* Achievement tiers — the only place a metallic palette is appropriate. */
   --color-tier-bronze:   var(--tier-bronze);
@@ -203,6 +206,9 @@
   --slot-night-bg:         oklch(0.968 0.016 275);
   --slot-night-border:     oklch(0.884 0.052 275);
   --slot-night-text:       oklch(0.440 0.150 272);
+  --slot-bedtime-bg:       oklch(0.965 0.025 295);
+  --slot-bedtime-border:   oklch(0.875 0.065 295);
+  --slot-bedtime-text:     oklch(0.400 0.160 295);
 
   --tier-bronze:   oklch(0.620 0.108 55);
   --tier-silver:   oklch(0.700 0.014 250);
@@ -387,6 +393,7 @@
     --slot-afternoon-bg: oklch(1 0 0); --slot-afternoon-border: oklch(0.709 0.024 76); --slot-afternoon-text: oklch(0.340 0.110 245);
     --slot-evening-bg: oklch(1 0 0);   --slot-evening-border: oklch(0.709 0.024 76);   --slot-evening-text: oklch(0.340 0.120 300);
     --slot-night-bg: oklch(1 0 0);     --slot-night-border: oklch(0.709 0.024 76);     --slot-night-text: oklch(0.330 0.120 272);
+    --slot-bedtime-bg: oklch(1 0 0);   --slot-bedtime-border: oklch(0.709 0.024 76);   --slot-bedtime-text: oklch(0.330 0.120 295);
 
     --shadow-card-value:  none;
     --shadow-raise-value: none;

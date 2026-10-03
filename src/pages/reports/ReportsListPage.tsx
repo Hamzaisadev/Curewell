@@ -179,9 +179,14 @@ export function ReportsListPage() {
         title="Lab Reports & Diagnostic Trends"
         description="Comprehensive diagnostic record archive and longitudinal biomarker trend analysis."
         action={
-          <Link to="/reports/new">
-            <Button leftIcon={<LabFlaskIcon size={17} />}>Add Lab Report</Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/reports/vault">
+              <Button variant="secondary" size="sm">Longitudinal Dossier Vault</Button>
+            </Link>
+            <Link to="/reports/new">
+              <Button size="sm" leftIcon={<LabFlaskIcon size={17} />}>Add Lab Report</Button>
+            </Link>
+          </div>
         }
       />
 

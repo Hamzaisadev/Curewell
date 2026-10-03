@@ -18,7 +18,8 @@ import { Disclaimer } from '../../components/ui/Disclaimer';
 import { MedicineIcon } from '../../components/ui/icons';
 import { MedicineOrderModal } from '../../components/medicines/MedicineOrderModal';
 import { useAuth } from '../../lib/auth/AuthContext';
-import { medicinesRepo, dosesRepo, sideEffectsRepo, visitsRepo } from '../../lib/db';
+import { medicinesRepo, sideEffectsRepo, visitsRepo } from '../../lib/db';
+import { discontinueMedication } from '../../domain/medicationRegimen';
 import { readInventory } from '../../lib/inventory';
 import { explainMedicine } from '../../lib/ai/client';
 import { formatMinutesTo24h, todayInAppTz } from '../../lib/time';
@@ -137,8 +138,7 @@ export function MedicineDetailPage() {
     if (!medicine) return;
     try {
       const today = todayInAppTz();
-      await medicinesRepo.discontinueMedicine(medicine.id, today);
-      await dosesRepo.deleteFuturePendingDoses(medicine.id, today);
+      await discontinueMedication(medicine.id, medicine.profile_id, today);
       setToastMessage('Medicine discontinued. Future scheduled doses cleared.');
       setIsDiscontinueOpen(false);
       await loadData();

@@ -149,7 +149,7 @@ export function executeClinicalRag(
   const retrievedPatientEvidence: string[] = [];
   const citations: RetrievedCitation[] = [];
 
-  // 2. Detect Specific Query Intent
+  // 2. Detect Specific Query Intent with Bilingual (English, Roman Urdu, Urdu Script) Support
   let queryIntent: RagRetrievalResult['queryIntent'] = 'general_clinical';
   if (
     qLower.includes('glucose') ||
@@ -163,7 +163,13 @@ export function executeClinicalRag(
     qLower.includes('bp reading') ||
     qLower.includes('systolic') ||
     qLower.includes('diastolic') ||
-    qLower.includes('vital')
+    qLower.includes('vital') ||
+    qLower.includes('شوگر') ||
+    qLower.includes('ذیابیطس') ||
+    qLower.includes('بلڈ پریشر') ||
+    qLower.includes('خون کا دباؤ') ||
+    qLower.includes('بلڈپریشر') ||
+    qLower.includes('dabaao')
   ) {
     queryIntent = 'vitals_interpretation';
   } else if (
@@ -175,7 +181,11 @@ export function executeClinicalRag(
     qLower.includes('overdose') ||
     qLower.includes('check my medicine') ||
     qLower.includes('check my prescription') ||
-    qLower.includes('interactions')
+    qLower.includes('interactions') ||
+    qLower.includes('ایک ساتھ') ||
+    qLower.includes('ملا کر') ||
+    qLower.includes('نقصان') ||
+    qLower.includes('ek sath')
   ) {
     queryIntent = 'interaction_check';
   } else if (
@@ -188,7 +198,10 @@ export function executeClinicalRag(
     qLower.includes('sgpt') ||
     qLower.includes('alt') ||
     qLower.includes('potassium') ||
-    qLower.includes('biomarker')
+    qLower.includes('biomarker') ||
+    qLower.includes('ٹیسٹ') ||
+    qLower.includes('رپورٹ') ||
+    qLower.includes('کولیسٹرول')
   ) {
     queryIntent = 'lab_interpretation';
   } else if (
@@ -199,7 +212,14 @@ export function executeClinicalRag(
     qLower.includes('meal') ||
     qLower.includes('schedule') ||
     qLower.includes('missed') ||
-    qLower.includes('forgot')
+    qLower.includes('forgot') ||
+    qLower.includes('خالی پیٹ') ||
+    qLower.includes('کھانے کے بعد') ||
+    qLower.includes('کھانے سے پہلے') ||
+    qLower.includes('صبح شام') ||
+    qLower.includes('وقت') ||
+    qLower.includes('khali pait') ||
+    qLower.includes('khane se pehle')
   ) {
     queryIntent = 'dosing_timing';
   } else if (
@@ -207,7 +227,11 @@ export function executeClinicalRag(
     qLower.includes('pregnancy') ||
     qLower.includes('breastfeed') ||
     qLower.includes('lactation') ||
-    qLower.includes('baby')
+    qLower.includes('baby') ||
+    qLower.includes('حاملہ') ||
+    qLower.includes('حمل') ||
+    qLower.includes('دودھ پلانا') ||
+    qLower.includes('hamal')
   ) {
     queryIntent = 'pregnancy_lactation';
   } else if (
@@ -216,7 +240,10 @@ export function executeClinicalRag(
     qLower.includes('dental') ||
     qLower.includes('extraction') ||
     qLower.includes('pre-op') ||
-    qLower.includes('stop before')
+    qLower.includes('stop before') ||
+    qLower.includes('آپریشن') ||
+    qLower.includes('سرجری') ||
+    qLower.includes('دانت نکلوانا')
   ) {
     queryIntent = 'pre_op';
   }
@@ -344,12 +371,15 @@ export function executeClinicalRag(
 
   // 5. Retrieve Matching Biomarkers & Reference Ranges
   BIOMARKER_KNOWLEDGE_CORPUS.forEach((bio) => {
-    const isRelevantBio =
+    const isDirectlyQueried =
       qLower.includes(bio.name.toLowerCase()) ||
-      bio.aliases.some((alias) => qLower.includes(alias.toLowerCase())) ||
-      (isLabFocusQuery && (queryIntent === 'lab_interpretation' || queryIntent === 'vitals_interpretation'));
+      bio.aliases.some((alias) => qLower.includes(alias.toLowerCase()));
 
-    if (isRelevantBio) {
+    const isCategoryMatched =
+      (isLabFocusQuery && queryIntent === 'lab_interpretation') ||
+      (queryIntent === 'vitals_interpretation' && (bio.category === 'Metabolic / Glycemic' || bio.category === 'Cardiac'));
+
+    if (isDirectlyQueried || isCategoryMatched) {
       retrievedClinicalRules.push(
         `[Diagnostic Reference: ${bio.name}] Standard Range: ${bio.standardReferenceRange}. High: ${bio.elevatedInterpretation}. Low: ${bio.decreasedInterpretation}`
       );

@@ -20,16 +20,12 @@ import {
   CheckIcon,
 } from '../../components/ui/icons';
 import { useAuth } from '../../lib/auth/AuthContext';
-import {
-  parseFrequency,
-  defaultDoseTimes,
-} from '../../domain/frequency';
-import { parseDuration, computeEndDate } from '../../domain/duration';
-import { buildSchedule } from '../../domain/schedule';
+import { parseFrequency, defaultDoseTimes } from '../../domain/frequency';
+import { parseDuration } from '../../domain/duration';
+import { recordPrescription } from '../../domain/medicationRegimen';
 import { todayInAppTz, formatMinutesTo24h } from '../../lib/time';
 import { EXTRACTION_DISCLAIMER } from '../../lib/disclaimer';
-import { visitsRepo, medicinesRepo, dosesRepo, testOrdersRepo, extractionAuditRepo } from '../../lib/db';
-import { readInventory, writeInventory } from '../../lib/inventory';
+import { visitsRepo, testOrdersRepo, extractionAuditRepo } from '../../lib/db';
 import { newId } from '../../lib/db/localStore';
 import type { Json } from '../../lib/supabase/types';
 import type { ExtractPrescriptionResponse } from '../../../api/_lib/schemas';
@@ -298,80 +294,14 @@ export function ReviewPrescriptionPage() {
         currency: 'PKR',
       });
 
-      // Step 2: Insert Medicines & Generate Schedules
-      const pillInventoryMap = readInventory(effectiveProfileId);
-      const effectiveStartDate = scheduleStartDate || todayInAppTz();
-
-      for (const med of validMedicines) {
-        // Validated above, so this cannot be null.
-        const freqCode = parseFrequency(med.frequency_raw)!;
-        const dur = parseDuration(med.duration_raw);
-
-        const isOngoing = med.is_ongoing ?? dur.kind === 'ongoing';
-        const durationDays = dur.kind === 'days' ? dur.days : null;
-
-        const endDate =
-          durationDays !== null && !isOngoing
-            ? computeEndDate(effectiveStartDate, durationDays)
-            : null;
-
-        const defaultTimes = defaultDoseTimes(freqCode, med.with_food, med.frequency_raw);
-
-        const createdMed = await medicinesRepo.createMedicine({
-          user_id: effectiveUserId,
-          profile_id: effectiveProfileId,
-          visit_id: visit.id,
-          medicine_name: med.medicine_name.trim(),
-          strength: med.strength?.trim() || null,
-          form: med.form || 'tablet',
-          dose_amount: med.dose_amount?.trim() || null,
-          frequency_code: freqCode,
-          frequency_raw: med.frequency_raw?.trim() || null,
-          with_food: med.with_food ?? null,
-          duration_days: durationDays,
-          start_date: effectiveStartDate,
-          end_date: endDate,
-          is_ongoing: isOngoing,
-          instructions: med.instructions || null,
-        });
-
-        // Initialize pill inventory count (e.g. standard pack of 20 pills)
-        if (createdMed.id && !pillInventoryMap[createdMed.id]) {
-          pillInventoryMap[createdMed.id] = durationDays
-            ? durationDays * (defaultTimes.length || 1) + 4
-            : 20;
-        }
-
-        // Generate automated deterministic dose rows if not PRN
-        if (defaultTimes.length > 0) {
-          const doseRows = buildSchedule({
-            medicineId: createdMed.id,
-            startDate: effectiveStartDate,
-            durationDays,
-            isOngoing,
-            doseTimes: defaultTimes,
-            now: new Date(),
-            // Drives the repeat interval: WEEKLY every 7 days, STAT once.
-            frequencyCode: freqCode,
-          });
-
-          if (doseRows.length > 0) {
-            await dosesRepo.createDoses(
-              doseRows.map((d) => ({
-                user_id: effectiveUserId,
-                profile_id: effectiveProfileId,
-                medicine_id: createdMed.id,
-                scheduled_date: d.scheduled_date,
-                scheduled_minutes: d.scheduled_minutes,
-                status: 'pending',
-              }))
-            );
-          }
-        }
-      }
-
-      // Save pill inventory
-      writeInventory(effectiveProfileId, pillInventoryMap);
+      // Step 2: Insert Medicines & Generate Schedules via deep Medication Regimen module
+      await recordPrescription({
+        userId: effectiveUserId,
+        profileId: effectiveProfileId,
+        visitId: visit.id,
+        scheduleStartDate,
+        medicines: validMedicines,
+      });
 
       // Step 3: Insert Ordered Tests
       for (const t of tests) {
@@ -740,7 +670,7 @@ export function ReviewPrescriptionPage() {
                             {doseTimes.length > 0 && (
                               <span className="text-xs font-semibold text-accent flex items-center gap-1">
                                 <ClockIcon size={12} className="shrink-0" />
-                                {doseTimes.map((t) => formatMinutesTo24h(t)).join(', ')}
+                                {doseTimes.map((t: number) => formatMinutesTo24h(t)).join(', ')}
                               </span>
                             )}
                           </div>

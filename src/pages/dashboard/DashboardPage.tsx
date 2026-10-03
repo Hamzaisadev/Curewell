@@ -1,22 +1,19 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AppShell } from '../../components/layout/AppShell';
 import { PatientInfoCard } from './components/PatientInfoCard';
-import { LabsCard } from './components/LabsCard';
 import { MedicationScheduleCard } from './components/MedicationScheduleCard';
-import { AdherenceHabitsCard } from './components/AdherenceHabitsCard';
-import { CabinetSummaryCard } from './components/CabinetSummaryCard';
-import { ClinicalDossierCard } from './components/ClinicalDossierCard';
 import { BloodPressureTrendCard } from './components/BloodPressureTrendCard';
 import { BloodGlucoseTrendCard } from './components/BloodGlucoseTrendCard';
-import { ActivePrescriptionsCard } from './components/ActivePrescriptionsCard';
-import { RecentConsultationsCard } from './components/RecentConsultationsCard';
-import { SymptomTriageCard } from './components/SymptomTriageCard';
-import { MedicalRecordsVaultCard } from './components/MedicalRecordsVaultCard';
-import { DrugInteractionRadarCard } from './components/DrugInteractionRadarCard';
-import { HealthMilestonesCard } from './components/HealthMilestonesCard';
-import { CareScheduleTimelineCard } from './components/CareScheduleTimelineCard';
-import { EmergencyHotlinesStripCard } from './components/EmergencyHotlinesStripCard';
+import { AdherenceHabitsCard } from './components/AdherenceHabitsCard';
+import { UpNextCard } from './components/UpNextCard';
 import { QuickVitalsModal } from '../../components/vitals/QuickVitalsModal';
+import {
+  HeartPulseIcon,
+  DropletIcon,
+  CapsuleIcon,
+  LabFlaskIcon,
+} from '../../components/ui/icons';
 
 export function DashboardPage() {
   const [vitalsModal, setVitalsModal] = useState<{ open: boolean; type: 'glucose' | 'bp' }>({
@@ -24,123 +21,81 @@ export function DashboardPage() {
     type: 'bp',
   });
   const [vitalsRefreshKey, setVitalsRefreshKey] = useState(0);
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
 
   return (
     <AppShell>
       <div className="space-y-6 pb-20">
-        {/* ═══════════════════════════════════════════════════════════════
-            BENTO SECTION 1: MASTER OVERVIEW (Cards 1–6)
-            ═══════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Left Master Column: 8 cols (equivalent to 4 units wide) */}
-          <div className="lg:col-span-8 flex flex-col gap-5">
-            {/* Tile 1: Patient Demographics & Conditions */}
-            <PatientInfoCard />
+        {/* ── Patient Identity & Circadian Greeting ────────────────── */}
+        <PatientInfoCard />
 
-            {/* Tile 2: Upcoming Medications Schedule (Full width across left master col) */}
-            <MedicationScheduleCard />
+        {/* ── Streamlined Quick Action Bar (4 essential daily actions) ── */}
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setVitalsModal({ open: true, type: 'bp' })}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-surface hover:bg-surface-sunken border border-line text-xs font-bold text-content shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
+          >
+            <HeartPulseIcon size={14} className="text-rose-500" />
+            <span>+ Log Blood Pressure</span>
+          </button>
 
-            {/* Sub-grid: Medicine Cabinet & Daily Adherence (Balanced 50/50 side-by-side) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-1 items-stretch">
-              {/* Tile 3: Medicine Cabinet & Inventory Supply */}
-              <div className="flex flex-col">
-                <CabinetSummaryCard className="h-full" />
-              </div>
+          <button
+            type="button"
+            onClick={() => setVitalsModal({ open: true, type: 'glucose' })}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-surface hover:bg-surface-sunken border border-line text-xs font-bold text-content shadow-xs transition-all shrink-0 active:scale-95 cursor-pointer"
+          >
+            <DropletIcon size={14} className="text-amber-500" />
+            <span>+ Log Blood Sugar</span>
+          </button>
 
-              {/* Tile 4: Daily Adherence & Habits */}
-              <div className="flex flex-col">
-                <AdherenceHabitsCard className="h-full" />
-              </div>
+          <Link
+            to="/prescriptions/new"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-surface hover:bg-surface-sunken border border-line text-xs font-bold text-content shadow-xs transition-all shrink-0"
+          >
+            <CapsuleIcon size={14} className="text-brand-600 dark:text-brand-400" />
+            <span>+ Add Medicine</span>
+          </Link>
+
+          <Link
+            to="/reports/new"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-surface hover:bg-surface-sunken border border-line text-xs font-bold text-content shadow-xs transition-all shrink-0"
+          >
+            <LabFlaskIcon size={14} className="text-teal-600 dark:text-teal-400" />
+            <span>+ Upload Report</span>
+          </Link>
+        </div>
+
+        {/* ── Asymmetric 2-Column Daily Health Companion Layout ─────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Main Column (8 cols): Today's Medicines & Vitals */}
+          <div className="lg:col-span-8 space-y-6">
+            <MedicationScheduleCard
+              onDoseRecorded={() => {
+                setScheduleRefreshKey((prev) => prev + 1);
+                setVitalsRefreshKey((prev) => prev + 1);
+              }}
+            />
+
+            {/* Side-by-side Blood Pressure & Blood Sugar */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <BloodPressureTrendCard
+                key={`bp-trend-${vitalsRefreshKey}`}
+                onOpenLog={() => setVitalsModal({ open: true, type: 'bp' })}
+              />
+              <BloodGlucoseTrendCard
+                key={`glucose-trend-${vitalsRefreshKey}`}
+                onOpenLog={() => setVitalsModal({ open: true, type: 'glucose' })}
+              />
             </div>
           </div>
 
-          {/* Right Master Column: 4 cols (equivalent to 2 units wide) */}
-          <div className="lg:col-span-4 flex flex-col gap-5">
-            {/* Tile 1: Diagnostic Labs (Emerald Green Theme) */}
-            <LabsCard />
-
-            {/* Tile 14: Clinical Care Guidance & Assistant Dossier */}
-            <div className="flex-1 flex flex-col">
-              <ClinicalDossierCard />
-            </div>
+          {/* Side Rail (4 cols): Daily Routine Habits & Coming Up */}
+          <div className="lg:col-span-4 space-y-6">
+            <AdherenceHabitsCard refreshKey={scheduleRefreshKey} />
+            <UpNextCard refreshKey={scheduleRefreshKey} />
           </div>
         </div>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            BENTO SECTION 2: DEDICATED VITALS & METABOLIC TRENDS (Cards 8 & 9)
-            ═══════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Card 8: Blood Pressure Trend Analytics */}
-          <div className="lg:col-span-7 flex flex-col">
-            <BloodPressureTrendCard
-              key={`bp-trend-${vitalsRefreshKey}`}
-              onOpenLog={() => setVitalsModal({ open: true, type: 'bp' })}
-            />
-          </div>
-
-          {/* Card 9: Blood Glucose Curve & ADA Range */}
-          <div className="lg:col-span-5 flex flex-col">
-            <BloodGlucoseTrendCard
-              key={`glucose-trend-${vitalsRefreshKey}`}
-              onOpenLog={() => setVitalsModal({ open: true, type: 'glucose' })}
-            />
-          </div>
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            BENTO SECTION 3: PRESCRIPTIONS & CLINICAL VISITS (Cards 10 & 11)
-            ═══════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Card 10: Active Prescriptions & Regimens */}
-          <div className="lg:col-span-6 flex flex-col">
-            <ActivePrescriptionsCard />
-          </div>
-
-          {/* Card 11: Recent Consultations & Doctor Notes */}
-          <div className="lg:col-span-6 flex flex-col">
-            <RecentConsultationsCard />
-          </div>
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            BENTO SECTION 4: TRIAGE, RECORDS & SAFETY (Cards 12, 13 & 14)
-            ═══════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-          {/* Card 12: Symptom Tracker & Red Flags */}
-          <div className="flex flex-col">
-            <SymptomTriageCard />
-          </div>
-
-          {/* Card 13: Diagnostic Scans & Records Vault */}
-          <div className="flex flex-col">
-            <MedicalRecordsVaultCard />
-          </div>
-
-          {/* Card 14: Drug Interaction Radar */}
-          <div className="flex flex-col">
-            <DrugInteractionRadarCard />
-          </div>
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            BENTO SECTION 5: CARE TIMELINE & AWARDS (Cards 15 & 16)
-            ═══════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          {/* Card 15: Care Schedule & Next Appointments */}
-          <div className="lg:col-span-6 flex flex-col">
-            <CareScheduleTimelineCard />
-          </div>
-
-          {/* Card 16: Health Milestones & Badges */}
-          <div className="lg:col-span-6 flex flex-col">
-            <HealthMilestonesCard />
-          </div>
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            BENTO SECTION 6: 24/7 EMERGENCY HOTLINES STRIP
-            ═══════════════════════════════════════════════════════════════ */}
-        <EmergencyHotlinesStripCard />
       </div>
 
       {/* Quick Vitals Modal for Instant Logging */}

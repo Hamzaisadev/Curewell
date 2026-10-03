@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { getGeminiClient, getGeminiModel } from './_lib/gemini';
+import { getGeminiClient, withModelFallback } from './_lib/gemini';
 import { checkRateLimit } from './_lib/rateLimit';
 import { verifyAuthToken } from './_lib/auth';
 import { readJsonBody, sendError, sendJson } from './_lib/http';
@@ -118,7 +118,6 @@ export default async function handler(req: IncomingMessage & { body?: unknown },
 
     const { messages, patientContext, stream } = parsed.data;
     const ai = getGeminiClient();
-    const model = getGeminiModel();
 
     // Execute Upgraded Clinical RAG & Multi-Turn Context Pipeline
     const latestUserMessage = messages.filter((m) => m.role === 'user').slice(-1)[0];
@@ -154,10 +153,14 @@ CORE INTELLIGENCE & CONVERSATIONAL DISCIPLINE:
    - Assist, explain, and educate; never replace a physician or claim diagnostic certainty.
    - When referencing vitals (glucose, BP), cite the exact value, measurement date, and clinical classification (e.g. hypoglycemia, normal, elevated).
    - For life-threatening emergencies (acute chest pain, stroke symptoms), immediately trigger emergency_triage.
-6. SCOPE:
+6. BILINGUAL LANGUAGE MIRRORING & LOCALIZATION (URDU & ENGLISH):
+   - Match the patient's language: If the user addresses you in Urdu (Urdu script) or Roman Urdu, respond in polite, natural, idiomatic Urdu.
+   - For clinical precision in Urdu, write medicine names and dosages in clear dual format (e.g. "پیناڈول (Panadol 500mg) دن میں دو بار").
+   - Follow-up "suggestions" MUST strictly match the active conversation language: if the user asked in Urdu, all items in "suggestions" must be in Urdu (e.g., "کیا میں یہ دوا کھانے کے بعد لے سکتا ہوں؟", "میری پچھلی بلڈ پریشر کی ریڈنگز دکھائیں").
+7. SCOPE:
    - Refuse strictly non-health topics (programming, politics, gaming, finance). Lifestyle, exercise, hydration, diet, and wellness are in scope.
 
-CRITICAL INSTRUCTION: You MUST ALWAYS respond in valid, pure JSON without markdown backticks.
+CRITICAL INSTRUCTION: You MUST ALWAYS respond in valid, pure JSON without markdown backticks. The "summary" field MUST be the first key in the JSON object to enable real-time text streaming.
 JSON Schema:
 {
   "summary": "Concise, human conversational clinical answer (1-3 sentences). Directly addresses the user's specific prompt.",
@@ -282,6 +285,8 @@ ${ragResult.retrievedPatientEvidence.length > 0 ? ragResult.retrievedPatientEvid
 
       const decodeJsonString = (raw: string): string => {
         let sanitized = raw;
+        // Strip trailing incomplete unicode or escape sequences
+        sanitized = sanitized.replace(/\\u[0-9a-fA-F]{0,3}$/, '');
         if (sanitized.endsWith('\\')) {
           sanitized = sanitized.slice(0, -1);
         }
@@ -289,6 +294,7 @@ ${ragResult.retrievedPatientEvidence.length > 0 ? ragResult.retrievedPatientEvid
           return JSON.parse(`"${sanitized}"`);
         } catch {
           return sanitized
+            .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
             .replace(/\\n/g, '\n')
             .replace(/\\r/g, '\r')
             .replace(/\\"/g, '"')
@@ -298,15 +304,17 @@ ${ragResult.retrievedPatientEvidence.length > 0 ? ragResult.retrievedPatientEvid
       };
 
       try {
-        const responseStream = await ai.models.generateContentStream({
-          model,
-          contents: validMessages,
-          config: {
-            systemInstruction,
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-          },
-        });
+        const { result: responseStream } = await withModelFallback(async (modelName) =>
+          ai.models.generateContentStream({
+            model: modelName,
+            contents: validMessages,
+            config: {
+              systemInstruction,
+              temperature: 0.2,
+              responseMimeType: 'application/json',
+            },
+          })
+        );
 
         for await (const chunk of responseStream) {
           const chunkText = chunk.text || '';
@@ -449,15 +457,17 @@ ${ragResult.retrievedPatientEvidence.length > 0 ? ragResult.retrievedPatientEvid
     }
 
     // Unary Mode (when stream: false)
-    const response = await ai.models.generateContent({
-      model,
-      contents: validMessages,
-      config: {
-        systemInstruction,
-        temperature: 0.2,
-        responseMimeType: 'application/json',
-      },
-    });
+    const { result: response } = await withModelFallback(async (modelName) =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: validMessages,
+        config: {
+          systemInstruction,
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+        },
+      })
+    );
 
     const rawText = response.text || '{}';
     let data: Record<string, unknown> = {};

@@ -10,7 +10,8 @@ import { Toast } from '../../components/ui/Toast';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { MedicineOrderModal } from '../../components/medicines/MedicineOrderModal';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
-import { SLOT_META } from '../../components/ui/slotMeta';
+import { DoseCard } from '../../components/ui/DoseCard';
+import { getSlotMeta } from '../../components/ui/slotMeta';
 import {
   CalendarIcon,
   ChevronLeftIcon,
@@ -29,6 +30,7 @@ import {
   Utensils,
   Droplets,
   AlertCircle,
+  AlertTriangle,
   Plus,
   ShoppingBag,
 } from 'lucide-react';
@@ -41,14 +43,27 @@ import {
   formatDoseTime,
   minutesInAppTz,
 } from '../../lib/time';
-import { bucketOf, Bucket, BUCKET_ORDER } from '../../domain/timeBuckets';
-import { deriveStatusOnRead, calculateAdherenceStreak } from '../../domain/adherence';
-import { defaultDoseTimes, parseFrequency } from '../../domain/frequency';
-import { buildSchedule } from '../../domain/schedule';
-import { computeEndDate } from '../../domain/duration';
+import { bucketOf, Bucket, resolveActiveBuckets } from '../../domain/timeBuckets';
+import { deriveMealInstruction } from '../../domain/schedule';
+import {
+  deriveStatusOnRead,
+  calculateLoggingStreak,
+  type LateDoseRiskResult,
+  type EffectiveDose,
+} from '../../domain/adherence';
+import {
+  isBucketWindowExpired,
+  checkDoseLateRisk,
+  type DailyScheduleView,
+} from '../../domain/medicationScheduleFacade';
+import {
+  getDaySchedule,
+  recordDoseAction,
+  batchRecordDosesTaken,
+} from '../../domain/medicationRegimen';
 import { useAuth } from '../../lib/auth/AuthContext';
-import { dosesRepo, medicinesRepo } from '../../lib/db';
-import { decrementPill, incrementPill, readInventory } from '../../lib/inventory';
+import { dosesRepo } from '../../lib/db';
+import { readInventory } from '../../lib/inventory';
 import type { Tables } from '../../lib/supabase/types';
 
 type Dose = Tables<'doses'>;
@@ -69,70 +84,6 @@ const SKIP_REASONS = [
   'Other',
 ] as const;
 
-/**
- * Creates the missing dose rows for `dateStr` for every medicine whose course
- * genuinely covers that date. Returns true if anything was written.
- */
-async function topUpScheduleFor(
-  medicines: Medicine[],
-  dateStr: string,
-  userId: string,
-  profileId: string
-): Promise<boolean> {
-  const rows: Array<{
-    user_id: string;
-    profile_id: string;
-    medicine_id: string;
-    scheduled_date: string;
-    scheduled_minutes: number;
-    status: 'pending';
-  }> = [];
-
-  for (const m of medicines) {
-    if (m.discontinued_at) continue;
-    const effectiveStartDate = m.start_date || todayInAppTz();
-    if (effectiveStartDate > dateStr) continue;
-
-    const isOngoing = m.is_ongoing ?? false;
-    const effectiveEndDate =
-      m.end_date || (m.duration_days ? computeEndDate(effectiveStartDate, m.duration_days) : null);
-
-    if (!isOngoing && effectiveEndDate && effectiveEndDate < dateStr) continue;
-
-    const freqCode = m.frequency_code ?? parseFrequency(m.frequency_raw);
-    if (!freqCode) continue;
-
-    const doseTimes = defaultDoseTimes(freqCode, m.with_food, m.frequency_raw);
-    if (doseTimes.length === 0) continue;
-
-    const generated = buildSchedule({
-      medicineId: m.id,
-      startDate: effectiveStartDate,
-      durationDays: m.duration_days,
-      isOngoing,
-      doseTimes,
-      now: new Date(),
-      frequencyCode: freqCode,
-    });
-
-    for (const slot of generated) {
-      if (slot.scheduled_date !== dateStr) continue;
-      rows.push({
-        user_id: userId,
-        profile_id: profileId,
-        medicine_id: m.id,
-        scheduled_date: slot.scheduled_date,
-        scheduled_minutes: slot.scheduled_minutes,
-        status: 'pending',
-      });
-    }
-  }
-
-  if (rows.length === 0) return false;
-  await dosesRepo.createDoses(rows);
-  return true;
-}
-
 export function TodaySchedulePage() {
   const { user, profile } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string>(todayInAppTz());
@@ -143,10 +94,16 @@ export function TodaySchedulePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<ScheduleFilter>('all');
+  const [isPastDosesOpen, setIsPastDosesOpen] = useState(true);
 
   const [skipDialogOpen, setSkipDialogOpen] = useState(false);
   const [activeDoseForSkip, setActiveDoseForSkip] = useState<Dose | null>(null);
   const [selectedSkipReason, setSelectedSkipReason] = useState<string>(SKIP_REASONS[0]);
+
+  const [lateDoseDialogOpen, setLateDoseDialogOpen] = useState(false);
+  const [activeDoseForLateCheck, setActiveDoseForLateCheck] = useState<Dose | null>(null);
+  const [lateDoseStep, setLateDoseStep] = useState<'prompt' | 'warning'>('prompt');
+  const [lateDoseRisk, setLateDoseRisk] = useState<LateDoseRiskResult | null>(null);
 
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [selectedMedicineForOrder, setSelectedMedicineForOrder] = useState<Medicine | null>(null);
@@ -164,33 +121,15 @@ export function TodaySchedulePage() {
       try {
         const today = todayInAppTz();
         const streakFrom = addDaysAppTz(today, -60);
-        const [fetchedDoses, fetchedMeds, rangeDoses] = await Promise.all([
-          dosesRepo.listDosesForDate(effectiveProfileId, dateStr),
-          medicinesRepo.listMedicines(effectiveProfileId),
+        const [dayResult, rangeDoses] = await Promise.all([
+          getDaySchedule(effectiveProfileId, dateStr, effectiveUserId),
           dosesRepo.listDosesForRange(effectiveProfileId, streakFrom, today),
         ]);
 
-        const map: Record<string, Medicine> = {};
-        for (const m of fetchedMeds) map[m.id] = m;
-        setMedicinesMap(map);
+        setMedicinesMap(dayResult.medicinesMap);
+        setDoses(dayResult.doses);
+        setInventory(dayResult.inventory);
         setStreakDoses(rangeDoses);
-
-        setInventory(readInventory(effectiveProfileId));
-
-        if (fetchedDoses.length === 0 && fetchedMeds.length > 0 && dateStr >= today) {
-          const created = await topUpScheduleFor(
-            fetchedMeds,
-            dateStr,
-            effectiveUserId,
-            effectiveProfileId
-          );
-          setDoses(
-            created ? await dosesRepo.listDosesForDate(effectiveProfileId, dateStr) : fetchedDoses
-          );
-          return;
-        }
-
-        setDoses(fetchedDoses);
       } catch (err) {
         console.warn('Error loading schedule:', err);
         setDoses([]);
@@ -208,55 +147,20 @@ export function TodaySchedulePage() {
     loadData(selectedDate);
   }, [loadData, selectedDate]);
 
-  const handleMarkTaken = async (dose: Dose) => {
-    if (dose.status === 'taken') return;
 
-    try {
-      const updated = await dosesRepo.updateDoseStatus(dose.id, 'taken');
-      setDoses((prev) => prev.map((d) => (d.id === dose.id ? updated : d)));
-
-      const remaining = decrementPill(effectiveProfileId, dose.medicine_id);
-      setInventory(readInventory(effectiveProfileId));
-
-      setToast({
-        tone: 'ok',
-        message:
-          remaining === null
-            ? 'Dose marked as taken.'
-            : `Dose marked as taken — ${remaining} left in cabinet.`,
-      });
-    } catch (err: unknown) {
-      console.error(err);
-      setToast({
-        tone: 'risk',
-        message: err instanceof Error ? err.message : 'Could not record this dose. Please try again.',
-      });
-    }
-  };
 
   /** Batch action to mark all due doses in a specific routine slot as taken */
   const handleMarkRoutineTaken = async (routineDoses: Dose[], routineName: string) => {
-    const actionable = routineDoses.filter(
-      (d) => deriveStatusOnRead(d, new Date()) === 'pending' || deriveStatusOnRead(d, new Date()) === 'missed'
-    );
-    if (actionable.length === 0) return;
-
     try {
-      const updatedList = await Promise.all(
-        actionable.map((d) => dosesRepo.updateDoseStatus(d.id, 'taken'))
-      );
+      const { updatedDoses, count } = await batchRecordDosesTaken(routineDoses, effectiveProfileId);
+      if (count === 0) return;
 
-      for (const d of actionable) {
-        decrementPill(effectiveProfileId, d.medicine_id);
-      }
+      setDoses(updatedDoses);
       setInventory(readInventory(effectiveProfileId));
-
-      const updatedMap = new Map(updatedList.map((d) => [d.id, d]));
-      setDoses((prev) => prev.map((d) => updatedMap.get(d.id) || d));
 
       setToast({
         tone: 'ok',
-        message: `Marked ${actionable.length} ${routineName.toLowerCase()} doses as taken.`,
+        message: `Marked ${count} ${routineName.toLowerCase()} doses as taken.`,
       });
     } catch (err: unknown) {
       console.error(err);
@@ -269,13 +173,13 @@ export function TodaySchedulePage() {
 
   const handleUndo = async (dose: Dose) => {
     try {
-      const updated = await dosesRepo.updateDoseStatus(dose.id, 'pending');
-      setDoses((prev) => prev.map((d) => (d.id === dose.id ? updated : d)));
-
-      if (dose.status === 'taken') {
-        incrementPill(effectiveProfileId, dose.medicine_id);
-        setInventory(readInventory(effectiveProfileId));
-      }
+      const { updatedDose } = await recordDoseAction({
+        dose,
+        newStatus: 'pending',
+        profileId: effectiveProfileId,
+      });
+      setDoses((prev) => prev.map((d) => (d.id === dose.id ? updatedDose : d)));
+      setInventory(readInventory(effectiveProfileId));
       setToast({ tone: 'ok', message: 'Dose reset to pending.' });
     } catch (err: unknown) {
       console.error(err);
@@ -295,13 +199,13 @@ export function TodaySchedulePage() {
   const handleConfirmSkip = async () => {
     if (!activeDoseForSkip) return;
     try {
-      const updated = await dosesRepo.updateDoseStatus(
-        activeDoseForSkip.id,
-        'skipped',
-        null,
-        selectedSkipReason
-      );
-      setDoses((prev) => prev.map((d) => (d.id === activeDoseForSkip.id ? updated : d)));
+      const { updatedDose } = await recordDoseAction({
+        dose: activeDoseForSkip,
+        newStatus: 'skipped',
+        skipReason: selectedSkipReason,
+        profileId: effectiveProfileId,
+      });
+      setDoses((prev) => prev.map((d) => (d.id === activeDoseForSkip.id ? updatedDose : d)));
       setSkipDialogOpen(false);
       setToast({ tone: 'ok', message: `Dose marked as skipped (${selectedSkipReason}).` });
     } catch (err: unknown) {
@@ -348,15 +252,63 @@ export function TodaySchedulePage() {
     });
   }, [doses, activeFilter]);
 
+  const nowMinutes = minutesInAppTz();
+
+  const activeBuckets = useMemo(() => {
+    const medList = Object.values(medicinesMap);
+    const resolved = resolveActiveBuckets(medList);
+    // If any dose scheduled time falls in bedtime range (>= 1320 or < 300)
+    const anyBedtimeDose = doses.some(
+      (d) => d.scheduled_minutes >= 1320 || d.scheduled_minutes < 300
+    );
+    if (anyBedtimeDose && !resolved.includes('bedtime')) {
+      resolved.push('bedtime');
+    }
+    return resolved;
+  }, [medicinesMap, doses]);
+
+  const hasBedtime = activeBuckets.includes('bedtime');
+
+  // Dedicated Past / Missed Doses:
+  // Isolate unlogged doses from closed buckets (e.g. afternoon doses when current time >= 17:00,
+  // or morning doses when >= 12:00, or all past-date unlogged doses)
+  const pastUnloggedDoses = useMemo(() => {
+    return doses.filter((d) => {
+      if (d.status === 'taken' || d.status === 'skipped') {
+        return false;
+      }
+      const s = deriveStatusOnRead(d, new Date());
+      if (s === 'missed') {
+        return true;
+      }
+      const bucket = bucketOf(d.scheduled_minutes, hasBedtime);
+      return isBucketWindowExpired(bucket, selectedDate, today, nowMinutes, hasBedtime);
+    });
+  }, [doses, hasBedtime, selectedDate, today, nowMinutes]);
+
+  const filteredPastUnloggedDoses = useMemo(() => {
+    if (activeFilter === 'taken') {
+      return [];
+    }
+    return pastUnloggedDoses;
+  }, [pastUnloggedDoses, activeFilter]);
+
+  // Active daypart bucket doses exclude past unlogged doses, keeping daypart blocks focused on actionable upcoming medications
+  const daypartDoses = useMemo(() => {
+    const pastIds = new Set(pastUnloggedDoses.map((d) => d.id));
+    return filteredDoses.filter((d) => !pastIds.has(d.id));
+  }, [filteredDoses, pastUnloggedDoses]);
+
   const buckets: Record<Bucket, Dose[]> = {
     morning: [],
     afternoon: [],
     night: [],
+    bedtime: [],
   };
-  for (const d of filteredDoses) {
-    buckets[bucketOf(d.scheduled_minutes)].push(d);
+  for (const d of daypartDoses) {
+    buckets[bucketOf(d.scheduled_minutes, hasBedtime)].push(d);
   }
-  for (const key of BUCKET_ORDER) {
+  for (const key of activeBuckets) {
     buckets[key].sort((a, b) => a.scheduled_minutes - b.scheduled_minutes);
   }
 
@@ -365,10 +317,40 @@ export function TodaySchedulePage() {
   const pendingCount = doses.filter((d) => deriveStatusOnRead(d, new Date()) === 'pending').length;
   const actionableCount = pendingCount + missedCount;
   const totalCount = doses.length;
-  const adherencePercent = totalCount === 0 ? 100 : Math.round((takenCount / totalCount) * 100);
+  const clinicalAdherencePercent =
+    totalCount === 0 ? 100 : Math.round((takenCount / totalCount) * 100);
+  const adherencePercent = clinicalAdherencePercent;
+
+  const skipReasonsSummary = useMemo(() => {
+    const summary: Record<string, number> = {};
+    for (const d of doses) {
+      if (d.status === 'skipped') {
+        const reason =
+          d.skipped_reason ||
+          (d as unknown as { skip_reason?: string }).skip_reason ||
+          (d as unknown as { skipReason?: string }).skipReason ||
+          'Unspecified';
+        summary[reason] = (summary[reason] ?? 0) + 1;
+      }
+    }
+    return summary;
+  }, [doses]);
+
+  const skipReasonText = useMemo(() => {
+    const entries = Object.entries(skipReasonsSummary);
+    if (entries.length === 0) return null;
+    return entries
+      .map(([reason, count]) => {
+        const lower = reason.toLowerCase();
+        if (lower.includes('doctor')) {
+          return `${count} ${count === 1 ? 'dose' : 'doses'} held per doctor advice`;
+        }
+        return `${count} ${count === 1 ? 'dose' : 'doses'} held (${reason})`;
+      })
+      .join(', ');
+  }, [skipReasonsSummary]);
 
   // Bento Hero: Next Actionable Dose Calculation
-  const nowMinutes = minutesInAppTz();
   const outstandingDoses = useMemo(() => {
     return doses.filter((d) => {
       const s = deriveStatusOnRead(d, new Date());
@@ -397,21 +379,298 @@ export function TodaySchedulePage() {
   }, [doses, inventory]);
 
   const streakDays = useMemo(() => {
-    return calculateAdherenceStreak(
-      streakDoses.map((d) => ({
+    const combinedMap = new Map<string, Dose>();
+    for (const d of streakDoses) {
+      combinedMap.set(d.id, d);
+    }
+    for (const d of doses) {
+      combinedMap.set(d.id, d);
+    }
+
+    const projectedList = Array.from(combinedMap.values()).map((d) => {
+      const isPrn =
+        medicinesMap[d.medicine_id]?.frequency_code === 'PRN' ||
+        medicinesMap[d.medicine_id]?.frequency_code === 'SOS' ||
+        Boolean((d as unknown as { is_prn?: boolean }).is_prn);
+      const skipReason =
+        d.skipped_reason ||
+        (d as unknown as { skip_reason?: string }).skip_reason ||
+        (d as unknown as { skipReason?: string }).skipReason ||
+        null;
+
+      return {
         id: d.id,
+        medicineId: d.medicine_id,
         medicine_id: d.medicine_id,
+        scheduledDate: d.scheduled_date,
         scheduled_date: d.scheduled_date,
+        scheduledMinutes: d.scheduled_minutes,
         scheduled_minutes: d.scheduled_minutes,
+        bucket: bucketOf(d.scheduled_minutes, hasBedtime),
+        mealInstruction: '',
+        isPrn,
         status: d.status,
+        takenAt: d.taken_at,
         taken_at: d.taken_at,
-        is_prn:
-          medicinesMap[d.medicine_id]?.frequency_code === 'PRN' ||
-          medicinesMap[d.medicine_id]?.frequency_code === 'SOS',
-      })),
-      new Date()
+        skipReason,
+        skip_reason: skipReason,
+      };
+    });
+
+    return calculateLoggingStreak(projectedList as unknown as EffectiveDose[], [], new Date());
+  }, [streakDoses, doses, medicinesMap, hasBedtime]);
+
+  const handleMarkTaken = async (dose: Dose) => {
+    if (dose.status === 'taken') return;
+
+    const currentMinutes = minutesInAppTz();
+    const isOverdue =
+      selectedDate < today ||
+      deriveStatusOnRead(dose, new Date()) === 'missed' ||
+      isBucketWindowExpired(
+        bucketOf(dose.scheduled_minutes, hasBedtime),
+        selectedDate,
+        today,
+        currentMinutes,
+        hasBedtime
+      ) ||
+      pastUnloggedDoses.some((d) => d.id === dose.id);
+
+    if (isOverdue) {
+      setActiveDoseForLateCheck(dose);
+      setLateDoseStep('prompt');
+      setLateDoseRisk(null);
+      setLateDoseDialogOpen(true);
+      return;
+    }
+
+    try {
+      const { updatedDose, remainingPills } = await recordDoseAction({
+        dose,
+        newStatus: 'taken',
+        profileId: effectiveProfileId,
+      });
+      setDoses((prev) => prev.map((d) => (d.id === dose.id ? updatedDose : d)));
+      setInventory(readInventory(effectiveProfileId));
+
+      setToast({
+        tone: 'ok',
+        message:
+          remainingPills === null
+            ? 'Dose marked as taken.'
+            : `Dose marked as taken — ${remainingPills} left in cabinet.`,
+      });
+    } catch (err: unknown) {
+      console.error(err);
+      setToast({
+        tone: 'risk',
+        message: err instanceof Error ? err.message : 'Could not record this dose. Please try again.',
+      });
+    }
+  };
+
+  const handleTookEarlier = async () => {
+    if (!activeDoseForLateCheck) return;
+    try {
+      const earlierDate = fromAppDate(activeDoseForLateCheck.scheduled_date);
+      earlierDate.setUTCMinutes(activeDoseForLateCheck.scheduled_minutes);
+      const earlierIso = earlierDate.toISOString();
+      const earlierTime =
+        earlierIso < new Date().toISOString()
+          ? earlierIso
+          : new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+      const { updatedDose, remainingPills } = await recordDoseAction({
+        dose: activeDoseForLateCheck,
+        newStatus: 'taken',
+        takenAt: earlierTime,
+        profileId: effectiveProfileId,
+      });
+      setDoses((prev) => prev.map((d) => (d.id === activeDoseForLateCheck.id ? updatedDose : d)));
+      setInventory(readInventory(effectiveProfileId));
+      setLateDoseDialogOpen(false);
+      setActiveDoseForLateCheck(null);
+
+      setToast({
+        tone: 'ok',
+        message:
+          remainingPills === null
+            ? 'Dose marked as taken earlier today.'
+            : `Dose marked as taken earlier today — ${remainingPills} left in cabinet.`,
+      });
+    } catch (err: unknown) {
+      console.error(err);
+      setToast({
+        tone: 'risk',
+        message: err instanceof Error ? err.message : 'Could not record this dose. Please try again.',
+      });
+    }
+  };
+
+  const handleTakingNow = async () => {
+    if (!activeDoseForLateCheck) return;
+
+    const currentMinutes = minutesInAppTz();
+    const med = medicinesMap[activeDoseForLateCheck.medicine_id];
+    const medName = med?.medicine_name || 'this medicine';
+
+    const mapToEffectiveDose = (d: Dose, bucket: Bucket): EffectiveDose => {
+      const m = medicinesMap[d.medicine_id];
+      return {
+        ...d,
+        medicineName: m?.medicine_name || medName,
+        medicine_name: m?.medicine_name || medName,
+        medicineId: d.medicine_id,
+        medicine_id: d.medicine_id,
+        strength: m?.strength ?? null,
+        doseAmount: m?.dose_amount ?? null,
+        dose_amount: m?.dose_amount ?? null,
+        mealInstruction: m?.instructions ?? '',
+        scheduledMinutes: d.scheduled_minutes,
+        scheduled_minutes: d.scheduled_minutes,
+        scheduledDate: d.scheduled_date,
+        scheduled_date: d.scheduled_date,
+        bucket,
+        status: deriveStatusOnRead(d, new Date()),
+        isPrn: false,
+        takenAt: d.taken_at,
+        taken_at: d.taken_at,
+        skipReason: d.skipped_reason,
+        skip_reason: d.skipped_reason,
+      };
+    };
+
+    const scheduleView: DailyScheduleView = {
+      targetDate: selectedDate,
+      activeBuckets,
+      buckets: {
+        morning: doses
+          .filter((d) => bucketOf(d.scheduled_minutes, hasBedtime) === 'morning')
+          .map((d) => mapToEffectiveDose(d, 'morning')),
+        afternoon: doses
+          .filter((d) => bucketOf(d.scheduled_minutes, hasBedtime) === 'afternoon')
+          .map((d) => mapToEffectiveDose(d, 'afternoon')),
+        night: doses
+          .filter((d) => bucketOf(d.scheduled_minutes, hasBedtime) === 'night')
+          .map((d) => mapToEffectiveDose(d, 'night')),
+        bedtime: doses
+          .filter((d) => bucketOf(d.scheduled_minutes, hasBedtime) === 'bedtime')
+          .map((d) => mapToEffectiveDose(d, 'bedtime')),
+      },
+      pastUnloggedDoses: pastUnloggedDoses.map((d) =>
+        mapToEffectiveDose(d, bucketOf(d.scheduled_minutes, hasBedtime))
+      ),
+      stats: {
+        totalScheduled: doses.length,
+        takenCount,
+        missedCount,
+        skippedCount: doses.filter((d) => d.status === 'skipped').length,
+        pendingCount,
+        actionableCount,
+        clinicalAdherencePercent: adherencePercent,
+        dailyLoggingStreak: streakDays,
+        skipReasonsSummary: {},
+      },
+      hasBedtime,
+    };
+
+    const effectiveDose = mapToEffectiveDose(
+      activeDoseForLateCheck,
+      bucketOf(activeDoseForLateCheck.scheduled_minutes, hasBedtime)
     );
-  }, [streakDoses, medicinesMap]);
+
+    const riskResult = checkDoseLateRisk(effectiveDose, scheduleView, currentMinutes);
+
+    if (riskResult.riskLevel === 'warning_dose_stacking') {
+      setLateDoseRisk(riskResult);
+      setLateDoseStep('warning');
+    } else {
+      // Safe to take immediately
+      try {
+        const { updatedDose, remainingPills } = await recordDoseAction({
+          dose: activeDoseForLateCheck,
+          newStatus: 'taken',
+          takenAt: new Date().toISOString(),
+          profileId: effectiveProfileId,
+        });
+        setDoses((prev) => prev.map((d) => (d.id === activeDoseForLateCheck.id ? updatedDose : d)));
+        setInventory(readInventory(effectiveProfileId));
+        setLateDoseDialogOpen(false);
+        setActiveDoseForLateCheck(null);
+
+        setToast({
+          tone: 'ok',
+          message:
+            remainingPills === null
+              ? 'Dose marked as taken.'
+              : `Dose marked as taken — ${remainingPills} left in cabinet.`,
+        });
+      } catch (err: unknown) {
+        console.error(err);
+        setToast({
+          tone: 'risk',
+          message: err instanceof Error ? err.message : 'Could not record this dose. Please try again.',
+        });
+      }
+    }
+  };
+
+  const handleSkipPerSafety = async () => {
+    if (!activeDoseForLateCheck) return;
+    try {
+      const { updatedDose } = await recordDoseAction({
+        dose: activeDoseForLateCheck,
+        newStatus: 'skipped',
+        skipReason: 'Skipped due to dose-stacking risk',
+        profileId: effectiveProfileId,
+      });
+      setDoses((prev) => prev.map((d) => (d.id === activeDoseForLateCheck.id ? updatedDose : d)));
+      setInventory(readInventory(effectiveProfileId));
+      setLateDoseDialogOpen(false);
+      setActiveDoseForLateCheck(null);
+
+      setToast({
+        tone: 'ok',
+        message: 'Dose marked as skipped per clinical safety advice.',
+      });
+    } catch (err: unknown) {
+      console.error(err);
+      setToast({
+        tone: 'risk',
+        message: err instanceof Error ? err.message : 'Could not record this dose. Please try again.',
+      });
+    }
+  };
+
+  const handleTakeAnyway = async () => {
+    if (!activeDoseForLateCheck) return;
+    try {
+      const { updatedDose, remainingPills } = await recordDoseAction({
+        dose: activeDoseForLateCheck,
+        newStatus: 'taken',
+        takenAt: new Date().toISOString(),
+        profileId: effectiveProfileId,
+      });
+      setDoses((prev) => prev.map((d) => (d.id === activeDoseForLateCheck.id ? updatedDose : d)));
+      setInventory(readInventory(effectiveProfileId));
+      setLateDoseDialogOpen(false);
+      setActiveDoseForLateCheck(null);
+
+      setToast({
+        tone: 'ok',
+        message:
+          remainingPills === null
+            ? 'Dose marked as taken.'
+            : `Dose marked as taken — ${remainingPills} left in cabinet.`,
+      });
+    } catch (err: unknown) {
+      console.error(err);
+      setToast({
+        tone: 'risk',
+        message: err instanceof Error ? err.message : 'Could not record this dose. Please try again.',
+      });
+    }
+  };
 
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -788,11 +1047,13 @@ export function TodaySchedulePage() {
                         <span>·</span>
                         {nextMedicine.with_food === true ? (
                           <span className="inline-flex items-center gap-1 text-amber-200 font-bold">
-                            <Utensils size={12} /> With food
+                            <Utensils size={12} />
+                            {deriveMealInstruction(true, bucketOf(nextDose.scheduled_minutes, hasBedtime), nextMedicine.instructions)}
                           </span>
                         ) : nextMedicine.with_food === false ? (
                           <span className="inline-flex items-center gap-1 text-sky-200 font-bold">
-                            <Droplets size={12} /> Empty stomach
+                            <Droplets size={12} />
+                            {deriveMealInstruction(false, bucketOf(nextDose.scheduled_minutes, hasBedtime), nextMedicine.instructions)}
                           </span>
                         ) : (
                           <span>As directed</span>
@@ -842,63 +1103,94 @@ export function TodaySchedulePage() {
                 )}
               </div>
 
-              {/* Bento 2: Adherence Score & Inventory Hub (5 Cols) */}
-              <div className="lg:col-span-5 grid grid-cols-2 gap-4">
-                {/* Adherence Score Box */}
+              {/* Bento 2: Two-Tier Adherence & Inventory Hub (5 Cols) */}
+              <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Tier 1 Box: Daily Logging Streak (Habit) */}
                 <div className="p-5 rounded-3xl bg-surface-raised border border-line shadow-2xs flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-content-subtle uppercase tracking-wider">
-                      Adherence Score
-                    </span>
-                    <div className="text-3xl font-black text-content mt-1">
-                      {adherencePercent}%
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
+                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Flame size={14} className="text-amber-500 fill-amber-500" />
+                        Tier 1: Habit Streak
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60 shadow-2xs">
+                        Daily Routine Maintained
+                      </span>
                     </div>
-                    <p className="text-xs text-teal-700 dark:text-teal-400 font-bold mt-0.5">
-                      {takenCount} of {totalCount} logged
+
+                    <div className="text-3xl font-black text-content mt-2 flex items-baseline gap-2">
+                      <Flame size={26} className="text-amber-500 fill-amber-500 shrink-0 self-center" />
+                      <span>{streakDays}</span>
+                      <span className="text-sm font-bold text-content-muted">
+                        {streakDays === 1 ? 'Day' : 'Days'}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-content-muted font-medium mt-1">
+                      {streakDays > 0 ? `${streakDays}-day streak active` : 'Build your routine by logging daily'}
                     </p>
                   </div>
-                  <div className="w-full bg-surface-sunken h-2.5 rounded-full overflow-hidden border border-line mt-4">
-                    <div
-                      style={{ width: `${adherencePercent}%` }}
-                      className="h-full bg-teal-600 rounded-full transition-all duration-500"
-                    />
+
+                  <div className="mt-3 pt-3 border-t border-line/60">
+                    <p className="text-[11px] text-content-subtle leading-relaxed">
+                      Logging all doses—including excused clinical holds—keeps your streak alive.
+                    </p>
                   </div>
                 </div>
 
-                {/* Streak Box */}
+                {/* Tier 2 Box: Clinical Adherence Rate (Doctor Truth) */}
                 <div className="p-5 rounded-3xl bg-surface-raised border border-line shadow-2xs flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
-                      <Flame size={13} className="text-amber-500 fill-amber-500" />
-                      Active Streak
-                    </span>
-                    <div className="text-3xl font-black text-content mt-1">
-                      {streakDays > 0 ? `${streakDays} Days` : takenCount > 0 ? `${takenCount} Taken` : '0 Days'}
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
+                      <span className="text-[11px] font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <ShieldCheck size={14} className="text-teal-600 dark:text-teal-400" />
+                        Tier 2: Clinical Rate
+                      </span>
+                      <span className="text-[10px] font-extrabold text-content-subtle px-1.5 py-0.5 rounded bg-surface-sunken border border-line">
+                        Doctor Truth
+                      </span>
                     </div>
-                    <p className="text-xs text-content-muted font-medium mt-0.5">
-                      {streakDays > 0 ? `${streakDays}-day streak active` : 'Log doses to build streak'}
-                    </p>
+
+                    <div className="text-3xl font-black text-content mt-2 flex items-baseline gap-1.5">
+                      <span>{clinicalAdherencePercent}%</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className="text-xs font-bold text-teal-700 dark:text-teal-400">
+                        Pharmacological Compliance
+                      </span>
+                      <span className="text-[11px] text-content-muted font-medium">
+                        ({takenCount} of {totalCount} taken)
+                      </span>
+                    </div>
                   </div>
-                  <div className="mt-3">
-                    <span
-                      className={clsx(
-                        'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border',
-                        streakDays > 0
-                          ? 'bg-amber-50 text-amber-800 border-amber-200'
-                          : 'bg-surface-sunken text-content-subtle border-line'
-                      )}
-                    >
-                      {takenCount === totalCount && totalCount > 0
-                        ? 'Goal Met 🎯'
-                        : streakDays > 0
-                          ? `${streakDays}d Streak 🔥`
-                          : 'In Progress'}
-                    </span>
+
+                  <div className="mt-3 space-y-2">
+                    <div className="w-full bg-surface-sunken h-2.5 rounded-full overflow-hidden border border-line">
+                      <div
+                        style={{ width: `${clinicalAdherencePercent}%` }}
+                        className="h-full bg-teal-600 rounded-full transition-all duration-500"
+                      />
+                    </div>
+
+                    {skipReasonText ? (
+                      <div
+                        title={skipReasonText}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 truncate max-w-full"
+                      >
+                        <ShieldCheck size={12} className="text-sky-600 dark:text-sky-400 shrink-0" />
+                        <span className="truncate">{skipReasonText}</span>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-content-subtle">
+                        No clinical holds documented
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Cabinet Stock Health Widget (Full Width below stats) */}
-                <div className="col-span-2 p-4 rounded-3xl bg-surface-raised border border-line shadow-2xs flex items-center justify-between text-xs">
+                <div className="col-span-1 sm:col-span-2 p-4 rounded-3xl bg-surface-raised border border-line shadow-2xs flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-surface-sunken border border-line flex items-center justify-center text-accent">
                       <Package size={16} />
@@ -944,16 +1236,129 @@ export function TodaySchedulePage() {
               </div>
             </div>
 
-            {/* Bento Grid Bottom Tier: 3 Daypart Bento Blocks */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-              {BUCKET_ORDER.map((key) => {
-                const slot = SLOT_META[key];
+            {/* Dedicated Past / Missed Doses Drawer (for unlogged doses from closed buckets) */}
+            {filteredPastUnloggedDoses.length > 0 && (
+              <section
+                aria-label="Past and missed doses"
+                className="rounded-3xl border border-amber-300 dark:border-amber-700/80 bg-amber-50/50 dark:bg-amber-950/20 overflow-hidden shadow-2xs transition-all"
+              >
+                <div className="p-4 sm:p-5 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-amber-700 dark:text-amber-400 shrink-0">
+                      <AlertCircle size={20} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-sm sm:text-base font-black text-content tracking-tight">
+                          Past / Missed Doses
+                        </h2>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-900/60 text-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                          {filteredPastUnloggedDoses.length} {filteredPastUnloggedDoses.length === 1 ? 'dose' : 'doses'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-content-muted font-medium mt-0.5">
+                        Unlogged medications from closed time windows. Log them now to maintain your daily streak and clinical record.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-auto">
+                    {!isPast && filteredPastUnloggedDoses.length > 1 && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleMarkRoutineTaken(filteredPastUnloggedDoses, 'past missed')}
+                        leftIcon={<Check size={13} className="text-amber-700 dark:text-amber-400" />}
+                        className="h-8 px-3 text-xs font-bold rounded-xl border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200 hover:bg-amber-100/60 tap-spring shadow-2xs"
+                      >
+                        Log all {filteredPastUnloggedDoses.length}
+                      </Button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setIsPastDosesOpen((prev) => !prev)}
+                      aria-expanded={isPastDosesOpen}
+                      aria-label={isPastDosesOpen ? 'Collapse past doses' : 'Expand past doses'}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-hover border border-line text-xs font-bold text-content tap-spring shadow-2xs cursor-pointer"
+                    >
+                      <span>{isPastDosesOpen ? 'Collapse' : 'View Doses'}</span>
+                      <ChevronDownIcon
+                        size={13}
+                        className={clsx(
+                          'transition-transform duration-200 text-content-muted',
+                          isPastDosesOpen && 'rotate-180'
+                        )}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Collapsible Drawer Content */}
+                {isPastDosesOpen && (
+                  <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-1 border-t border-amber-200/70 dark:border-amber-800/40 space-y-3">
+                    <div className="space-y-2.5">
+                      {filteredPastUnloggedDoses.map((dose) => {
+                        const medicine = medicinesMap[dose.medicine_id];
+                        const doseBucket = bucketOf(dose.scheduled_minutes, hasBedtime);
+                        const mealInst = deriveMealInstruction(
+                          medicine?.with_food,
+                          doseBucket,
+                          medicine?.instructions
+                        );
+
+                        return (
+                          <DoseCard
+                            key={dose.id}
+                            medicineId={dose.medicine_id}
+                            medicineName={medicine?.medicine_name || 'Prescribed medicine'}
+                            strength={medicine?.strength}
+                            doseAmount={
+                              medicine?.dose_amount || (medicine?.form ? `1 ${medicine.form}` : '1 dose')
+                            }
+                            scheduledMinutes={dose.scheduled_minutes}
+                            status={deriveStatusOnRead(dose, new Date())}
+                            withFood={medicine?.with_food}
+                            instructions={medicine?.instructions}
+                            mealInstruction={mealInst}
+                            remaining={inventory[dose.medicine_id]}
+                            onTake={() => handleMarkTaken(dose)}
+                            onSkip={() => handleOpenSkip(dose)}
+                            onUndo={() => handleUndo(dose)}
+                            onOrderRefill={() => handleOpenOrderModal(medicine)}
+                            onViewDetails={() => handleOpenOrderModal(medicine)}
+                            readOnly={isPast}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Bento Grid Bottom Tier: Adaptive Daypart Bento Blocks */}
+            <div
+              className={clsx(
+                'grid gap-4 items-start',
+                activeBuckets.length === 4
+                  ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'
+                  : 'grid-cols-1 md:grid-cols-3'
+              )}
+            >
+              {activeBuckets.map((key) => {
+                const slot = getSlotMeta(key, hasBedtime);
+                const allBucketDoses = doses.filter((d) => bucketOf(d.scheduled_minutes, hasBedtime) === key);
+                const completed = allBucketDoses.filter((d) => d.status === 'taken').length;
+                const total = allBucketDoses.length;
                 const bucketDoses = buckets[key];
-                const completed = bucketDoses.filter((d) => d.status === 'taken').length;
                 const pending = bucketDoses.filter(
                   (d) => deriveStatusOnRead(d, new Date()) === 'pending' || deriveStatusOnRead(d, new Date()) === 'missed'
                 ).length;
-                const allDone = bucketDoses.length > 0 && completed === bucketDoses.length;
+                const allDone = total > 0 && completed === total;
+                const pastFromThisBucket = pastUnloggedDoses.filter(
+                  (d) => bucketOf(d.scheduled_minutes, hasBedtime) === key
+                );
 
                 return (
                   <div
@@ -998,7 +1403,7 @@ export function TodaySchedulePage() {
                               : 'bg-surface-sunken text-content-subtle border border-line'
                           )}
                         >
-                          {completed}/{bucketDoses.length}
+                          {completed}/{total}
                         </span>
                       </div>
 
@@ -1016,9 +1421,25 @@ export function TodaySchedulePage() {
                       {/* Daypart Medicine List */}
                       <div className="space-y-2.5 mt-3">
                         {bucketDoses.length === 0 ? (
-                          <div className="h-28 flex items-center justify-center text-xs text-content-subtle italic">
-                            No doses in {slot.label.toLowerCase()}
-                          </div>
+                          pastFromThisBucket.length > 0 ? (
+                            <div className="h-28 flex flex-col items-center justify-center text-xs text-content-subtle text-center p-2">
+                              <span className="font-semibold text-content-muted">
+                                {pastFromThisBucket.length} overdue {pastFromThisBucket.length === 1 ? 'dose' : 'doses'} in Past Doses drawer
+                              </span>
+                              <span className="text-[11px] mt-1 text-amber-700 dark:text-amber-400 font-bold">
+                                Window closed · Log above
+                              </span>
+                            </div>
+                          ) : allDone ? (
+                            <div className="h-28 flex flex-col items-center justify-center text-xs text-teal-700 dark:text-teal-400 text-center p-2">
+                              <span className="font-bold">✓ All {total} doses logged</span>
+                              <span className="text-[11px] text-content-subtle mt-0.5">Great job!</span>
+                            </div>
+                          ) : (
+                            <div className="h-28 flex items-center justify-center text-xs text-content-subtle italic">
+                              No doses in {slot.label.toLowerCase()}
+                            </div>
+                          )
                         ) : (
                           bucketDoses.map((dose) => {
                             const medicine = medicinesMap[dose.medicine_id];
@@ -1026,6 +1447,11 @@ export function TodaySchedulePage() {
                             const isSkipped = dose.status === 'skipped';
                             const isMissed = deriveStatusOnRead(dose, new Date()) === 'missed';
                             const stock = inventory[dose.medicine_id];
+                            const mealInst = deriveMealInstruction(
+                              medicine?.with_food,
+                              key,
+                              medicine?.instructions
+                            );
 
                             return (
                               <div
@@ -1070,17 +1496,27 @@ export function TodaySchedulePage() {
 
                                 {/* Bottom action bar */}
                                 <div className="pt-2 border-t border-line/60 flex items-center justify-between gap-2">
-                                  <div className="text-[10px] font-bold text-content-subtle">
+                                  <div className="text-[10px] font-bold text-content-subtle min-w-0 flex-1">
                                     {medicine?.with_food === true ? (
-                                      <span className="text-amber-800 dark:text-amber-300 flex items-center gap-0.5">
-                                        <Utensils size={10} /> Food
+                                      <span
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-[10px] sm:text-[11px] font-bold truncate shadow-2xs"
+                                        title={mealInst}
+                                      >
+                                        <Utensils size={11} className="text-amber-700 dark:text-amber-400 shrink-0" />
+                                        <span className="truncate">{mealInst}</span>
                                       </span>
                                     ) : medicine?.with_food === false ? (
-                                      <span className="text-blue-800 dark:text-blue-300 flex items-center gap-0.5">
-                                        <Droplets size={10} /> Empty
+                                      <span
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 text-sky-900 dark:text-sky-200 text-[10px] sm:text-[11px] font-bold truncate shadow-2xs"
+                                        title={mealInst}
+                                      >
+                                        <Droplets size={11} className="text-sky-700 dark:text-sky-400 shrink-0" />
+                                        <span className="truncate">{mealInst}</span>
                                       </span>
                                     ) : (
-                                      'Direct'
+                                      <span className="text-[11px] font-medium text-content-subtle">
+                                        Direct
+                                      </span>
                                     )}
                                   </div>
 
@@ -1212,6 +1648,146 @@ export function TodaySchedulePage() {
             </Button>
           </div>
         </div>
+      </Dialog>
+
+      {/* Late Dose Safety & Dose-Stacking Risk Dialog */}
+      <Dialog
+        open={lateDoseDialogOpen}
+        onOpenChange={(open) => {
+          setLateDoseDialogOpen(open);
+          if (!open) {
+            setActiveDoseForLateCheck(null);
+            setLateDoseStep('prompt');
+            setLateDoseRisk(null);
+          }
+        }}
+        title="Late Dose Safety Check"
+        description={
+          lateDoseStep === 'warning'
+            ? 'Clinical dose-stacking risk alert'
+            : 'Out-of-window administration verification'
+        }
+      >
+        {activeDoseForLateCheck && (
+          <div className="space-y-4 pt-1">
+            {/* Context Medication Card */}
+            {medicinesMap[activeDoseForLateCheck.medicine_id] && (
+              <div className="p-3.5 rounded-2xl bg-surface-sunken border border-line flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <h4 className="font-bold text-content text-sm">
+                    {medicinesMap[activeDoseForLateCheck.medicine_id]?.medicine_name}
+                  </h4>
+                  <p className="text-content-muted text-[11px] mt-0.5">
+                    {medicinesMap[activeDoseForLateCheck.medicine_id]?.strength
+                      ? `${medicinesMap[activeDoseForLateCheck.medicine_id]?.strength} · `
+                      : ''}
+                    {medicinesMap[activeDoseForLateCheck.medicine_id]?.dose_amount || '1 dose'} ·
+                    Scheduled at {formatDoseTime(activeDoseForLateCheck.scheduled_minutes)}
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold text-[11px] border border-amber-500/20 whitespace-nowrap">
+                  Overdue Dose
+                </span>
+              </div>
+            )}
+
+            {lateDoseStep === 'prompt' ? (
+              <div className="space-y-4">
+                <p className="text-sm font-semibold text-content leading-relaxed">
+                  Did you take this dose earlier today, or are you taking it right now?
+                </p>
+
+                <div className="flex flex-col gap-2.5 pt-1">
+                  <Button
+                    variant="secondary"
+                    onClick={handleTookEarlier}
+                    className="w-full justify-start text-xs font-bold py-3 px-4 rounded-xl border-line hover:border-accent hover:bg-surface-hover tap-spring cursor-pointer"
+                  >
+                    <Clock size={15} className="mr-2 text-accent" />
+                    I took it earlier today
+                  </Button>
+
+                  <Button
+                    variant="primary"
+                    onClick={handleTakingNow}
+                    className="w-full justify-start text-xs font-bold py-3 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white tap-spring cursor-pointer"
+                  >
+                    <Check size={15} className="mr-2 stroke-[3]" />
+                    I am taking it right now
+                  </Button>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLateDoseDialogOpen(false)}
+                    className="text-xs text-content-muted"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* High-visibility clinical warning alert */}
+                <div
+                  role="alert"
+                  className="p-4 rounded-2xl bg-amber-500/10 border border-amber-400 dark:border-amber-600/50 text-amber-950 dark:text-amber-100 space-y-2.5"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle
+                      className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"
+                      size={20}
+                    />
+                    <div className="space-y-1.5 flex-1">
+                      <h4 className="text-sm font-black tracking-tight text-amber-900 dark:text-amber-200">
+                        Clinical Warning: Dose Stacking Risk
+                      </h4>
+                      <p className="text-xs font-semibold leading-relaxed">
+                        Warning: Taking this dose right now is very close to your upcoming dose. Taking doses too close together can lead to accidental double-dosing or side effects.
+                      </p>
+                      {lateDoseRisk?.message && (
+                        <p className="text-xs text-amber-900/90 dark:text-amber-200/90 bg-amber-500/10 p-2.5 rounded-xl border border-amber-400/30 leading-relaxed font-medium">
+                          {lateDoseRisk.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Two clear actions */}
+                <div className="flex flex-col gap-2.5 pt-1">
+                  <Button
+                    variant="secondary"
+                    onClick={handleSkipPerSafety}
+                    className="w-full text-xs font-bold py-2.5 rounded-xl border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-100 hover:bg-amber-100/60 tap-spring cursor-pointer"
+                  >
+                    Skip this dose per safety advice
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleTakeAnyway}
+                    className="w-full text-xs font-bold py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white tap-spring cursor-pointer"
+                  >
+                    Take anyway
+                  </Button>
+                </div>
+
+                <div className="pt-1 flex justify-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLateDoseStep('prompt')}
+                    className="text-xs text-content-muted"
+                  >
+                    ← Back to options
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Dialog>
     </AppShell>
   );

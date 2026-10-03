@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { MessageCircle } from 'lucide-react';
 import { AppShell } from '../../components/layout/AppShell';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/ui/Button';
@@ -15,11 +16,11 @@ import { ErrorState } from '../../components/ui/ErrorState';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { PackageIcon, PlusIcon, CheckIcon, MedicineIcon } from '../../components/ui/icons';
-import { MessageCircle } from 'lucide-react';
 import { MedicineOrderModal } from '../../components/medicines/MedicineOrderModal';
 import { useAuth } from '../../lib/auth/AuthContext';
-import { medicinesRepo, dosesRepo } from '../../lib/db';
+import { medicinesRepo } from '../../lib/db';
 import { readInventory, writeInventory } from '../../lib/inventory';
+import { discontinueMedication, logPrnDose } from '../../domain/medicationRegimen';
 import { todayInAppTz, addDaysAppTz, formatDateShort, formatDateMedium } from '../../lib/time';
 import { isActive, recentlyFinishedMedicines } from '../../domain/activeMedicines';
 import { defaultDoseTimes, parseFrequency, type FrequencyCode } from '../../domain/frequency';
@@ -130,15 +131,12 @@ export function MedicineCabinetPage() {
     if (!discontinueTarget) return;
     const name = discontinueTarget.medicine_name;
     try {
-      await medicinesRepo.discontinueMedicine(discontinueTarget.id, new Date().toISOString());
-      await dosesRepo.deleteFuturePendingDoses(discontinueTarget.id, todayStr);
+      await discontinueMedication(discontinueTarget.id, effectiveProfileId, todayStr);
       setDiscontinueTarget(null);
       setToast({ message: `Stopped ${name}. Future doses removed.`, tone: 'ok' });
       await loadMedicines();
     } catch (err: unknown) {
       console.error(err);
-      // Previously this only reached the console, so a failed write looked
-      // exactly like a successful one.
       setToast({
         message: err instanceof Error ? err.message : `Could not stop ${name}. Please try again.`,
         tone: 'risk',
@@ -148,22 +146,14 @@ export function MedicineCabinetPage() {
 
   const handleLogPrnDose = async (med: Medicine) => {
     try {
-      const now = new Date();
-      await dosesRepo.createDoses([
-        {
-          user_id: effectiveUserId,
-          profile_id: effectiveProfileId,
-          medicine_id: med.id,
-          scheduled_date: todayStr,
-          scheduled_minutes: now.getHours() * 60 + now.getMinutes(),
-          status: 'taken',
-          taken_at: now.toISOString(),
-        },
-      ]);
+      await logPrnDose({
+        medicineId: med.id,
+        profileId: effectiveProfileId,
+        userId: effectiveUserId,
+        dateStr: todayStr,
+      });
 
-      const current = countFor(med);
-      if (current > 0) saveInventory({ ...inventory, [med.id]: current - 1 });
-
+      setInventory(readInventory(effectiveProfileId));
       setToast({ message: `Logged a dose of ${med.medicine_name}.`, tone: 'ok' });
     } catch (err: unknown) {
       console.error(err);

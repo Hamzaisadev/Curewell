@@ -21,6 +21,7 @@ const toneStyles = {
   },
   evening: { icon: 'text-slot-evening-text bg-slot-evening-bg border border-slot-evening-border' },
   night: { icon: 'text-slot-night-text bg-slot-night-bg border border-slot-night-border' },
+  bedtime: { icon: 'text-slot-night-text bg-slot-night-bg border border-slot-night-border' },
 };
 
 /**

@@ -57,6 +57,24 @@ export async function getDefaultProfile(userId: string): Promise<Profile | null>
   }
 }
 
+export async function getProfileById(profileId: string): Promise<Profile | null> {
+  if (!profileId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', profileId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ?? null;
+  } catch (err) {
+    console.warn('getProfileById failed, falling back to local store:', err);
+    const local = getLocalItems<Profile>('profiles');
+    return local.find((p) => p.id === profileId) ?? null;
+  }
+}
+
 export async function listProfiles(userId: string): Promise<Profile[]> {
   return listWithFallback<Profile>(
     'listProfiles',

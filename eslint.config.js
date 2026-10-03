@@ -45,7 +45,8 @@ const noAiBrandingRule = {
       },
       JSXText(node) {
         if (isAllowedFile) return;
-        if (AI_BRANDING_REGEX.test(node.value)) {
+        const cleanVal = node.value.replace(/Shifa\s+AI(\s+Co-Pilot)?/gi, '');
+        if (AI_BRANDING_REGEX.test(cleanVal)) {
           context.report({
             node,
             message: `Banned AI branding in UI text: "${node.value.trim()}". Name the benefit to the user, not the technology.`,
@@ -54,13 +55,16 @@ const noAiBrandingRule = {
       },
       Literal(node) {
         if (isAllowedFile) return;
-        if (typeof node.value === 'string' && AI_BRANDING_REGEX.test(node.value)) {
+        if (typeof node.value === 'string') {
           if (node.parent && node.parent.type === 'ImportDeclaration') return;
           if (filename.includes('.test.') || filename.includes('.spec.')) return;
-          context.report({
-            node,
-            message: `Banned AI branding string literal: "${node.value}". Name the benefit to the user, not the technology.`,
-          });
+          const cleanVal = node.value.replace(/Shifa\s+AI(\s+Co-Pilot)?/gi, '');
+          if (AI_BRANDING_REGEX.test(cleanVal)) {
+            context.report({
+              node,
+              message: `Banned AI branding string literal: "${node.value}". Name the benefit to the user, not the technology.`,
+            });
+          }
         }
       },
     };

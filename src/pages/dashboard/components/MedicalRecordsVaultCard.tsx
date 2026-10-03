@@ -6,6 +6,16 @@ import type { Report } from '../../../lib/db/reports';
 import { formatDateMedium } from '../../../lib/time';
 import { FolderIcon, ChevronRightIcon } from '../../../components/ui/icons';
 
+function formatReportDateSafe(dateStr: string | null | undefined, dobStr: string | null | undefined): string {
+  if (!dateStr) return 'Recent upload';
+  const rYear = new Date(dateStr).getFullYear();
+  const bYear = dobStr ? new Date(dobStr).getFullYear() : 0;
+  if (bYear > 0 && rYear < bYear) {
+    return 'Date pending verification';
+  }
+  return formatDateMedium(dateStr);
+}
+
 export function MedicalRecordsVaultCard() {
   const { profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
@@ -43,14 +53,14 @@ export function MedicalRecordsVaultCard() {
             <span className="text-teal-600 dark:text-teal-400">
               <FolderIcon size={16} />
             </span>
-            <h2 className="text-xs font-bold text-content tracking-tight uppercase tracking-wider text-content-muted">
-              Records Vault
+            <h2 className="text-xs font-bold text-content uppercase tracking-wider text-content-muted">
+              Diagnostic Records Vault
             </h2>
           </div>
 
           <Link
             to="/reports"
-            className="text-2xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline flex items-center gap-0.5"
+            className="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline flex items-center gap-0.5"
           >
             <span>All Files</span>
             <ChevronRightIcon size={13} />
@@ -69,25 +79,25 @@ export function MedicalRecordsVaultCard() {
               <Link
                 key={r.id}
                 to={`/reports/${r.id}`}
-                className="p-2 rounded-xl bg-surface-sunken/50 dark:bg-ink-900/30 border border-line/40 flex items-center justify-between gap-2 hover:border-brand-500/40 transition-colors group"
+                className="p-3 rounded-2xl bg-surface-sunken/60 dark:bg-ink-900/30 border border-line/40 flex items-center justify-between gap-3 hover:border-brand-500/40 transition-colors group"
               >
                 <div className="min-w-0">
                   <h4 className="text-xs font-bold text-content truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                     {r.title || r.lab_name || 'Diagnostic Report'}
                   </h4>
-                  <p className="text-[10px] text-content-subtle font-mono">
-                    {r.report_date ? formatDateMedium(r.report_date) : 'Recent upload'}
+                  <p className="text-[11px] text-content-subtle font-mono mt-0.5">
+                    {formatReportDateSafe(r.report_date, profile?.date_of_birth)}
                   </p>
                 </div>
-                <span className="text-2xs text-brand-600 font-bold group-hover:underline shrink-0">
+                <span className="text-xs text-brand-600 font-bold group-hover:underline shrink-0">
                   View &rarr;
                 </span>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="py-3 text-center">
-            <p className="text-2xs text-content-muted">No diagnostic files uploaded yet</p>
+          <div className="py-4 text-center">
+            <p className="text-xs text-content-muted">No diagnostic files uploaded yet</p>
             <Link
               to="/reports/new"
               className="inline-block mt-1 text-2xs font-bold text-brand-600 hover:underline"
@@ -99,7 +109,7 @@ export function MedicalRecordsVaultCard() {
       </div>
 
       <div className="pt-2 mt-3 border-t border-line/40 flex items-center justify-between text-2xs text-content-subtle">
-        <span>Scans &amp; Lab PDFs</span>
+        <span>Lab scans &amp; pathology PDFs</span>
         <Link to="/reports/new" className="font-bold text-brand-600 hover:underline">
           + Add File &rarr;
         </Link>

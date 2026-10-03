@@ -20,6 +20,8 @@ export interface NavItem {
   /** One-line explanation, shown in menus and the mobile sheet. */
   description?: string;
   icon: (size: number) => ReactNode;
+  /** Prominent badge / pill styling (used for Shifa AI co-pilot). */
+  prominent?: boolean;
 }
 
 /**
@@ -36,6 +38,13 @@ export const PRIMARY_NAV: NavItem[] = [
   { label: 'Schedule', path: '/medicines', icon: (s) => <MedicineIcon size={s} /> },
   { label: 'Timeline', path: '/timeline', icon: (s) => <StethoscopeIcon size={s} /> },
   {
+    label: 'Shifa AI',
+    path: '/assistant',
+    description: 'Clinical health co-pilot and medication interactions',
+    icon: (s) => <SparklesIcon size={s} />,
+    prominent: true,
+  },
+  {
     label: 'Lab reports',
     path: '/reports',
     description: 'Test records and biomarker trends',
@@ -47,7 +56,6 @@ export const PRIMARY_NAV: NavItem[] = [
     description: 'Emergency red flags and specialist guide',
     icon: (s) => <AlertTriangleIcon size={s} />,
   },
-  { label: 'Assistant', path: '/assistant', icon: (s) => <SparklesIcon size={s} /> },
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
@@ -101,8 +109,13 @@ export const SECONDARY_NAV: NavItem[] = [
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
   { label: 'Home', path: '/', icon: (s) => <HomeIcon size={s} /> },
   { label: 'Schedule', path: '/medicines', icon: (s) => <MedicineIcon size={s} /> },
+  {
+    label: 'Shifa AI',
+    path: '/assistant',
+    icon: (s) => <SparklesIcon size={s} />,
+    prominent: true,
+  },
   { label: 'Timeline', path: '/timeline', icon: (s) => <StethoscopeIcon size={s} /> },
-  { label: 'Assistant', path: '/assistant', icon: (s) => <SparklesIcon size={s} /> },
 ];
 
 /**

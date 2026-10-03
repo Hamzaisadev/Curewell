@@ -319,6 +319,16 @@ export function MoonIcon(props: IconProps) {
   );
 }
 
+export function BedtimeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      <path d="M19 3v4" />
+      <path d="M21 5h-4" />
+    </Icon>
+  );
+}
+
 export function ClockIcon(props: IconProps) {
   return (
     <Icon {...props}>

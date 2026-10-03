@@ -82,7 +82,6 @@ function DirectCounter({ target, duration = 900, suffix = '', delay = 0, active 
 
 export function HeroMetricsStrip() {
   const stripRef = useRef<HTMLDivElement>(null);
-  // Viewport trigger using native IntersectionObserver
   const isInView = useInViewport(stripRef, { threshold: 0.2, once: true });
 
   return (
@@ -97,21 +96,22 @@ export function HeroMetricsStrip() {
       {/* Metric 1: 100% Patient Controlled */}
       <motion.div
         variants={cardVariants}
-        whileHover={{ y: -3, transition: { duration: 0.15 } }}
-        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-teal-300 shadow-xs hover:shadow-sm transition-all duration-200 text-left group relative overflow-hidden"
+        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-900/5 shadow-xs transition-all duration-300 text-left group relative overflow-hidden"
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-50 to-transparent rounded-bl-full pointer-events-none -mr-4 -mt-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+        <div className="flex items-center justify-between mb-2 relative z-10">
           <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight flex items-baseline">
             <DirectCounter target={100} suffix="%" duration={1100} delay={150} active={isInView} />
           </span>
-          <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 group-hover:scale-110 transition-transform">
             <ShieldIcon className="w-4 h-4" />
           </div>
         </div>
-        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors">
+        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors relative z-10">
           Patient-Controlled
         </p>
-        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug relative z-10">
           Every AI extraction requires your manual review and approval
         </p>
       </motion.div>
@@ -119,10 +119,11 @@ export function HeroMetricsStrip() {
       {/* Metric 2: 0 Silent AI Commits */}
       <motion.div
         variants={cardVariants}
-        whileHover={{ y: -3, transition: { duration: 0.15 } }}
-        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-teal-300 shadow-xs hover:shadow-sm transition-all duration-200 text-left group relative overflow-hidden"
+        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-900/5 shadow-xs transition-all duration-300 text-left group relative overflow-hidden"
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-50 to-transparent rounded-bl-full pointer-events-none -mr-4 -mt-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+        <div className="flex items-center justify-between mb-2 relative z-10">
           <span className="text-2xl sm:text-3xl font-black text-teal-700 font-mono tracking-tight">
             0
           </span>
@@ -130,10 +131,10 @@ export function HeroMetricsStrip() {
             <SparklesIcon className="w-4 h-4 text-teal-600" />
           </div>
         </div>
-        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors">
+        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors relative z-10">
           Silent AI Commits
         </p>
-        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug relative z-10">
           Zero hallucinated entries; strictly grounded in uploaded records
         </p>
       </motion.div>
@@ -141,10 +142,11 @@ export function HeroMetricsStrip() {
       {/* Metric 3: 10-Sec Emergency Access */}
       <motion.div
         variants={cardVariants}
-        whileHover={{ y: -3, transition: { duration: 0.15 } }}
-        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-teal-300 shadow-xs hover:shadow-sm transition-all duration-200 text-left group relative overflow-hidden"
+        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-900/5 shadow-xs transition-all duration-300 text-left group relative overflow-hidden"
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-50 to-transparent rounded-bl-full pointer-events-none -mr-4 -mt-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+        <div className="flex items-center justify-between mb-2 relative z-10">
           <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight flex items-baseline">
             <DirectCounter target={10} suffix="-Sec" duration={900} delay={250} active={isInView} />
           </span>
@@ -153,10 +155,10 @@ export function HeroMetricsStrip() {
             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600" />
           </span>
         </div>
-        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-900 transition-colors">
+        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-900 transition-colors relative z-10">
           Emergency Access
         </p>
-        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug relative z-10">
           Instant tamper-proof QR telemetry access for paramedics
         </p>
       </motion.div>
@@ -164,21 +166,22 @@ export function HeroMetricsStrip() {
       {/* Metric 4: 256-Bit Encrypted Privacy */}
       <motion.div
         variants={cardVariants}
-        whileHover={{ y: -3, transition: { duration: 0.15 } }}
-        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-teal-300 shadow-xs hover:shadow-sm transition-all duration-200 text-left group relative overflow-hidden"
+        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+        className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-900/5 shadow-xs transition-all duration-300 text-left group relative overflow-hidden"
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-50 to-transparent rounded-bl-full pointer-events-none -mr-4 -mt-4 opacity-50 group-hover:opacity-100 transition-opacity" />
+        <div className="flex items-center justify-between mb-2 relative z-10">
           <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight flex items-baseline">
             <DirectCounter target={256} suffix="-Bit" duration={1200} delay={350} active={isInView} />
           </span>
-          <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 group-hover:scale-110 transition-transform">
             <LockIcon className="w-4 h-4 text-teal-700" />
           </div>
         </div>
-        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors">
+        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors relative z-10">
           Encrypted Privacy
         </p>
-        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug">
+        <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug relative z-10">
           AES-256 vault standard. Health data is never sold or used for ads
         </p>
       </motion.div>

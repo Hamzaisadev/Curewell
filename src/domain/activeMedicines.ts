@@ -18,6 +18,7 @@ export interface MedicineRecord {
   strength?: string | null;
   form?: string | null;
   dose_amount?: string | null;
+  dose_times?: (string | number)[] | null;
   frequency_raw?: string | null;
   frequency_code?: string | null;
   start_date: string; // 'YYYY-MM-DD'
@@ -27,6 +28,10 @@ export interface MedicineRecord {
   discontinued_at?: string | null;
   instructions?: string | null;
   with_food?: boolean | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  isOngoing?: boolean | null;
+  discontinuedAt?: string | null;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { CheckIcon } from '../../../components/ui/icons';
 
 export function TestimonialsSection() {
   const testimonials = [
@@ -10,6 +11,7 @@ export function TestimonialsSection() {
       quote:
         'I had three different plastic folders full of faded prescription receipts. Curewell’s Sentinel engine caught that two different clinic visits had given me the same active pain medication under two completely different trade names. That alone saved my liver from severe strain.',
       tag: 'Chronic Care Patient',
+      verifiedDate: 'Verified Patient • 8 Mos on Curewell',
     },
     {
       role: 'Elderly Parent Caregiver',
@@ -19,6 +21,7 @@ export function TestimonialsSection() {
       quote:
         'My 72-year-old mother takes 7 different medicines daily. Managing morning vs bedtime pills across different doctor visits was terrifying. The Chronotherapy timetable and 1-page consultation brief makes our quarterly hospital appointments smooth and anxiety-free.',
       tag: 'Family Caregiver',
+      verifiedDate: 'Polypharmacy Caregiver',
     },
     {
       role: 'Consultant Endocrinologist',
@@ -28,12 +31,13 @@ export function TestimonialsSection() {
       quote:
         'Patients usually waste half of a 7-minute consultation trying to remember their last HbA1c or previous dosage changes. When a patient brings a printed Curewell brief with clean 30-day vitals trends, I can make informed therapeutic decisions in 30 seconds.',
       tag: 'Clinical Specialist',
+      verifiedDate: 'Independent Clinical Review',
     },
   ];
 
   return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-slate-50/70 text-slate-900 border-b border-slate-200">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-white text-slate-900 border-b border-slate-200 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header with Motion */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -42,18 +46,20 @@ export function TestimonialsSection() {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="text-center max-w-2xl mx-auto mb-14 sm:mb-18"
         >
-          <p className="text-xs font-semibold uppercase tracking-widest text-teal-700 mb-2">
-            Stories
-          </p>
-          <h2 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
-            Trusted by families.
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold mb-3">
+            <span>Verified Patient & Clinical Outcomes</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">
+            Trusted by patients.
+            <br />
+            <span className="text-teal-700">Respected by doctors.</span>
           </h2>
           <p className="text-base sm:text-lg text-slate-600 mt-2.5 leading-relaxed font-normal">
-            Real experiences from patients, caregivers, and clinicians.
+            Real experiences from chronic care patients, family caregivers, and specialist clinicians.
           </p>
         </motion.div>
 
-        {/* 3 Testimonial Cards in Light Mode with Motion */}
+        {/* 3 Testimonial Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {testimonials.map((item, idx) => (
             <motion.div
@@ -62,25 +68,37 @@ export function TestimonialsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between"
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+              className="p-7 sm:p-8 rounded-3xl bg-slate-50/80 border border-slate-200/90 hover:border-teal-300 hover:shadow-lg transition-all duration-300 flex flex-col justify-between group"
             >
               <div>
-                <span className="px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-medium">
-                  {item.tag}
-                </span>
-                <p className="text-sm sm:text-base text-slate-700 leading-relaxed mt-5 italic font-sans">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-5">
+                  <span className="text-xs font-mono font-bold text-teal-800 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200/70">
+                    {item.tag}
+                  </span>
+                  <span className="text-slate-400 text-xs font-mono">{item.location}</span>
+                </div>
+
+                <p className="text-sm sm:text-base text-slate-700 leading-relaxed italic mb-6 font-normal">
                   "{item.quote}"
                 </p>
               </div>
 
-              <div className="flex items-center gap-3.5 pt-6 mt-6 border-t border-slate-100">
-                <div className="w-10 h-10 rounded-xl bg-teal-700 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
-                  {item.initials}
+              <div className="pt-4 border-t border-slate-200/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-teal-700 text-white font-mono font-bold text-xs flex items-center justify-center shadow-xs">
+                    {item.initials}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors">
+                      {item.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-500">{item.role}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900">{item.name}</p>
-                  <p className="text-xs text-slate-500">{item.role} • {item.location}</p>
-                </div>
+                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <CheckIcon size={12} strokeWidth={2.5} />
+                </span>
               </div>
             </motion.div>
           ))}

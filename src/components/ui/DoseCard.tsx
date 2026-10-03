@@ -7,6 +7,7 @@ import { SLOT_META } from './slotMeta';
 import { CheckIcon } from './icons';
 import { bucketOf } from '../../domain/timeBuckets';
 import { mealRelationOf } from '../../domain/mealRelation';
+import { deriveMealInstruction } from '../../domain/schedule';
 import { formatDoseTime } from '../../lib/time';
 import {
   Package,
@@ -35,6 +36,8 @@ export interface DoseCardProps {
   status: DoseStatus;
   withFood?: boolean | null;
   instructions?: string | null;
+  /** Contextual meal guidance (e.g. "Take with or after breakfast", "Take on an empty stomach") */
+  mealInstruction?: string | null;
   skippedReason?: string | null;
   /** Remaining pills, when the cabinet is tracking this medicine. */
   remaining?: number | null;
@@ -76,6 +79,7 @@ export function DoseCard({
   status,
   withFood,
   instructions,
+  mealInstruction,
   skippedReason,
   remaining,
   onTake,
@@ -92,12 +96,23 @@ export function DoseCard({
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
 
-  const slot = SLOT_META[bucketOf(scheduledMinutes)];
+  const bucket = bucketOf(scheduledMinutes);
+  const slot = SLOT_META[bucket];
   const relation = mealRelationOf(withFood);
   const badge = statusBadge[status];
   const isActionable = status === 'pending' || status === 'missed';
   const isOutOfStock = typeof remaining === 'number' && remaining <= 0;
   const isLowStock = typeof remaining === 'number' && remaining > 0 && remaining <= 5;
+
+  const contextualMealInstruction =
+    mealInstruction && mealInstruction.trim().length > 0
+      ? mealInstruction.trim()
+      : deriveMealInstruction(withFood, bucket, instructions);
+
+  const hasSpecificMealInstruction =
+    Boolean(contextualMealInstruction) &&
+    contextualMealInstruction !== 'Meal timing not specified — follow your doctor’s instructions' &&
+    contextualMealInstruction !== 'Not specified';
 
   const toggleExpand = () => {
     if (onToggleExpand) {
@@ -247,16 +262,24 @@ export function DoseCard({
                   </Badge>
                 </span>
               )}
-              {relation === 'with_food' && (
-                <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-300 text-[10px] font-bold">
-                  <Utensils size={10} />
-                  With Food
-                </span>
-              )}
-              {relation === 'empty_stomach' && (
-                <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-blue-900 dark:text-blue-300 text-[10px] font-bold">
-                  <Droplets size={10} />
-                  Empty Stomach
+              {!isExpanded && hasSpecificMealInstruction && (
+                <span
+                  className={clsx(
+                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border transition-colors shadow-2xs',
+                    relation === 'empty_stomach'
+                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200'
+                      : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200'
+                  )}
+                  title={contextualMealInstruction}
+                >
+                  {relation === 'empty_stomach' ? (
+                    <Droplets size={11} className="text-sky-700 dark:text-sky-400 shrink-0" />
+                  ) : (
+                    <Utensils size={11} className="text-amber-700 dark:text-amber-400 shrink-0" />
+                  )}
+                  <span className="truncate max-w-[180px] sm:max-w-[280px]">
+                    {contextualMealInstruction}
+                  </span>
                 </span>
               )}
             </div>
@@ -363,20 +386,24 @@ export function DoseCard({
                     </span>
                   )}
 
-                  {/* Meal Guidance Pill */}
-                  {relation === 'with_food' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200 text-xs font-bold">
-                      <Utensils size={12} />
-                      Take with Food
+                  {/* Meal Guidance Callout */}
+                  {hasSpecificMealInstruction ? (
+                    <span
+                      className={clsx(
+                        'inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border shadow-2xs',
+                        relation === 'empty_stomach'
+                          ? 'bg-sky-100 dark:bg-sky-950/60 border-sky-300 dark:border-sky-700 text-sky-950 dark:text-sky-200'
+                          : 'bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200'
+                      )}
+                    >
+                      {relation === 'empty_stomach' ? (
+                        <Droplets size={12} className="text-sky-700 dark:text-sky-400" />
+                      ) : (
+                        <Utensils size={12} className="text-amber-700 dark:text-amber-400" />
+                      )}
+                      {contextualMealInstruction}
                     </span>
-                  )}
-                  {relation === 'empty_stomach' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-100 dark:bg-blue-950/60 border border-blue-300 dark:border-blue-700 text-blue-950 dark:text-blue-200 text-xs font-bold">
-                      <Droplets size={12} />
-                      Empty Stomach
-                    </span>
-                  )}
-                  {relation === 'unspecified' && !badge && (
+                  ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-surface-sunken border border-line text-content-subtle text-xs font-medium">
                       <HelpCircle size={12} />
                       As directed by physician
@@ -392,8 +419,8 @@ export function DoseCard({
                 )}
               </div>
 
-              {/* Special Clinical Instructions (if present) */}
-              {instructions && (
+              {/* Special Clinical Instructions (if present and distinct from meal callout) */}
+              {instructions && instructions.trim().toLowerCase() !== contextualMealInstruction?.toLowerCase() && (
                 <div className="text-xs text-content-muted bg-surface-sunken border border-line/60 rounded-xl px-3 py-2 flex items-start gap-2 leading-relaxed">
                   <FileText size={14} className="text-accent shrink-0 mt-0.5" />
                   <span>{instructions}</span>

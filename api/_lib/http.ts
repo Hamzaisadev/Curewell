@@ -48,6 +48,19 @@ export function sendError(res: ServerResponse, context: string, err: unknown): v
     return;
   }
 
+  // Detect rate limit / quota exhaustion from AI providers
+  const status = (err as any)?.status || (err as any)?.code;
+  const isRateLimit =
+    status === 429 ||
+    /quota|rate limit|resource_exhausted|429/i.test(message);
+
+  if (isRateLimit) {
+    sendJson(res, 429, {
+      error: 'AI service quota or rate limit reached. Please wait a moment before trying again.',
+    });
+    return;
+  }
+
   sendJson(res, 500, { error: 'Something went wrong handling that request. Please try again.' });
 }
 

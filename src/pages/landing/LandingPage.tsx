@@ -1,5 +1,6 @@
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
+import { ClinicalProtocolMarquee } from './components/ClinicalProtocolMarquee';
 import { ClinicalBentoGrid } from './components/ClinicalBentoGrid';
 import { ProblemVsSolutionSection } from './components/ProblemVsSolutionSection';
 import { ShifaAiClinicalTerminal } from './components/ShifaAiClinicalTerminal';
@@ -18,38 +19,41 @@ export function LandingPage() {
       <Navbar />
 
       <main>
-        {/* 2. Hero Section with Blueprint Canvas & Proof Metrics */}
+        {/* 2. Hero Section with 3D Perspective Vault Stage & Proof Metrics */}
         <HeroSection />
 
-        {/* 3. The Clinical Bento Grid — Award-Grade Core Architecture */}
+        {/* 3. Clinical Protocol Infinite Marquee */}
+        <ClinicalProtocolMarquee />
+
+        {/* 4. The Clinical Bento Grid — Interactive Living Health Vault */}
         <ClinicalBentoGrid />
 
-        {/* 4. Problem vs Solution: Broken Paper Reality vs Curewell Standard */}
+        {/* 5. Problem vs Solution: Broken Paper Reality vs Curewell Standard */}
         <ProblemVsSolutionSection />
 
-        {/* 5. Shifa AI Clinical Intelligence Co-Pilot Terminal */}
+        {/* 6. Shifa AI Clinical Intelligence Co-Pilot Terminal */}
         <ShifaAiClinicalTerminal />
 
-        {/* 6. Comparison Matrix: Generic AI vs Curewell + Shifa AI */}
+        {/* 7. Comparison Matrix: Generic AI vs Curewell + Shifa AI */}
         <ComparisonMatrixSection />
 
-        {/* 7. Clinical Vitals Telemetry & Automatic Staging */}
+        {/* 8. Interactive Clinical Vitals Telemetry Lab & Automatic Staging */}
         <VitalsTelemetrySection />
 
-        {/* 8. Bank-Grade Security & Zero-Knowledge Privacy Vault */}
+        {/* 9. Bank-Grade Security & Zero-Knowledge Privacy Vault */}
         <PrivacyVaultSection />
 
-        {/* 9. Patient & Physician Testimonials */}
+        {/* 10. Patient & Physician Testimonials */}
         <TestimonialsSection />
 
-        {/* 10. Frequently Asked Questions Accordion */}
+        {/* 11. Frequently Asked Questions Accordion */}
         <FaqSection />
 
-        {/* 11. Final Conversion Call to Action */}
+        {/* 12. Final Conversion Call to Action */}
         <FinalCtaSection />
       </main>
 
-      {/* 12. Clinical Disclaimer, Sitemap & Social Placeholders */}
+      {/* 13. Clinical Disclaimer, Sitemap & Network Telemetry */}
       <Footer />
     </div>
   );

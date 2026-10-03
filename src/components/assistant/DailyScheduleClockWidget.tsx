@@ -21,13 +21,32 @@ export interface DailyScheduleSlot {
 
 interface DailyScheduleClockWidgetProps {
   slots: DailyScheduleSlot[];
+  onMarkTaken?: (slot: DailyScheduleSlot) => Promise<boolean>;
 }
 
-export function DailyScheduleClockWidget({ slots }: DailyScheduleClockWidgetProps) {
+export function DailyScheduleClockWidget({ slots, onMarkTaken }: DailyScheduleClockWidgetProps) {
   const [takenMap, setTakenMap] = useState<Record<number, boolean>>({});
+  const [isPending, setIsPending] = useState<number | null>(null);
 
-  const toggleTaken = (idx: number) => {
-    setTakenMap((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  const toggleTaken = async (idx: number, slot: DailyScheduleSlot) => {
+    if (takenMap[idx]) {
+      setTakenMap((prev) => ({ ...prev, [idx]: false }));
+      return;
+    }
+
+    if (onMarkTaken) {
+      setIsPending(idx);
+      try {
+        const ok = await onMarkTaken(slot);
+        if (ok) {
+          setTakenMap((prev) => ({ ...prev, [idx]: true }));
+        }
+      } finally {
+        setIsPending(null);
+      }
+    } else {
+      setTakenMap((prev) => ({ ...prev, [idx]: true }));
+    }
   };
 
   const getPeriodIcon = (period: string) => {
@@ -103,8 +122,9 @@ export function DailyScheduleClockWidget({ slots }: DailyScheduleClockWidgetProp
 
                 <button
                   type="button"
-                  onClick={() => toggleTaken(idx)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 cursor-pointer ${
+                  disabled={isPending === idx}
+                  onClick={() => toggleTaken(idx, slot)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 cursor-pointer disabled:opacity-50 ${
                     isTaken
                       ? 'bg-ok-bg text-ok-text border border-ok-border'
                       : 'bg-surface-raised text-content border border-line hover:border-accent hover:text-accent shadow-2xs'
@@ -114,6 +134,8 @@ export function DailyScheduleClockWidget({ slots }: DailyScheduleClockWidgetProp
                     <>
                       <CheckIcon size={12} className="text-ok-text" /> Taken
                     </>
+                  ) : isPending === idx ? (
+                    'Saving...'
                   ) : (
                     'Mark Taken'
                   )}

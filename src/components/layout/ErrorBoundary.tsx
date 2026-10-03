@@ -17,7 +17,7 @@ interface State {
 const QUICK_LINKS = [
   { href: '/medicines', label: 'Schedule' },
   { href: '/timeline', label: 'Timeline' },
-  { href: '/assistant', label: 'Assistant' },
+  { href: '/assistant', label: 'Shifa AI' },
   { href: '/settings', label: 'Settings' },
 ];
 

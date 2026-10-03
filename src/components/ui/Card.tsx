@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export type CardAccent = 'none' | 'accent' | 'ok' | 'warn' | 'risk' | 'info' | 'morning' | 'afternoon' | 'evening' | 'night';
+export type CardAccent = 'none' | 'accent' | 'ok' | 'warn' | 'risk' | 'info' | 'morning' | 'afternoon' | 'evening' | 'night' | 'bedtime';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   header?: React.ReactNode;
@@ -28,6 +28,7 @@ const accentRail: Record<CardAccent, string> = {
   afternoon: 'before:bg-slot-afternoon-border',
   evening: 'before:bg-slot-evening-border',
   night: 'before:bg-slot-night-border',
+  bedtime: 'before:bg-slot-night-border',
 };
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(

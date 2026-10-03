@@ -78,6 +78,33 @@ export function TopBar() {
         <nav className="hidden md:flex items-center gap-0.5 lg:gap-1" aria-label="Main">
           {PRIMARY_NAV.map((link) => {
             const active = isNavItemActive(link.path, location.pathname);
+
+            if (link.prominent) {
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  aria-current={active ? 'page' : undefined}
+                  className={clsx(
+                    'group relative inline-flex items-center gap-1.5 px-3 py-1.5 mx-0.5 lg:mx-1 text-xs font-bold rounded-full transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs',
+                    active
+                      ? 'bg-accent text-content-onaccent shadow-sm border border-accent ring-2 ring-accent/25'
+                      : 'bg-accent-subtle/70 text-accent-onsubtle border border-accent/30 hover:border-accent hover:bg-accent-subtle hover:shadow-xs'
+                  )}
+                >
+                  <span
+                    className={clsx(
+                      'shrink-0 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-6',
+                      active ? 'text-content-onaccent' : 'text-accent'
+                    )}
+                  >
+                    {link.icon(14)}
+                  </span>
+                  <span>{link.label}</span>
+                </Link>
+              );
+            }
+
             return (
               <Link
                 key={link.path}

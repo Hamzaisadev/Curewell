@@ -171,4 +171,79 @@ describe('DoseCard (Expandable Accordion Item)', () => {
     fireEvent.click(undoBtn);
     expect(handleUndo).toHaveBeenCalledTimes(1);
   });
+
+  it('prominently renders contextual meal badges when withFood is true or false', () => {
+    const { rerender } = render(
+      <DoseCard
+        medicineName="Metformin"
+        strength="500 mg"
+        scheduledMinutes={480} // morning
+        status="pending"
+        withFood={true}
+      />
+    );
+
+    // Contextual badge for morning withFood=true
+    expect(screen.getByText('Take with or after breakfast')).toBeInTheDocument();
+
+    // Rerender as afternoon withFood=true
+    rerender(
+      <DoseCard
+        medicineName="Metformin"
+        strength="500 mg"
+        scheduledMinutes={780} // afternoon
+        status="pending"
+        withFood={true}
+      />
+    );
+    expect(screen.getByText('Take with or after lunch')).toBeInTheDocument();
+
+    // Rerender as night withFood=true
+    rerender(
+      <DoseCard
+        medicineName="Metformin"
+        strength="500 mg"
+        scheduledMinutes={1200} // night
+        status="pending"
+        withFood={true}
+      />
+    );
+    expect(screen.getByText('Take with or after dinner')).toBeInTheDocument();
+
+    // Rerender as empty stomach
+    rerender(
+      <DoseCard
+        medicineName="Thyroxine"
+        strength="50 mcg"
+        scheduledMinutes={420}
+        status="pending"
+        withFood={false}
+      />
+    );
+    expect(screen.getByText('Take on an empty stomach')).toBeInTheDocument();
+  });
+
+  it('honors explicit mealInstruction prop and doctor instruction override', () => {
+    const { rerender } = render(
+      <DoseCard
+        medicineName="Aspirin"
+        scheduledMinutes={1200}
+        status="pending"
+        mealInstruction="Take after dinner"
+      />
+    );
+
+    expect(screen.getByText('Take after dinner')).toBeInTheDocument();
+
+    rerender(
+      <DoseCard
+        medicineName="Antacid"
+        scheduledMinutes={1260}
+        status="pending"
+        instructions="Take 30 mins before dinner"
+      />
+    );
+
+    expect(screen.getByText('Take 30 mins before dinner')).toBeInTheDocument();
+  });
 });

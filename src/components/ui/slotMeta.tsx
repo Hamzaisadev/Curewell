@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { Bucket } from '../../domain/timeBuckets';
-import { BUCKET_DEFINITIONS } from '../../domain/timeBuckets';
+import { BUCKET_DEFINITIONS, getBucketTimeRange } from '../../domain/timeBuckets';
 import type { MealRelation } from '../../domain/mealRelation';
-import { SunriseIcon, SunIcon, MoonIcon, MealIcon, ClockIcon, InfoIcon } from './icons';
+import { SunriseIcon, SunIcon, MoonIcon, BedtimeIcon, MealIcon, ClockIcon, InfoIcon } from './icons';
 
 /**
  * Presentation metadata for time-of-day buckets.
@@ -15,7 +15,7 @@ export interface SlotMeta {
   key: Bucket;
   label: string;
   timeRange: string;
-  tone: 'morning' | 'afternoon' | 'night';
+  tone: 'morning' | 'afternoon' | 'night' | 'bedtime';
   icon: (size: number) => ReactNode;
   /** Tailwind classes for a tinted surface in this slot's colour. */
   surface: string;
@@ -54,7 +54,29 @@ export const SLOT_META: Record<Bucket, SlotMeta> = {
     text: 'text-slot-night-text',
     border: 'border-slot-night-border',
   },
+  bedtime: {
+    key: 'bedtime',
+    label: BUCKET_DEFINITIONS.bedtime.label,
+    timeRange: BUCKET_DEFINITIONS.bedtime.timeRange,
+    tone: 'bedtime',
+    icon: (size) => <BedtimeIcon size={size} />,
+    surface: 'bg-slot-bedtime-bg',
+    text: 'text-slot-bedtime-text',
+    border: 'border-slot-bedtime-border',
+  },
 };
+
+/**
+ * Returns dynamic slot meta with the correct time range depending on whether
+ * bedtime is active (since Night's window is 17:00–21:59 if bedtime is active, or 17:00–04:59 otherwise).
+ */
+export function getSlotMeta(bucket: Bucket, hasBedtime = false): SlotMeta {
+  const meta = SLOT_META[bucket];
+  return {
+    ...meta,
+    timeRange: getBucketTimeRange(bucket, hasBedtime),
+  };
+}
 
 /** Icon for a meal relation, paired with `mealRelationInstruction` for the text. */
 export function mealRelationIcon(relation: MealRelation, size = 14): ReactNode {

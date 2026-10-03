@@ -16,72 +16,15 @@ import {
   ClockIcon,
   ReceiptIcon,
 } from '../ui/icons';
-import { sideEffectsRepo, testOrdersRepo, visitsRepo, medicinesRepo } from '../../lib/db';
-import { todayInAppTz, addDaysAppTz } from '../../lib/time';
+import { todayInAppTz } from '../../lib/time';
+import {
+  executeClinicalAction,
+  type ClinicalActionCall,
+  type ClinicalActionType,
+  type ClinicalActionData,
+} from '../../domain/clinicalActionExecutor';
 
-export interface ClinicalActionCall {
-  type:
-    | 'log_symptom'
-    | 'adjust_schedule'
-    | 'create_refill'
-    | 'schedule_followup'
-    | 'otc_compatibility'
-    | 'emergency_triage'
-    | 'missed_dose'
-    | 'caregiver_brief'
-    | 'generic_substitution'
-    | 'pre_op_cessation'
-    | 'pregnancy_lactation'
-    | 'travel_timezone'
-    | 'log_expense';
-  title?: string;
-  data: {
-    symptom?: string;
-    medicine_name?: string;
-    new_time?: string;
-    meal_relation?: string;
-    adjustment_reason?: string;
-    severity?: 'mild' | 'moderate' | 'severe';
-    shiftDetails?: string;
-    pillCount?: number;
-    dailyDose?: number;
-    daysRemaining?: number;
-    doctor_name?: string;
-    followupDate?: string;
-    test_name?: string;
-    otc_name?: string;
-    safety_grade?: 'safe' | 'caution' | 'prohibited';
-    safety_note?: string;
-    safe_alternative?: string;
-    emergency_title?: string;
-    emergency_reasons?: string[];
-    // Receipt & Expense tool data
-    expense_title?: string;
-    expense_category?: 'doctor' | 'medicine' | 'lab' | 'other';
-    expense_amount?: number;
-    expense_currency?: string;
-    expense_date?: string;
-    pharmacy_name?: string;
-    receipt_items?: Array<{ name: string; price?: number; quantity?: number }>;
-    // Catchup / Caregiver / Travel
-    missed_time?: string;
-    catchup_instructions?: string;
-    do_not_double?: boolean;
-    caregiver_message?: string;
-    prescribed_brand?: string;
-    dispensed_brand?: string;
-    generic_name?: string;
-    is_equivalent?: boolean;
-    procedure_name?: string;
-    procedure_date?: string;
-    meds_to_stop?: Array<{ name: string; stop_days_before: number; stop_date: string }>;
-    pregnancy_category?: string;
-    lactation_safety?: string;
-    fetal_risk_summary?: string;
-    destination_city?: string;
-    flight_plan?: Array<{ local_time: string; instruction: string }>;
-  };
-}
+export type { ClinicalActionCall, ClinicalActionType, ClinicalActionData };
 
 interface ClinicalActionCardsProps {
   action: ClinicalActionCall;
@@ -110,24 +53,13 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
     const handleApplySchedule = async () => {
       setIsExecuting(true);
       try {
-        const currentMeds = await medicinesRepo.listMedicines(profileId);
-        const targetMed = currentMeds.find(
-          (m) =>
-            m.medicine_name.toLowerCase().includes((action.data.medicine_name || '').toLowerCase()) ||
-            (action.data.medicine_name || '').toLowerCase().includes(m.medicine_name.toLowerCase())
-        );
-
-        if (targetMed) {
-          const isWithFood =
-            action.data.meal_relation?.toLowerCase().includes('after') ||
-            action.data.meal_relation?.toLowerCase().includes('with');
-          await medicinesRepo.updateMedicine(targetMed.id, {
-            instructions: `${targetMed.instructions || ''} [Updated schedule: ${action.data.new_time || ''} ${action.data.meal_relation || ''}]`.trim(),
-            with_food: isWithFood,
-          });
+        const res = await executeClinicalAction(action, { profileId, userId: effectiveUserId });
+        if (res.success) {
+          setIsDone(true);
+          if (onExecuted) onExecuted(res.message);
+        } else {
+          setToastMsg(res.message);
         }
-        setIsDone(true);
-        if (onExecuted) onExecuted(`Applied schedule adjustment for ${action.data.medicine_name || 'medication'}.`);
       } catch (err) {
         console.error('Failed to update schedule:', err);
       } finally {
@@ -195,16 +127,14 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
     const handleLogSymptom = async () => {
       setIsExecuting(true);
       try {
-        await sideEffectsRepo.createSideEffect({
-          user_id: effectiveUserId,
-          profile_id: profileId,
-          medicine_name: action.data.medicine_name || 'General Health Symptom',
-          note: action.data.symptom || 'Reported symptom',
-          severity: severity,
-          occurred_at: new Date().toISOString(),
-        });
-        setIsDone(true);
-        if (onExecuted) onExecuted(`Symptom "${action.data.symptom}" logged to Medical Timeline.`);
+        const res = await executeClinicalAction(
+          { ...action, data: { ...action.data, severity } },
+          { profileId, userId: effectiveUserId }
+        );
+        if (res.success) {
+          setIsDone(true);
+          if (onExecuted) onExecuted(res.message);
+        }
       } catch (err) {
         console.error('Failed to log symptom:', err);
       } finally {
@@ -479,29 +409,12 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
   if (action.type === 'schedule_followup') {
     const handleSchedule = async () => {
       setIsExecuting(true);
-      const today = todayInAppTz();
-      const targetDate = action.data.followupDate || addDaysAppTz(today, 14);
-
       try {
-        if (action.data.test_name) {
-          await testOrdersRepo.createTestOrder({
-            user_id: effectiveUserId,
-            profile_id: profileId,
-            test_name: action.data.test_name,
-            ordered_date: today,
-            status: 'pending',
-          });
-        } else {
-          await visitsRepo.createVisit({
-            user_id: effectiveUserId,
-            profile_id: profileId,
-            doctor_name: action.data.doctor_name || 'Physician',
-            visit_date: targetDate,
-            diagnosis: 'Follow-up Consultation',
-          });
+        const res = await executeClinicalAction(action, { profileId, userId: effectiveUserId });
+        if (res.success) {
+          setIsDone(true);
+          if (onExecuted) onExecuted(res.message);
         }
-        setIsDone(true);
-        if (onExecuted) onExecuted('Follow-up reminder recorded.');
       } catch (err) {
         console.error('Failed to create reminder:', err);
       } finally {
@@ -700,37 +613,21 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
 
   // 12. Tool: Receipt & Pharmacy Expense OCR Card
   if (action.type === 'log_expense') {
-    const title = action.data.expense_title || `${action.data.pharmacy_name || 'Pharmacy'} Medicine Bill`;
     const amount = action.data.expense_amount || 0;
-    const category = action.data.expense_category || 'medicine';
     const date = action.data.expense_date || todayInAppTz();
     const currency = action.data.expense_currency || 'Rs.';
     const pharmacy = action.data.pharmacy_name;
     const items = action.data.receipt_items || [];
 
-    const handleSaveExpense = () => {
+    const handleSaveExpense = async () => {
       setIsExecuting(true);
       try {
-        const newExpense = {
-          id: `receipt-${Date.now()}`,
-          title,
-          amount,
-          category,
-          date,
-          currency,
-          note: pharmacy ? `Scanned bill from ${pharmacy}` : undefined,
-        };
-
-        const existing =
-          localStorage.getItem('curewell_health_expenses_v1') ||
-          localStorage.getItem('medfolio_health_expenses_v1');
-        const list = existing ? JSON.parse(existing) : [];
-        list.unshift(newExpense);
-        localStorage.setItem('curewell_health_expenses_v1', JSON.stringify(list));
-
-        setIsDone(true);
-        setToastMsg(`Saved ${currency} ${amount.toLocaleString()} to Medical Expense Tracker!`);
-        if (onExecuted) onExecuted(`Expense of ${currency} ${amount.toLocaleString()} logged to Medical Expenses.`);
+        const res = await executeClinicalAction(action, { profileId, userId: effectiveUserId });
+        if (res.success) {
+          setIsDone(true);
+          setToastMsg(`Saved ${currency} ${amount.toLocaleString()} to Medical Expense Tracker!`);
+          if (onExecuted) onExecuted(res.message);
+        }
       } catch (err) {
         console.error('Failed to save expense:', err);
       } finally {

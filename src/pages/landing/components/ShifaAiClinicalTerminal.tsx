@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   SparklesIcon,
   ShieldIcon,
-  ActivityIcon,
   BarChartIcon,
   AlertTriangleIcon,
   LabFlaskIcon,
   DoctorIcon,
+  CheckIcon,
 } from '../../../components/ui/icons';
 
 interface TerminalScenario {
@@ -41,7 +41,7 @@ const TERMINAL_SCENARIOS: TerminalScenario[] = [
     sources: [
       { name: 'Vitals: Fasting Glucose (108 mg/dL)', tag: 'Aug 28', color: 'text-teal-300' },
       { name: 'Prescription: Metformin 500mg BD', tag: 'Active', color: 'text-emerald-300' },
-      { name: 'Lab: HbA1c 6.1%', tag: 'Aug 20', color: 'text-blue-300' },
+      { name: 'Lab: HbA1c 6.1%', tag: 'Aug 20', color: 'text-cyan-300' },
     ],
     suggestedActions: [
       'Show 30-day glucose scatter chart',
@@ -107,8 +107,8 @@ const TERMINAL_SCENARIOS: TerminalScenario[] = [
       '1. [HIGH] Review ALT normalization and confirm whether Metformin 500mg dose should remain at BD. 2. [MEDIUM] Inquire about Vitamin D3 maintenance dose.',
     highlightType: 'info',
     sources: [
-      { name: 'Patient Vault: Complete Record History', tag: 'Verified Only', color: 'text-purple-300' },
-      { name: 'Operating Mode: Patient-Grounded', tag: 'Zero Guesswork', color: 'text-teal-300' },
+      { name: 'Patient Vault: Complete Record History', tag: 'Verified Only', color: 'text-teal-300' },
+      { name: 'Operating Mode: Patient-Grounded', tag: 'Zero Guesswork', color: 'text-emerald-300' },
     ],
     suggestedActions: [
       'Print 1-Page Doctor PDF',
@@ -122,25 +122,34 @@ export function ShifaAiClinicalTerminal() {
   const [selectedScenario, setSelectedScenario] = useState<TerminalScenario>(
     TERMINAL_SCENARIOS[0] as TerminalScenario
   );
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  const handleActionClick = (action: string) => {
+    setActionNotice(`Simulated Action: "${action}" triggered`);
+    setTimeout(() => setActionNotice(null), 3000);
+  };
 
   return (
-    <section id="shifa-ai" className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-slate-50/70 text-slate-900 relative overflow-hidden border-b border-slate-200">
+    <section id="shifa-ai" className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white relative overflow-hidden border-b border-slate-800 scroll-mt-28">
       {/* Millimeter Blueprint Grid Pattern */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-25"
+        className="absolute inset-0 pointer-events-none opacity-10"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(148, 163, 184, 0.25) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(148, 163, 184, 0.25) 1px, transparent 1px)
+            linear-gradient(to right, rgba(20, 184, 166, 0.4) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(20, 184, 166, 0.4) 1px, transparent 1px)
           `,
-          backgroundSize: '28px 28px',
+          backgroundSize: '32px 32px',
         }}
       />
+
+      {/* Ambient glowing radial blur */}
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Left Column: Explainer & Scenario Switcher */}
+          {/* Left Column: Explainer & Interactive Scenario Switcher */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -148,23 +157,27 @@ export function ShifaAiClinicalTerminal() {
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-5 space-y-5"
           >
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold">
-              <SparklesIcon size={14} className="text-teal-700" />
-              <span>Clinical Co-Pilot</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-950/80 border border-teal-500/40 text-teal-300 text-xs font-semibold">
+              <SparklesIcon size={14} className="text-teal-400 animate-pulse" />
+              <span>Grounded Clinical Intelligence</span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.1]">
               Meet Shifa AI.
+              <br />
+              <span className="bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
+                Zero Hallucinations.
+              </span>
             </h2>
 
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-              An intelligent clinical layer grounded strictly in your verified records. It cross-checks blood pressure, glucose logs, lab trajectories, and medication schedules without guessing.
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
+              An intelligent clinical layer grounded strictly in your verified records. It cross-checks blood pressure, glucose logs, lab trajectories, and medication schedules without guessing or making silent commits.
             </p>
 
             {/* Scenario Selector */}
             <div className="space-y-2.5 pt-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Interactive Scenarios:
+              <p className="text-xs font-mono font-bold uppercase tracking-wider text-teal-400">
+                Interactive Clinical Scenarios:
               </p>
               {TERMINAL_SCENARIOS.map((scenario) => {
                 const isActive = selectedScenario.id === scenario.id;
@@ -172,30 +185,30 @@ export function ShifaAiClinicalTerminal() {
                   <button
                     key={scenario.id}
                     onClick={() => setSelectedScenario(scenario)}
-                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between shadow-2xs ${
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                       isActive
-                        ? 'bg-teal-50/80 border-teal-600 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        ? 'bg-slate-800/90 border-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.15)] ring-1 ring-teal-500/40'
+                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                          isActive ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-600'
+                          isActive ? 'bg-teal-600 text-white' : 'bg-slate-800 text-slate-400'
                         }`}
                       >
                         {scenario.icon}
                       </div>
                       <div>
-                        <p className={`text-xs font-bold ${isActive ? 'text-teal-950' : 'text-slate-800'}`}>
+                        <p className={`text-xs font-bold ${isActive ? 'text-white' : 'text-slate-300'}`}>
                           {scenario.label}
                         </p>
-                        <p className="text-[11px] text-slate-500 line-clamp-1">{scenario.userPrompt}</p>
+                        <p className="text-[11px] text-slate-400 line-clamp-1">{scenario.userPrompt}</p>
                       </div>
                     </div>
                     <span
-                      className={`text-[10px] font-medium px-2 py-0.5 rounded shrink-0 ${
-                        isActive ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-600'
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shrink-0 ${
+                        isActive ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40' : 'bg-slate-800 text-slate-400'
                       }`}
                     >
                       {scenario.badge}
@@ -205,114 +218,172 @@ export function ShifaAiClinicalTerminal() {
               })}
             </div>
 
-            <div className="pt-1 flex items-center gap-2 text-xs text-slate-500">
-              <ShieldIcon size={14} className="text-teal-700" />
-              <span>Deterministic record retrieval • Zero silent commits</span>
+            <div className="pt-2 flex items-center gap-2 text-xs font-mono text-slate-400">
+              <ShieldIcon size={14} className="text-teal-400" />
+              <span>100% Patient Approval • Deterministic Grounding</span>
             </div>
           </motion.div>
 
-          {/* Right Column: High-Contrast Terminal Box */}
+          {/* Right Column: High-Contrast Obsidian Terminal Workstation */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.5, delay: 0.15 }}
             className="lg:col-span-7"
           >
-            <div className="bg-slate-950 rounded-3xl border border-slate-800 shadow-xl overflow-hidden text-white">
+            <div className="bg-slate-950 rounded-3xl border border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden text-white relative">
+              {/* Top Specular Line */}
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/60 to-transparent" />
+
               {/* Terminal Title Bar */}
-              <div className="px-5 py-3.5 border-b border-slate-800 bg-slate-900 flex items-center justify-between">
+              <div className="px-5 py-3.5 border-b border-slate-800/90 bg-slate-900/90 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span className="ml-2 text-xs font-mono font-medium text-slate-300">
-                    shifa-clinical-terminal
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500/90" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/90" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/90" />
+                  <span className="ml-2 text-xs font-mono font-bold text-slate-300">
+                    shifa-clinical-engine // v4.0.0
                   </span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-medium">
-                  Connected
-                </span>
+                
+                {/* Audio Wave Visualizer Simulation */}
+                <div className="flex items-center gap-1">
+                  {[4, 12, 8, 16, 10, 6, 14, 8].map((h, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{
+                        height: [h, Math.max(3, (h * 1.6) % 18), h],
+                      }}
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        delay: i * 0.1,
+                      }}
+                      className="w-1 bg-teal-400 rounded-full"
+                      style={{ height: `${h}px` }}
+                    />
+                  ))}
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 ml-2">
+                    ACTIVE
+                  </span>
+                </div>
               </div>
 
               {/* Chat Simulation Area */}
-              <div className="p-5 sm:p-7 space-y-4 bg-slate-950 min-h-[440px]">
-                {/* User Message */}
-                <div className="flex justify-end">
-                  <div className="bg-teal-700 text-white rounded-2xl rounded-br-xs px-4 py-3 max-w-[400px] text-xs leading-relaxed font-medium">
-                    {selectedScenario.userPrompt}
+              <div className="p-5 sm:p-7 space-y-4 bg-slate-950/95 min-h-[460px] flex flex-col justify-between">
+                <div className="space-y-4">
+                  {/* User Query Message */}
+                  <div className="flex justify-end">
+                    <div className="bg-teal-700 text-white rounded-2xl rounded-br-xs px-4 py-3 max-w-[420px] text-xs sm:text-sm leading-relaxed font-medium shadow-md">
+                      {selectedScenario.userPrompt}
+                    </div>
                   </div>
-                </div>
 
-                {/* AI Grounded Response */}
-                <div className="flex justify-start">
-                  <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl rounded-bl-xs p-4 sm:p-5 max-w-[500px] space-y-3 shadow-md">
-                    <p className="text-xs sm:text-sm leading-relaxed text-slate-200">
-                      {selectedScenario.aiResponse}
-                    </p>
-
-                    {/* Integrated Clinical Callout Box */}
-                    <div
-                      className={`p-3.5 rounded-xl border space-y-1 ${
-                        selectedScenario.highlightType === 'alert'
-                          ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
-                          : selectedScenario.highlightType === 'trajectory'
-                          ? 'bg-cyan-950/40 border-cyan-500/40 text-cyan-200'
-                          : selectedScenario.highlightType === 'info'
-                          ? 'bg-purple-950/40 border-purple-500/40 text-purple-200'
-                          : 'bg-teal-950/40 border-teal-500/40 text-teal-200'
-                      }`}
+                  {/* AI Grounded Response */}
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={selectedScenario.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.25 }}
+                      className="flex justify-start"
                     >
-                      <div className="flex items-center gap-1.5 text-xs font-semibold">
-                        <ActivityIcon size={14} />
-                        <span>{selectedScenario.highlightTitle}</span>
-                      </div>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        {selectedScenario.highlightDesc}
-                      </p>
-                    </div>
+                      <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl rounded-bl-xs p-4 sm:p-5 max-w-[540px] space-y-3.5 shadow-xl">
+                        <div className="flex items-center gap-2 text-teal-400 text-xs font-mono font-bold">
+                          <SparklesIcon size={14} className="text-teal-300" />
+                          <span>SHIFA CLINICAL SYNTHESIS:</span>
+                        </div>
 
-                    {/* Verified Record Citations */}
-                    <div className="pt-2 border-t border-slate-800 space-y-1">
-                      <p className="text-[10px] uppercase font-semibold text-slate-400">
-                        Verified Sources in Vault:
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedScenario.sources.map((src, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded bg-black/50 border border-slate-800 text-[10px] text-slate-300 flex items-center gap-1"
-                          >
-                            <span className={src.color}>{src.name}</span>
-                            <span className="text-slate-500">[{src.tag}]</span>
-                          </span>
-                        ))}
+                        <p className="text-xs sm:text-sm leading-relaxed text-slate-200">
+                          {selectedScenario.aiResponse}
+                        </p>
+
+                        {/* Highlight Card */}
+                        <div
+                          className={`p-3.5 rounded-xl border ${
+                            selectedScenario.highlightType === 'alert'
+                              ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                              : 'bg-teal-950/40 border-teal-500/40 text-teal-200'
+                          }`}
+                        >
+                          <p className="text-xs font-bold mb-1 flex items-center gap-1.5 font-mono">
+                            {selectedScenario.highlightType === 'alert' ? (
+                              <AlertTriangleIcon size={14} className="text-rose-400" />
+                            ) : (
+                              <CheckIcon size={14} className="text-teal-400" />
+                            )}
+                            <span>{selectedScenario.highlightTitle}</span>
+                          </p>
+                          <p className="text-xs leading-relaxed text-slate-300 font-sans">
+                            {selectedScenario.highlightDesc}
+                          </p>
+                        </div>
+
+                        {/* Grounded Sources */}
+                        <div className="pt-2 border-t border-slate-800/80">
+                          <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2">
+                            Grounded Verified Records (Zero Hallucinations):
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedScenario.sources.map((source, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300 hover:border-teal-500/50 transition-colors"
+                              >
+                                <span className={source.color}>{source.name}</span>
+                                <span className="text-slate-600">•</span>
+                                <span className="text-slate-400">{source.tag}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Suggested Action Chips */}
+                        <div className="pt-2">
+                          <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2">
+                            Suggested Next Actions:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedScenario.suggestedActions.map((action, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => handleActionClick(action)}
+                                className="px-2.5 py-1 rounded-lg bg-teal-950/70 hover:bg-teal-900 border border-teal-700/50 text-teal-300 text-xs font-medium transition-all hover:scale-[1.02] cursor-pointer"
+                              >
+                                {action} &rarr;
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
 
-                {/* Follow-up Action Suggestions */}
-                <div className="pt-2 space-y-1.5">
-                  <p className="text-[10px] uppercase font-semibold text-slate-500">
-                    Suggested Actions:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedScenario.suggestedActions.map((action, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 hover:text-teal-300 transition-colors cursor-pointer flex items-center gap-1.5"
-                      >
-                        <SparklesIcon size={11} className="text-teal-400" />
-                        {action}
-                      </span>
-                    ))}
-                  </div>
+                {/* Action notice feedback */}
+                {actionNotice && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-2 rounded bg-teal-900/80 border border-teal-500 text-teal-200 text-xs font-mono text-center"
+                  >
+                    {actionNotice}
+                  </motion.div>
+                )}
+
+                {/* Terminal Command Line */}
+                <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <span className="text-teal-400">&gt;</span>
+                    <span className="text-slate-400">RAG_PIPELINE --grounding=100% --zero-silent-commits</span>
+                  </span>
+                  <span className="text-emerald-400">READY</span>
                 </div>
               </div>
             </div>
           </motion.div>
-
         </div>
       </div>
     </section>

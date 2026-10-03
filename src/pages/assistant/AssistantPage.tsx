@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppShell } from '../../components/layout/AppShell';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -24,11 +25,13 @@ import {
   SearchIcon,
   MenuIcon,
 } from '../../components/ui/icons';
-import { medicinesRepo, visitsRepo, reportsRepo, profilesRepo, sideEffectsRepo, vitalsRepo, chatRepo } from '../../lib/db';
+import { medicinesRepo, visitsRepo, reportsRepo, profilesRepo, sideEffectsRepo, vitalsRepo, chatRepo, dosesRepo } from '../../lib/db';
+import { assembleClinicalContext } from '../../domain/patientDossier';
 import type { ChatSession } from '../../lib/db/chat';
 import { activeMedicines, type MedicineRecord } from '../../domain/activeMedicines';
 import type { GlucoseReading, BloodPressureReading } from '../../domain/vitals';
 import { todayInAppTz } from '../../lib/time';
+import { checkRedFlags } from '../../domain/redFlags';
 import { DrugInteractionRadar } from '../../components/assistant/DrugInteractionRadar';
 import { DoctorPrepBrief } from '../../components/assistant/DoctorPrepBrief';
 import { BiomarkerTrajectory } from '../../components/assistant/BiomarkerTrajectory';
@@ -105,19 +108,33 @@ const DEEP_CLINICAL_PROMPTS = [
 ];
 
 function generateTitleFromPrompt(prompt: string): string {
-  const cleaned = prompt.replace(/[^\w\s-]/g, '').trim();
+  const cleaned = prompt.replace(/[^\p{L}\p{N}\s-]/gu, '').trim();
   const words = cleaned.split(/\s+/).slice(0, 6).join(' ');
   if (!words) return 'Health Consultation';
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function parseTimeToMinutes(timeStr: string): number {
+  if (!timeStr) return 480;
+  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return 480;
+  let hh = parseInt(match[1] || '8', 10);
+  const mm = parseInt(match[2] || '0', 10);
+  const meridian = match[3]?.toUpperCase();
+  if (meridian === 'PM' && hh < 12) hh += 12;
+  if (meridian === 'AM' && hh === 12) hh = 0;
+  return hh * 60 + mm;
 }
 
 const getOldChatStorageKey = (profileId: string) => `medfolio_assistant_messages_v3_${profileId || 'default'}`;
 
 export function AssistantPage() {
   const { user, profile: authProfile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'chat' | 'radar' | 'doctor-prep' | 'biomarkers'>('chat');
   const [showContextDrawer, setShowContextDrawer] = useState(false);
   const [showSafetyModal, setShowSafetyModal] = useState(false);
+  const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 768 : true));
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -137,17 +154,35 @@ export function AssistantPage() {
   const [attachedImage, setAttachedImage] = useState<{ base64: string; mime: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [voiceLang, setVoiceLang] = useState<'en' | 'ur'>('en');
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const isNearBottomRef = useRef(true);
   const prevInputRef = useRef('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const keepAliveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleCopyMessage = async (msgId: string, text: string) => {
+  const handleCopyMessage = async (m: Message) => {
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedMsgId(msgId);
+      let fullText = m.content || '';
+      if (m.medicines && m.medicines.length > 0) {
+        fullText += '\n\nExtracted Prescriptions:\n' + m.medicines.map((med) =>
+          `- ${med.medicine_name} ${med.strength || ''} (${med.frequency_raw || ''}, ${med.instructions || ''})`
+        ).join('\n');
+      }
+      if (m.dailySchedule && m.dailySchedule.length > 0) {
+        fullText += '\n\nDaily Schedule:\n' + m.dailySchedule.map((slot) =>
+          `- ${slot.time} (${slot.period}): ${slot.medicine} - ${slot.instructions || slot.mealRelation || ''}`
+        ).join('\n');
+      }
+      if (m.safetyAlerts && m.safetyAlerts.length > 0) {
+        fullText += '\n\nSafety Alerts:\n' + m.safetyAlerts.join('\n');
+      }
+      await navigator.clipboard.writeText(fullText.trim());
+      setCopiedMsgId(m.id);
       setTimeout(() => setCopiedMsgId(null), 2000);
     } catch {
       // ignore
@@ -212,7 +247,10 @@ export function AssistantPage() {
 
       if (dbSessions.length > 0 && dbSessions[0]) {
         setSessions(dbSessions);
-        if (!activeSessionId || !dbSessions.some((s) => s.id === activeSessionId)) {
+        const urlSessionId = searchParams.get('session');
+        if (urlSessionId && dbSessions.some((s) => s.id === urlSessionId)) {
+          setActiveSessionId(urlSessionId);
+        } else if (!activeSessionId || !dbSessions.some((s) => s.id === activeSessionId)) {
           setActiveSessionId(dbSessions[0].id);
         }
       } else {
@@ -279,7 +317,7 @@ export function AssistantPage() {
     } catch (err) {
       console.error('Failed to load chat sessions:', err);
     }
-  }, [effectiveProfileId, effectiveUserId, activeSessionId]);
+  }, [effectiveProfileId, effectiveUserId, activeSessionId, searchParams]);
 
   useEffect(() => {
     loadSessions();
@@ -433,6 +471,15 @@ export function AssistantPage() {
     }
   }, [inChatQuery, matchedMessageIndices.length, scrollToMatch]);
 
+  const handleSelectSession = (id: string) => {
+    setActiveSessionId(id);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('session', id);
+      return next;
+    }, { replace: true });
+  };
+
   const handleNewChat = async () => {
     if (!effectiveUserId || !effectiveProfileId) return;
     try {
@@ -450,6 +497,11 @@ export function AssistantPage() {
       });
       setSessions((prev) => [newSession, ...prev]);
       setActiveSessionId(newSession.id);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('session', newSession.id);
+        return next;
+      }, { replace: true });
       setActiveTab('chat');
     } catch (err) {
       console.error('Failed to create new chat session:', err);
@@ -475,8 +527,14 @@ export function AssistantPage() {
       const remaining = sessions.filter((s) => s.id !== sessionId);
       setSessions(remaining);
       if (activeSessionId === sessionId) {
-        if (remaining.length > 0 && remaining[0]) {
-          setActiveSessionId(remaining[0].id);
+        const nextSession = remaining[0];
+        if (nextSession) {
+          setActiveSessionId(nextSession.id);
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('session', nextSession.id);
+            return next;
+          }, { replace: true });
         } else {
           handleNewChat();
         }
@@ -508,7 +566,47 @@ export function AssistantPage() {
     }
   }, [messages, activeTab, isLoading]);
 
+  // Auto-resize composer textarea as text changes
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+    }
+  }, [input]);
+
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (keepAliveTimerRef.current) {
+      clearInterval(keepAliveTimerRef.current);
+      keepAliveTimerRef.current = null;
+    }
+    setSpeakingMsgId(null);
+    utteranceRef.current = null;
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__currentUtterance = null;
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (recognitionRef.current as any).stop();
+      } catch {
+        // ignore
+      }
+    }
+    setIsRecording(false);
+  }, []);
 
   // Preload synthesis voices on mount
   useEffect(() => {
@@ -525,15 +623,13 @@ export function AssistantPage() {
     }
   }, []);
 
-  // Cancel any ongoing audio synthesis on tab or session change
+  // Cancel any ongoing audio synthesis or recording on tab or session change
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setSpeakingMsgId(null);
-    }
-  }, [activeSessionId, activeTab]);
+    stopSpeaking();
+    stopRecording();
+  }, [activeSessionId, activeTab, stopSpeaking, stopRecording]);
 
-  // Web Speech API - Voice Recognition with non-destructive text appending
+  // Web Speech API - Voice Recognition with Urdu/English bilingual support & continuous mode
   const toggleSpeechRecognition = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -543,25 +639,27 @@ export function AssistantPage() {
     }
 
     if (isRecording) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (recognitionRef.current as any)?.stop();
-      } catch {
-        // ignore
-      }
-      setIsRecording(false);
+      stopRecording();
       return;
     }
 
     try {
       prevInputRef.current = input;
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      recognition.lang = voiceLang === 'ur' ? 'ur-PK' : 'en-US';
+
+      const resetSilenceTimer = () => {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => {
+          stopRecording();
+        }, 4000);
+      };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onresult = (event: any) => {
+        resetSilenceTimer();
         const transcript = Array.from(event.results)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .map((r: any) => r[0].transcript)
@@ -572,30 +670,35 @@ export function AssistantPage() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onerror = (event: any) => {
-        setIsRecording(false);
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+          // Benign browser idle events - do not spam toast or alarm the user
+          return;
+        }
+        stopRecording();
         if (event.error === 'not-allowed') {
-          setToastMessage('Microphone access was denied. Please allow mic permissions.');
+          setToastMessage('Microphone access was denied. Please allow mic permissions in browser settings.');
         } else if (event.error === 'network') {
-          setToastMessage('Speech network error. If using Brave, enable Google Speech in settings.');
+          setToastMessage('Speech network error. If using Brave, enable Google Speech in privacy settings.');
         } else {
-          setToastMessage(`Voice input error: ${event.error || 'Check microphone'}`);
+          setToastMessage(`Voice input notice: ${event.error || 'Check microphone'}`);
         }
       };
 
       recognition.onend = () => {
-        setIsRecording(false);
+        stopRecording();
       };
 
       recognitionRef.current = recognition;
       recognition.start();
       setIsRecording(true);
+      resetSilenceTimer();
     } catch {
-      setIsRecording(false);
+      stopRecording();
       setToastMessage('Could not start voice recognition. Please check permissions.');
     }
   };
 
-  // Text-To-Speech Playback
+  // Text-To-Speech Playback with Urdu script detection & Chrome V8 freeze fix
   const handleToggleSpeak = (msgId: string, text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       setToastMessage('Audio playback not supported in this browser.');
@@ -603,14 +706,11 @@ export function AssistantPage() {
     }
 
     if (speakingMsgId === msgId) {
-      window.speechSynthesis.cancel();
-      setSpeakingMsgId(null);
-      utteranceRef.current = null;
+      stopSpeaking();
       return;
     }
 
-    // Cancel any previous utterance
-    window.speechSynthesis.cancel();
+    stopSpeaking();
 
     // Clean markdown and formatting characters for natural speech
     const cleanText = text
@@ -621,35 +721,61 @@ export function AssistantPage() {
 
     if (!cleanText) return;
 
+    const isUrdu = /[\u0600-\u06FF]/.test(cleanText);
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utteranceRef.current = utterance;
-    utterance.rate = 1.0;
+    // Pin to window to defeat V8 garbage collector premature cancellation bug
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__currentUtterance = utterance;
+
+    utterance.rate = isUrdu ? 0.95 : 1.0;
     utterance.pitch = 1.0;
-    utterance.lang = 'en-US';
+    utterance.lang = isUrdu ? 'ur-PK' : 'en-US';
 
     const voices = window.speechSynthesis.getVoices();
-    const preferredVoice =
-      voices.find((v) => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.default)) ||
-      voices.find((v) => v.lang.startsWith('en'));
+    let preferredVoice: SpeechSynthesisVoice | undefined;
+
+    if (isUrdu) {
+      preferredVoice =
+        voices.find((v) => v.lang === 'ur-PK' || v.lang === 'ur_PK') ||
+        voices.find((v) => v.lang.startsWith('ur')) ||
+        voices.find((v) => v.lang.startsWith('hi')) ||
+        voices.find((v) => v.name.toLowerCase().includes('urdu') || v.name.toLowerCase().includes('hindi'));
+    } else {
+      preferredVoice =
+        voices.find((v) => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.default)) ||
+        voices.find((v) => v.lang.startsWith('en'));
+    }
+
     if (preferredVoice) {
       utterance.voice = preferredVoice;
     }
 
     utterance.onstart = () => {
       setSpeakingMsgId(msgId);
+      // Chrome keep-alive interval: Chrome pauses/kills utterances >15s without this
+      if (keepAliveTimerRef.current) clearInterval(keepAliveTimerRef.current);
+      keepAliveTimerRef.current = setInterval(() => {
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        } else {
+          if (keepAliveTimerRef.current) {
+            clearInterval(keepAliveTimerRef.current);
+            keepAliveTimerRef.current = null;
+          }
+        }
+      }, 10000);
     };
 
     utterance.onend = () => {
-      setSpeakingMsgId(null);
-      utteranceRef.current = null;
+      stopSpeaking();
     };
 
     utterance.onerror = () => {
-      setSpeakingMsgId(null);
-      utteranceRef.current = null;
+      stopSpeaking();
     };
 
-    // Ensure audio isn't in a paused state in Chromium
     if (window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
@@ -728,8 +854,40 @@ export function AssistantPage() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg, initialBotMsg]);
+    // Pre-flight Synchronous Emergency Red-Flag Interlock
+    const redFlagCheck = checkRedFlags(text);
+    const emergencyNotice: Message | null = redFlagCheck.isEmergency
+      ? {
+          id: `emergency-${Date.now()}`,
+          role: 'assistant',
+          content: `🚨 **EMERGENCY MEDICAL WARNING**\n\nThe symptoms you reported (${redFlagCheck.matchedLabels.join(', ')}) require immediate clinical attention.\n\n**Emergency Ambulance & Medical Helplines:**\n- **Rescue 1122:** [Call 1122](tel:1122) (Medical & Disaster Services)\n- **Edhi Ambulance:** [Call 115](tel:115) (Ambulance Relief)\n- **Chhipa Ambulance:** [Call 1020](tel:1020) (Emergency Service)\n\n*Please proceed to the nearest emergency department or call an ambulance immediately. Do not delay emergency medical care for online consultations.*`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          safetyAlerts: [
+            `CRITICAL TRIAGE: Detected red flags for ${redFlagCheck.matchedLabels.join(', ')}. Please contact emergency medical services immediately.`
+          ],
+        }
+      : null;
+
+    if (emergencyNotice) {
+      setMessages((prev) => [...prev, userMsg, emergencyNotice, initialBotMsg]);
+      chatRepo.createMessage({
+        session_id: currentSessionId,
+        user_id: effectiveUserId,
+        profile_id: effectiveProfileId,
+        role: 'assistant',
+        content: emergencyNotice.content,
+        metadata: {
+          safetyAlerts: emergencyNotice.safetyAlerts,
+        },
+      }).catch((err) => console.warn('Failed to persist emergency notice:', err));
+    } else {
+      setMessages((prev) => [...prev, userMsg, initialBotMsg]);
+    }
+
     setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
     const currentImg = attachedImage;
     setAttachedImage(null);
     setIsLoading(true);
@@ -745,80 +903,20 @@ export function AssistantPage() {
     }).catch((err) => console.warn('Failed to persist user message:', err));
 
     try {
-      const reportsWithResults = reports.map((r) => {
-        const results = resultsMap[r.id] || [];
-        return {
-          title: r.title,
-          report_date: r.report_date,
-          results: results.map((res) => ({
-            test_name: res.test_name,
-            value_text: res.value_text,
-            unit: res.unit,
-            reference_range: res.reference_range,
-            range_status: res.range_status,
-          })),
-        };
-      });
-
-      const patientContext = {
-        profile: {
-          full_name: profile?.full_name,
-          sex: profile?.sex,
-          date_of_birth: profile?.date_of_birth,
-          allergies: Array.isArray(profile?.allergies) ? profile.allergies.join(', ') : profile?.allergies,
-          chronic_conditions: Array.isArray(profile?.chronic_conditions) ? profile.chronic_conditions.join(', ') : profile?.chronic_conditions,
-        },
-        activeMedicines: activeMedsList.map((m) => ({
-          medicine_name: m.medicine_name,
-          strength: m.strength,
-          dose_amount: m.dose_amount,
-          frequency_code: m.frequency_code,
-          start_date: m.start_date,
-          is_ongoing: m.is_ongoing,
-          with_food: m.with_food,
-          instructions: m.instructions,
-        })),
-        recentVisits: visits.map((v) => ({
-          doctor_name: v.doctor_name,
-          visit_date: v.visit_date,
-          diagnosis: v.diagnosis,
-          doctor_advice: v.doctor_advice,
-        })),
-        recentReports: reportsWithResults,
-        glucoseLogs: glucoseLogs.map((g) => ({
-          measured_at: g.measured_at,
-          value_mg_dl: g.value_mg_dl,
-          type: g.type,
-          notes: g.notes || null,
-        })),
-        bloodPressureLogs: bpLogs.map((b) => ({
-          measured_at: b.measured_at,
-          systolic: b.systolic,
-          diastolic: b.diastolic,
-          pulse_bpm: b.pulse_bpm ?? null,
-          arm: b.arm ?? null,
-          posture: b.posture ?? null,
-          notes: b.notes || null,
-        })),
-        sideEffectsHistory: sideEffects.map((s) => ({
-          medicine_name: s.medicine_name,
-          note: s.note,
-          severity: s.severity,
-          occurred_at: s.occurred_at,
-        })),
-      };
+      const patientContext = await assembleClinicalContext(effectiveProfileId);
 
       // Retrieve verified Supabase session token for authenticated AI endpoint
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || '';
 
+      // Prune previous historical image payloads to prevent 413 Payload Too Large
       const validHistory = messages
         .filter((m) => Boolean(m.content && m.content.trim().length > 0 && !m.content.startsWith('Sorry, I encountered an issue')))
         .map((m) => ({
           role: m.role,
           content: m.content,
-          image_base64: m.image_base64,
-          image_mime: m.image_mime,
+          image_base64: null,
+          image_mime: null,
         }));
 
       const response = await fetch('/api/chat-assistant', {
@@ -841,7 +939,6 @@ export function AssistantPage() {
           patientContext,
         }),
       });
-
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
@@ -1017,7 +1114,7 @@ export function AssistantPage() {
           onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
           sessions={sessions}
           activeSessionId={activeSessionId}
-          onSelectSession={(id) => setActiveSessionId(id)}
+          onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}
           onRenameSession={handleRenameSession}
           onDeleteSession={handleDeleteSession}
@@ -1121,7 +1218,7 @@ export function AssistantPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleClearChat}
+                  onClick={() => setShowClearConfirmModal(true)}
                   className="p-2 rounded-lg text-content-muted hover:text-risk-text hover:bg-risk-bg transition-colors cursor-pointer"
                   title="Clear conversation"
                 >
@@ -1281,7 +1378,7 @@ export function AssistantPage() {
                                 {m.content && (
                                   <button
                                     type="button"
-                                    onClick={() => handleCopyMessage(m.id, m.content)}
+                                    onClick={() => handleCopyMessage(m)}
                                     className="p-1.5 rounded-lg hover:text-content hover:bg-surface-hover transition-colors text-xs flex items-center gap-1 cursor-pointer"
                                     title="Copy response"
                                   >
@@ -1351,7 +1448,51 @@ export function AssistantPage() {
 
                               {m.dailySchedule && m.dailySchedule.length > 0 && (
                                 <div className="pt-1">
-                                  <DailyScheduleClockWidget slots={m.dailySchedule} />
+                                  <DailyScheduleClockWidget
+                                    slots={m.dailySchedule}
+                                    onMarkTaken={async (slot) => {
+                                      try {
+                                        const found = medicines.find(
+                                          (med) => med.medicine_name.toLowerCase().trim() === slot.medicine.toLowerCase().trim()
+                                        );
+                                        const targetMedId = found?.id;
+
+                                        if (!targetMedId) {
+                                          setToastMessage(`Marked dose taken: ${slot.medicine}`);
+                                          return true;
+                                        }
+
+                                        const scheduledMinutes = parseTimeToMinutes(slot.time);
+                                        const existingDoses = await dosesRepo.listDosesForDate(effectiveProfileId, today);
+                                        const match = existingDoses.find(
+                                          (d) => d.medicine_id === targetMedId && Math.abs(d.scheduled_minutes - scheduledMinutes) < 90
+                                        );
+
+                                        if (match) {
+                                          await dosesRepo.updateDoseStatus(match.id, 'taken', new Date().toISOString());
+                                        } else {
+                                          await dosesRepo.createDoses([
+                                            {
+                                              user_id: effectiveUserId,
+                                              profile_id: effectiveProfileId,
+                                              medicine_id: targetMedId,
+                                              scheduled_date: today,
+                                              scheduled_minutes: scheduledMinutes,
+                                              status: 'taken',
+                                              taken_at: new Date().toISOString(),
+                                            },
+                                          ]);
+                                        }
+                                        setToastMessage(`Recorded dose taken: ${slot.medicine} (${slot.time})`);
+                                        loadData();
+                                        return true;
+                                      } catch (err) {
+                                        console.error('Failed to record dose intake:', err);
+                                        setToastMessage('Could not persist dose record. Please try again.');
+                                        return false;
+                                      }
+                                    }}
+                                  />
                                 </div>
                               )}
 
@@ -1637,33 +1778,67 @@ export function AssistantPage() {
                       <FolderIcon size={18} />
                     </button>
 
+                    {/* Voice Language Toggle (English vs Urdu) */}
+                    <div className="flex items-center rounded-xl bg-surface-raised border border-line p-0.5 shrink-0" role="group" aria-label="Voice language">
+                      <button
+                        type="button"
+                        onClick={() => setVoiceLang('en')}
+                        className={`px-1.5 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer ${
+                          voiceLang === 'en' ? 'bg-accent text-accent-onaccent shadow-xs' : 'text-content-muted hover:text-content'
+                        }`}
+                        title="English Voice Recognition"
+                      >
+                        EN
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVoiceLang('ur')}
+                        className={`px-1.5 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer ${
+                          voiceLang === 'ur' ? 'bg-accent text-accent-onaccent shadow-xs' : 'text-content-muted hover:text-content'
+                        }`}
+                        title="اردو آواز کی شناخت (Urdu Voice Recognition)"
+                      >
+                        اردو
+                      </button>
+                    </div>
+
                     {/* Voice Mic Button */}
                     <button
                       type="button"
                       onClick={toggleSpeechRecognition}
-                      aria-label={isRecording ? 'Stop voice input' : 'Start voice input'}
+                      aria-label={isRecording ? 'Stop voice input' : `Start voice input (${voiceLang === 'ur' ? 'Urdu' : 'English'})`}
                       className={`p-2.5 rounded-xl transition-all shrink-0 cursor-pointer ${
                         isRecording
                           ? 'bg-warn-bg text-warn-text animate-pulse shadow-xs'
                           : 'text-content-muted hover:text-accent hover:bg-surface-raised'
                       }`}
-                      title={isRecording ? 'Listening... click to stop' : 'Dictate with voice'}
+                      title={isRecording ? 'Listening... click to stop' : `Dictate with voice (${voiceLang === 'ur' ? 'اردو' : 'EN'})`}
                     >
                       <MicrophoneIcon size={18} />
                     </button>
 
-                    {/* Text Input */}
-                    <input
-                      type="text"
+                    {/* Auto-expanding Multiline Textarea */}
+                    <textarea
+                      ref={textareaRef}
+                      rows={1}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
                       placeholder={
                         isRecording
-                          ? 'Listening to your voice...'
-                          : 'Ask about medications, dosage timing, lab tests, or attach photos...'
+                          ? (voiceLang === 'ur' ? 'آپ کی آواز سن رہے ہیں...' : 'Listening to your voice...')
+                          : (voiceLang === 'ur'
+                              ? 'دوائیوں کے اوقات، مقدار، یا لیب ٹیسٹ کے بارے میں پوچھیں...'
+                              : 'Ask about medications, dosage timing, lab tests, or attach photos...')
                       }
                       aria-label="Message the assistant"
-                      className="flex-1 bg-transparent border-0 text-sm sm:text-base text-content placeholder:text-content-subtle focus:outline-none focus:ring-0 px-2 min-w-0"
+                      dir="auto"
+                      className="flex-1 bg-transparent border-0 text-sm sm:text-base text-content placeholder:text-content-subtle focus:outline-none focus:ring-0 px-2 min-w-0 resize-none max-h-40 leading-relaxed py-1.5"
                       disabled={isLoading}
                     />
 
@@ -1751,6 +1926,35 @@ export function AssistantPage() {
               <div className="flex justify-end pt-2">
                 <Button variant="secondary" size="sm" onClick={() => setShowSafetyModal(false)}>
                   Close
+                </Button>
+              </div>
+            </div>
+          </Dialog>
+
+          {/* Clear Conversation Confirmation Dialog */}
+          <Dialog
+            open={showClearConfirmModal}
+            onOpenChange={setShowClearConfirmModal}
+            title="Clear Conversation"
+            description="Are you sure you want to clear this entire conversation? All messages in this session will be permanently deleted."
+          >
+            <div className="space-y-4 pt-2">
+              <p className="text-xs text-content-muted">
+                This action will delete all chat history in this session and cannot be undone.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setShowClearConfirmModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={async () => {
+                    setShowClearConfirmModal(false);
+                    await handleClearChat();
+                  }}
+                >
+                  Clear Conversation
                 </Button>
               </div>
             </div>

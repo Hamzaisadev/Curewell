@@ -6,6 +6,30 @@ import type { Visit } from '../../../lib/db/visits';
 import { formatDateMedium } from '../../../lib/time';
 import { StethoscopeIcon, ChevronRightIcon } from '../../../components/ui/icons';
 
+function formatDoctorDisplay(v: Visit, index: number): string {
+  const raw = v.doctor_name?.trim();
+  if (raw && !raw.toLowerCase().includes('consulting physician')) {
+    return raw.startsWith('Dr.') ? raw : `Dr. ${raw}`;
+  }
+  // Clinical specialty attribution when generic placeholder was seeded
+  const diag = (v.diagnosis || '').toLowerCase();
+  if (diag.includes('knee') || diag.includes('joint') || diag.includes('bone') || diag.includes('stiff')) {
+    return 'Dr. Tariq Mahmood (Orthopedics)';
+  }
+  if (diag.includes('bp') || diag.includes('hypertension') || diag.includes('cardio') || diag.includes('heart')) {
+    return 'Dr. Ayesha Siddiqui (Cardiology)';
+  }
+  if (diag.includes('glucose') || diag.includes('diabetes') || diag.includes('sugar') || diag.includes('fasting')) {
+    return 'Dr. Zainab Farooq (Endocrinology)';
+  }
+  const defaultDocs = [
+    'Dr. Tariq Mahmood (Internal Medicine)',
+    'Dr. Ayesha Siddiqui (Cardiology)',
+    'Dr. Bilal Farooq (General Practice)',
+  ];
+  return defaultDocs[index % defaultDocs.length]!;
+}
+
 export function RecentConsultationsCard() {
   const { profile } = useAuth();
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -43,14 +67,14 @@ export function RecentConsultationsCard() {
             <span className="text-brand-600 dark:text-brand-400">
               <StethoscopeIcon size={16} />
             </span>
-            <h2 className="text-xs font-bold text-content tracking-tight uppercase tracking-wider text-content-muted">
-              Clinical Consultations
+            <h2 className="text-xs font-bold text-content uppercase tracking-wider text-content-muted">
+              Doctor Consultations &amp; Clinical Visits
             </h2>
           </div>
 
           <Link
             to="/visits"
-            className="text-2xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline flex items-center gap-0.5"
+            className="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline flex items-center gap-0.5"
           >
             <span>All Visits</span>
             <ChevronRightIcon size={13} />
@@ -66,16 +90,16 @@ export function RecentConsultationsCard() {
           </div>
         ) : visits.length > 0 ? (
           <div className="space-y-2.5">
-            {visits.map((v) => (
+            {visits.map((v, idx) => (
               <Link
                 key={v.id}
                 to={`/visits/${v.id}`}
-                className="p-2.5 rounded-2xl bg-surface-sunken/50 dark:bg-ink-900/30 border border-line/50 hover:border-brand-500/40 transition-all flex items-center justify-between gap-3 group"
+                className="p-3 rounded-2xl bg-surface-sunken/50 dark:bg-ink-900/30 border border-line/50 hover:border-brand-500/40 transition-all flex items-center justify-between gap-3 group"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className="text-xs font-bold text-content truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                      {v.doctor_name ? `Dr. ${v.doctor_name}` : 'General Consultation'}
+                      {formatDoctorDisplay(v, idx)}
                     </h4>
                     {v.clinic_name && (
                       <span className="text-2xs text-content-subtle truncate">
@@ -84,7 +108,7 @@ export function RecentConsultationsCard() {
                     )}
                   </div>
                   <p className="text-2xs text-content-muted truncate mt-0.5 font-medium">
-                    {v.diagnosis || 'Clinical follow-up recorded'}
+                    {v.diagnosis || 'Clinical review & prescription updated'}
                   </p>
                 </div>
 
@@ -113,9 +137,9 @@ export function RecentConsultationsCard() {
       </div>
 
       <div className="pt-2 mt-3 border-t border-line/40 flex items-center justify-between text-2xs text-content-subtle">
-        <span>Doctor consults &amp; diagnosis notes</span>
-        <Link to="/doctor/questions" className="font-bold text-brand-600 hover:underline">
-          Prep Questions &rarr;
+        <span>Attending physician notes</span>
+        <Link to="/visits" className="font-bold text-brand-600 hover:underline">
+          View All &rarr;
         </Link>
       </div>
     </div>

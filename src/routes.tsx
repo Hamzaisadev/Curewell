@@ -32,6 +32,9 @@ const ReviewReportPage = lazy(() =>
 const ReportsListPage = lazy(() =>
   import('./pages/reports/ReportsListPage').then((m) => ({ default: m.ReportsListPage }))
 );
+const ReportsVaultPage = lazy(() =>
+  import('./pages/reports/ReportsVaultPage').then((m) => ({ default: m.ReportsVaultPage }))
+);
 const TimelinePage = lazy(() =>
   import('./pages/timeline/TimelinePage').then((m) => ({ default: m.TimelinePage }))
 );
@@ -258,6 +261,14 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <ReportsListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/vault"
+          element={
+            <ProtectedRoute>
+              <ReportsVaultPage />
             </ProtectedRoute>
           }
         />

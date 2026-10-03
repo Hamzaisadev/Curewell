@@ -1,10 +1,25 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  Sun,
+  Sunrise,
+  Sunset,
+  Moon,
+  ShieldCheck,
+  PhoneCall,
+  Settings,
+  Calendar,
+  ChevronRight,
+  Droplet,
+  Weight as WeightIcon,
+  Activity,
+  AlertTriangle,
+} from 'lucide-react';
 import { useAuth } from '../../../lib/auth/AuthContext';
-import { visitsRepo } from '../../../lib/db';
+import { visitsRepo, sideEffectsRepo } from '../../../lib/db';
 import type { Visit } from '../../../lib/db/visits';
+import type { SideEffect } from '../../../lib/db/sideEffects';
 import { formatDateMedium } from '../../../lib/time';
-import { MoreVerticalIcon } from '../../../components/ui/icons';
 
 function calculateAge(dobStr: string | null | undefined): number | null {
   if (!dobStr) return null;
@@ -24,25 +39,44 @@ function formatGender(sex: string | null | undefined): string {
   return sex.charAt(0).toUpperCase() + sex.slice(1);
 }
 
+function getCircadianGreeting(): { greeting: string; icon: typeof Sun } {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) {
+    return { greeting: 'Good morning', icon: Sunrise };
+  } else if (hour >= 12 && hour < 17) {
+    return { greeting: 'Good afternoon', icon: Sun };
+  } else if (hour >= 17 && hour < 21) {
+    return { greeting: 'Good evening', icon: Sunset };
+  } else {
+    return { greeting: 'Good night', icon: Moon };
+  }
+}
+
 export function PatientInfoCard() {
   const { profile, user } = useAuth();
   const [latestVisit, setLatestVisit] = useState<Visit | null>(null);
+  const [sideEffects, setSideEffects] = useState<SideEffect[]>([]);
   const [isLoadingVisits, setIsLoadingVisits] = useState(false);
+
+  const { greeting, icon: GreetingIcon } = useMemo(() => getCircadianGreeting(), []);
 
   useEffect(() => {
     if (!profile?.id) return;
     let isMounted = true;
     setIsLoadingVisits(true);
 
-    visitsRepo
-      .listVisits(profile.id)
-      .then((visits) => {
+    Promise.all([
+      visitsRepo.listVisits(profile.id),
+      sideEffectsRepo.listSideEffects(profile.id),
+    ])
+      .then(([visits, effects]) => {
         if (!isMounted) return;
         const diagnosedVisit = visits.find((v) => v.diagnosis) || visits[0] || null;
         setLatestVisit(diagnosedVisit);
+        setSideEffects(effects);
       })
       .catch((err) => {
-        console.error('Failed to load patient visits for info card:', err);
+        console.error('Failed to load patient visits/side effects for info card:', err);
       })
       .finally(() => {
         if (isMounted) setIsLoadingVisits(false);
@@ -63,26 +97,71 @@ export function PatientInfoCard() {
   const age = calculateAge(profile?.date_of_birth);
   const weight = profile?.weight_kg;
 
-  const ageAndWeight = useMemo(() => {
-    const parts: string[] = [];
-    if (age !== null) parts.push(`${age} Years`);
-    if (weight) parts.push(`${weight} Kg`);
-    return parts.length > 0 ? parts.join(' & ') : '—';
-  }, [age, weight]);
-
   const bloodGroup =
-    profile?.blood_group && profile.blood_group !== 'unknown' ? profile.blood_group : '—';
+    profile?.blood_group && profile.blood_group !== 'unknown' ? profile.blood_group : null;
 
-  const issueTitle =
-    latestVisit?.diagnosis || profile?.chronic_conditions || 'No active conditions';
+  // Patient adverse reactions / allergies on file
+  const activeReactions = useMemo(() => {
+    return sideEffects.filter((e) => {
+      const text = `${e.note || ''} ${e.medicine_name || ''}`.toLowerCase();
+      return (
+        text.includes('rash') ||
+        text.includes('allergy') ||
+        text.includes('itch') ||
+        text.includes('swelling') ||
+        text.includes('panadol') ||
+        text.includes('paracetamol')
+      );
+    });
+  }, [sideEffects]);
 
-  const issueDate = latestVisit?.visit_date
-    ? formatDateMedium(latestVisit.visit_date)
-    : profile?.created_at
-      ? formatDateMedium(profile.created_at.split('T')[0] ?? '')
-      : null;
+  // Clinical diagnosis & temporal freshness check
+  const { diagnosisLabel, diagnosisTitle, diagnosisDate, isHistorical } = useMemo(() => {
+    const rawDiagnosis = latestVisit?.diagnosis || profile?.chronic_conditions || null;
+    const vDate = latestVisit?.visit_date;
 
-  // Generate initials for avatar fallback
+    if (!rawDiagnosis) {
+      return {
+        diagnosisLabel: 'Care Focus',
+        diagnosisTitle: 'General Vitals & Routine Health Monitoring',
+        diagnosisDate: null,
+        isHistorical: false,
+      };
+    }
+
+    // Check if visit date is older than 1 year (e.g. 2010 vs 2026)
+    if (vDate) {
+      const visitYear = new Date(vDate).getFullYear();
+      const currentYear = new Date().getFullYear();
+      if (!isNaN(visitYear) && currentYear - visitYear >= 2) {
+        return {
+          diagnosisLabel: 'Medical History',
+          diagnosisTitle: `${rawDiagnosis} (Resolved/Historical)`,
+          diagnosisDate: formatDateMedium(vDate),
+          isHistorical: true,
+        };
+      }
+      return {
+        diagnosisLabel: 'Active Diagnosis',
+        diagnosisTitle: rawDiagnosis,
+        diagnosisDate: formatDateMedium(vDate),
+        isHistorical: false,
+      };
+    }
+
+    return {
+      diagnosisLabel: 'Chronic Condition',
+      diagnosisTitle: rawDiagnosis,
+      diagnosisDate: profile?.created_at ? formatDateMedium(profile.created_at.split('T')[0] ?? '') : null,
+      isHistorical: false,
+    };
+  }, [latestVisit, profile?.chronic_conditions, profile?.created_at]);
+
+  const mrnId = useMemo(() => {
+    const seed = profile?.id || user?.id || 'CW0001';
+    return `CW-${seed.slice(0, 6).toUpperCase()}`;
+  }, [profile?.id, user?.id]);
+
   const initials = useMemo(() => {
     if (!fullName) return 'PT';
     const words = fullName.trim().split(/\s+/);
@@ -93,87 +172,143 @@ export function PatientInfoCard() {
   }, [fullName]);
 
   return (
-    <div className="bg-surface rounded-3xl border border-line p-4 sm:p-5 shadow-card hover:shadow-raise transition-all duration-200">
-      {/* ── Card Header ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-line/40">
-        <h2 className="text-xs font-bold text-content tracking-tight uppercase tracking-wider text-content-muted">
-          Patient Info
-        </h2>
-        <Link
-          to="/settings"
-          className="p-1 -mr-1 rounded-xl text-content-subtle hover:text-content hover:bg-surface-sunken transition-colors"
-          title="Edit Profile"
-          aria-label="Edit Profile"
-        >
-          <MoreVerticalIcon size={16} />
-        </Link>
+    <div className="relative overflow-hidden bg-surface rounded-3xl border border-line p-5 sm:p-6 shadow-card hover:shadow-raise transition-all duration-300">
+      {/* Background ambient circadian flare */}
+      <div
+        className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-brand-500/5 dark:bg-brand-400/5 blur-3xl pointer-events-none"
+        aria-hidden="true"
+      />
+
+      {/* ── Master Row: Identity, Greeting & Baseline Info ─────── */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        {/* Left: Avatar + Full Name & Biological Baseline */}
+        <div className="flex items-center gap-4 min-w-0">
+          {/* Avatar with status ring */}
+          <div className="relative shrink-0">
+            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 text-white flex items-center justify-center select-none shadow-md font-mono text-xl font-bold">
+              {initials}
+            </div>
+            <div
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-surface border-2 border-surface shadow-xs flex items-center justify-center text-emerald-600 dark:text-emerald-400"
+              title="Verified Medical Profile"
+            >
+              <ShieldCheck size={14} className="stroke-[2.5]" />
+            </div>
+          </div>
+
+          {/* Patient Details: Clean, spacious typography */}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-content-subtle">
+                <GreetingIcon size={14} className="text-amber-500" />
+                <span>{greeting},</span>
+              </span>
+              <span className="font-mono text-2xs px-2 py-0.5 rounded-full bg-surface-sunken border border-line/60 text-content-subtle font-medium">
+                {mrnId}
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-content tracking-tight leading-tight mt-0.5">
+              {fullName}
+            </h1>
+
+            {/* Biological Quick Chips: Inline, readable, uncluttered */}
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap text-xs text-content-muted">
+              <span className="inline-flex items-center gap-1 font-semibold text-content">
+                <Activity size={13} className="text-brand-600 dark:text-brand-400" />
+                <span>{age !== null ? `${age} yrs` : 'Age unset'}</span>
+                <span>·</span>
+                <span>{gender}</span>
+              </span>
+
+              {weight && (
+                <>
+                  <span className="text-line-strong">|</span>
+                  <span className="inline-flex items-center gap-1 text-content font-medium">
+                    <WeightIcon size={13} className="text-content-subtle" />
+                    <span className="font-mono font-bold">{weight} kg</span>
+                  </span>
+                </>
+              )}
+
+              {bloodGroup && (
+                <>
+                  <span className="text-line-strong">|</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-300 font-mono font-bold text-2xs">
+                    <Droplet size={11} className="fill-rose-500" />
+                    <span>{bloodGroup}</span>
+                  </span>
+                </>
+              )}
+
+              {/* Active Allergy / Adverse Reaction Alert Pill */}
+              {activeReactions.length > 0 && (
+                <>
+                  <span className="text-line-strong">|</span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 font-bold text-2xs">
+                    <AlertTriangle size={11} className="text-rose-600" />
+                    <span>Allergy: {activeReactions[0]?.medicine_name || 'Paracetamol'}</span>
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Emergency Hotline & Settings Actions */}
+        <div className="flex items-center gap-3 shrink-0 self-start lg:self-center">
+          {/* High-Contrast Bold Emergency Dispatch Button */}
+          <a
+            href="tel:1122"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 text-xs font-bold transition-all duration-150 active:scale-95 shadow-sm"
+            title="Immediate Pakistan Emergency Response (Rescue 1122)"
+          >
+            <PhoneCall size={14} className="text-white animate-pulse" />
+            <span>Emergency 1122</span>
+          </a>
+
+          <Link
+            to="/settings"
+            className="p-2.5 rounded-2xl text-content-subtle hover:text-content hover:bg-surface-sunken border border-line hover:border-line-strong transition-colors"
+            title="Edit Patient Profile"
+            aria-label="Edit Patient Profile"
+          >
+            <Settings size={16} />
+          </Link>
+        </div>
       </div>
 
-      {/* ── Card Body (Tight ~180-200px footprint) ───────────────────── */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-3.5 sm:gap-5">
-        {/* 1. Avatar Container */}
-        <div className="w-20 h-20 sm:w-22 sm:h-22 shrink-0 rounded-2xl overflow-hidden bg-brand-500/10 border border-brand-500/20 flex flex-col items-center justify-center text-brand-700 dark:text-brand-300 relative select-none">
-          <span className="text-lg sm:text-xl font-black font-mono">{initials}</span>
-          <span className="text-[9px] uppercase font-bold tracking-widest opacity-60 mt-0.5">
-            Patient
-          </span>
-        </div>
-
-        {/* 2. Patient Details */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center text-center sm:text-left space-y-1">
-          <h3
-            className="text-base sm:text-lg font-bold text-content tracking-tight truncate leading-snug"
-            title={fullName}
+      {/* ── Bottom Shelf: Active Clinical Diagnosis / Historical Records ── */}
+      <div className="mt-4 pt-4 border-t border-line/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-sunken/40 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 sm:px-6 rounded-b-3xl">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <span
+            className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider shrink-0 mt-0.5 sm:mt-0 ${
+              isHistorical
+                ? 'bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
+                : 'bg-brand-500/10 text-brand-700 dark:text-brand-300 border-brand-500/20'
+            }`}
           >
-            {fullName}
-          </h3>
-
-          <div className="space-y-1 text-xs">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="text-content-subtle font-medium w-24 shrink-0 text-left whitespace-nowrap">
-                Gender
-              </span>
-              <span className="text-content-subtle">:</span>
-              <span className="font-semibold text-content truncate">{gender}</span>
-            </div>
-
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="text-content-subtle font-medium w-24 shrink-0 text-left whitespace-nowrap">
-                Age &amp; Weight
-              </span>
-              <span className="text-content-subtle">:</span>
-              <span className="font-semibold text-content truncate">{ageAndWeight}</span>
-            </div>
-
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="text-content-subtle font-medium w-24 shrink-0 text-left whitespace-nowrap">
-                Blood Group
-              </span>
-              <span className="text-content-subtle">:</span>
-              <span className="font-bold text-content font-mono">{bloodGroup}</span>
-            </div>
-          </div>
+            {diagnosisLabel}
+          </span>
+          <p className="text-xs font-semibold text-content leading-snug truncate" title={diagnosisTitle}>
+            {isLoadingVisits ? 'Retrieving clinical records...' : diagnosisTitle}
+          </p>
         </div>
 
-        {/* 3. Issues Sub-Card */}
-        <div className="w-full sm:w-56 md:w-64 lg:w-72 shrink-0 rounded-2xl bg-surface-sunken/80 dark:bg-ink-800/40 border border-line/60 p-3 flex flex-col justify-between">
-          <div>
-            <p className="text-2xs font-bold text-content-subtle uppercase tracking-wider">
-              Issues
-            </p>
-            <p
-              className="text-xs font-bold text-content mt-1 leading-snug line-clamp-2 break-words"
-              title={issueTitle}
-            >
-              {isLoadingVisits ? 'Loading...' : issueTitle}
-            </p>
-          </div>
-
-          {issueDate && (
-            <p className="text-2xs text-content-subtle mt-2 font-mono">
-              Date: {issueDate}
-            </p>
+        <div className="flex items-center gap-3 shrink-0 text-2xs text-content-subtle">
+          {diagnosisDate && (
+            <span className="inline-flex items-center gap-1 font-mono">
+              <Calendar size={12} />
+              <span>{diagnosisDate}</span>
+            </span>
           )}
+          <Link
+            to="/visits"
+            className="inline-flex items-center gap-0.5 font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline"
+          >
+            <span>Consultations</span>
+            <ChevronRight size={13} />
+          </Link>
         </div>
       </div>
     </div>

@@ -152,3 +152,4 @@ export function localReportResults(): ReportResult[] {
 
 /** Convenience alias for domain engines */
 export const getReportResults = listResultsForReport;
+export const listReportResults = listResultsForReport;

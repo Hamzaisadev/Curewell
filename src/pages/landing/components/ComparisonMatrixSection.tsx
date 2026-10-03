@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { CheckIcon, XIcon } from '../../../components/ui/icons';
+import { CheckIcon, XIcon, ShieldIcon } from '../../../components/ui/icons';
 
 export function ComparisonMatrixSection() {
   const comparisons = [
@@ -31,8 +31,8 @@ export function ComparisonMatrixSection() {
   ];
 
   return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-white text-slate-900 border-b border-slate-200">
-      <div className="max-w-6xl mx-auto">
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-white text-slate-900 border-b border-slate-200 relative overflow-hidden">
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Section Header with Motion */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -41,35 +41,36 @@ export function ComparisonMatrixSection() {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="text-center max-w-2xl mx-auto mb-14 sm:mb-18"
         >
-          <p className="text-xs font-semibold uppercase tracking-widest text-teal-700 mb-2">
-            Safety Matrix
-          </p>
-          <h2 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
-            Built for safety.
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200/70 text-teal-800 text-xs font-semibold mb-3">
+            <ShieldIcon size={14} className="text-teal-700" />
+            <span>Safety Architecture</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">
+            Deterministic precision vs Generative guessing.
           </h2>
           <p className="text-base sm:text-lg text-slate-600 mt-2.5 leading-relaxed font-normal">
-            Why healthcare requires deterministic precision instead of generative guessing.
+            Why healthcare demands clinical grounding instead of generic chatbot answers.
           </p>
         </motion.div>
 
-        {/* Comparison Table in Light Mode */}
+        {/* Comparison Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="rounded-3xl bg-white border border-slate-200 shadow-xs overflow-hidden"
+          className="rounded-3xl bg-white border border-slate-200/90 shadow-lg overflow-hidden"
         >
-          <div className="grid grid-cols-1 md:grid-cols-12 border-b border-slate-200 bg-slate-50 p-4 sm:p-5 font-bold text-xs sm:text-sm">
-            <div className="md:col-span-4 text-slate-500 uppercase tracking-wider text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-12 border-b border-slate-200 bg-slate-50/90 p-4 sm:p-5 font-bold text-xs sm:text-sm">
+            <div className="md:col-span-4 text-slate-500 uppercase tracking-wider text-xs font-mono">
               Clinical Criterion
             </div>
-            <div className="md:col-span-4 text-rose-700 uppercase tracking-wider text-xs mt-2 md:mt-0">
+            <div className="md:col-span-4 text-slate-500 uppercase tracking-wider text-xs font-mono mt-2 md:mt-0">
               Generic Public AI Chatbots
             </div>
-            <div className="md:col-span-4 text-teal-800 uppercase tracking-wider text-xs mt-2 md:mt-0 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
-              Curewell + Shifa AI Co-Pilot
+            <div className="md:col-span-4 text-teal-800 uppercase tracking-wider text-xs font-mono mt-2 md:mt-0 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
+              <span>Curewell + Shifa AI</span>
             </div>
           </div>
 
@@ -77,22 +78,22 @@ export function ComparisonMatrixSection() {
             {comparisons.map((row, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 p-5 sm:p-6 text-xs sm:text-sm gap-4 items-center hover:bg-slate-50/50 transition-colors"
+                className="grid grid-cols-1 md:grid-cols-12 p-5 sm:p-6 text-xs sm:text-sm gap-4 items-center hover:bg-teal-50/20 transition-all duration-200 group"
               >
-                <div className="md:col-span-4 font-semibold text-slate-900">
+                <div className="md:col-span-4 font-bold text-slate-900 group-hover:text-teal-950 transition-colors">
                   {row.criterion}
                 </div>
                 <div className="md:col-span-4 text-slate-600 flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-5 h-5 rounded-md bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0 mt-0.5">
                     <XIcon size={12} strokeWidth={2.5} />
                   </span>
                   <p className="leading-relaxed">{row.generic}</p>
                 </div>
-                <div className="md:col-span-4 text-slate-900 font-medium flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-md bg-teal-100 text-teal-800 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="md:col-span-4 text-slate-900 font-medium flex items-start gap-2.5 bg-teal-50/40 p-3 rounded-xl border border-teal-100">
+                  <span className="w-5 h-5 rounded-md bg-teal-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                     <CheckIcon size={12} strokeWidth={2.5} />
                   </span>
-                  <p className="leading-relaxed">{row.curewell}</p>
+                  <p className="leading-relaxed font-semibold text-teal-950">{row.curewell}</p>
                 </div>
               </div>
             ))}

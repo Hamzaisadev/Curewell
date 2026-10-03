@@ -30,7 +30,11 @@ export function BottomNav() {
                 aria-current={active ? 'page' : undefined}
                 className={clsx(
                   'relative flex flex-col items-center justify-center gap-1 h-full min-h-11 px-1 select-none transition-colors duration-[var(--duration-fast)]',
-                  active ? 'text-accent' : 'text-content-subtle hover:text-content'
+                  active
+                    ? 'text-accent'
+                    : item.prominent
+                    ? 'text-accent font-semibold hover:text-accent-hover'
+                    : 'text-content-subtle hover:text-content'
                 )}
               >
                 {active && (
@@ -40,8 +44,15 @@ export function BottomNav() {
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
-                <span className="shrink-0">{item.icon(21)}</span>
-                <span className={clsx('text-2xs leading-none', active && 'font-bold')}>
+                <span className={clsx('shrink-0', item.prominent && !active && 'scale-105')}>
+                  {item.icon(21)}
+                </span>
+                <span
+                  className={clsx(
+                    'text-2xs leading-none',
+                    (active || item.prominent) && 'font-bold'
+                  )}
+                >
                   {item.label}
                 </span>
               </Link>

@@ -12,10 +12,8 @@ import {
   evaluateBloodPressure,
   mmolToMgDl,
   type GlucoseType,
-  type GlucoseReading,
-  type BloodPressureReading,
 } from '../../domain/vitals';
-import { createGlucoseReading, createBloodPressureReading } from '../../lib/db/vitals';
+import { recordGlucose, recordBloodPressure } from '../../domain/vitalsIntake';
 import { useAuth } from '../../lib/auth/AuthContext';
 
 export interface QuickVitalsModalProps {
@@ -80,24 +78,17 @@ export function QuickVitalsModal({
       if (e) e.preventDefault();
       if (!glucoseValue || !effectiveUserId || !effectiveProfileId || isSaving) return;
 
-      let mgDl = glucoseValue;
-      if (glucoseUnit === 'mmol/L') {
-        mgDl = mmolToMgDl(mgDl);
-      }
-
-      const newReading: GlucoseReading = {
-        user_id: effectiveUserId,
-        profile_id: effectiveProfileId,
-        measured_at: new Date().toISOString(),
-        type: glucoseType,
-        value_mg_dl: Math.round(mgDl),
-        notes: glucoseNotes.trim() || undefined,
-      };
-
       setIsSaving(true);
       setGlucoseSaveError(null);
       try {
-        await createGlucoseReading(newReading);
+        await recordGlucose({
+          userId: effectiveUserId,
+          profileId: effectiveProfileId,
+          value: glucoseValue,
+          unit: glucoseUnit,
+          type: glucoseType,
+          notes: glucoseNotes,
+        });
         setGlucoseNotes('');
         onSaved?.();
         onClose();
@@ -126,22 +117,19 @@ export function QuickVitalsModal({
       if (e) e.preventDefault();
       if (!systolic || !diastolic || !effectiveUserId || !effectiveProfileId || isSaving) return;
 
-      const newReading: BloodPressureReading = {
-        user_id: effectiveUserId,
-        profile_id: effectiveProfileId,
-        measured_at: new Date().toISOString(),
-        systolic: Math.round(systolic),
-        diastolic: Math.round(diastolic),
-        pulse_bpm: pulse ? Math.round(pulse) : undefined,
-        arm: bpArm,
-        posture: bpPosture,
-        notes: bpNotes.trim() || undefined,
-      };
-
       setIsSaving(true);
       setBpSaveError(null);
       try {
-        await createBloodPressureReading(newReading);
+        await recordBloodPressure({
+          userId: effectiveUserId,
+          profileId: effectiveProfileId,
+          systolic,
+          diastolic,
+          pulse,
+          arm: bpArm,
+          posture: bpPosture,
+          notes: bpNotes,
+        });
         setBpNotes('');
         onSaved?.();
         onClose();

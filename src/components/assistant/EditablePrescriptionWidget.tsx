@@ -4,15 +4,28 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Select } from '../ui/Select';
 import { PrescriptionIcon, CheckIcon, XIcon, PlusIcon } from '../ui/icons';
-import { medicinesRepo, dosesRepo } from '../../lib/db';
-import { parseFrequency, defaultDoseTimes } from '../../domain/frequency';
-import { buildSchedule } from '../../domain/schedule';
-import { computeEndDate } from '../../domain/duration';
+import { recordPrescription } from '../../domain/medicationRegimen';
+import { parseFrequency } from '../../domain/frequency';
 import { todayInAppTz } from '../../lib/time';
 import { newId } from '../../lib/db/localStore';
 
 /** Used when a row has no duration set, and shown in the UI as the same number. */
 const DEFAULT_DURATION_DAYS = 5;
+
+const CHRONIC_DRUG_KEYWORDS = [
+  'metformin', 'glucophage', 'glimepiride', 'gliclazide', 'sitagliptin', 'vildagliptin', 'empagliflozin', 'dapagliflozin', 'insulin',
+  'amlodipine', 'norvasc', 'lisinopril', 'zestril', 'ramipril', 'losartan', 'cozaar', 'valsartan', 'telmisartan',
+  'bisoprolol', 'concor', 'atenolol', 'tenormin', 'carvedilol', 'metoprolol', 'spironolactone', 'furosemide', 'lasix',
+  'atorvastatin', 'lipiget', 'rosuvastatin', 'simvastatin', 'ezetimibe',
+  'levothyroxine', 'thyroxine', 'eltroxin',
+  'clopidogrel', 'plavix', 'warfarin', 'coumadin', 'aspirin', 'disprin cv', 'lowplat',
+];
+
+export function isLikelyChronicMedicine(medName?: string | null): boolean {
+  if (!medName) return false;
+  const lower = medName.toLowerCase();
+  return CHRONIC_DRUG_KEYWORDS.some((kw) => lower.includes(kw));
+}
 
 export interface ExtractedMedItem {
   medicine_name: string;
@@ -26,6 +39,7 @@ export interface ExtractedMedItem {
   /** null = the prescription did not state a meal relation. */
   with_food?: boolean | null;
   instructions?: string;
+  is_ongoing?: boolean;
 }
 
 interface EditablePrescriptionWidgetProps {
@@ -48,7 +62,15 @@ export function EditablePrescriptionWidget({
   // Rows carry a stable id so React keys survive reordering and removal; with
   // `key={idx}` an edit could be applied to the wrong row after a delete.
   const [items, setItems] = useState<DraftRow[]>(() =>
-    initialMedicines.map((m) => ({ ...m, rowId: newId() }))
+    initialMedicines.map((m) => {
+      const isChronic = m.is_ongoing ?? isLikelyChronicMedicine(m.medicine_name);
+      return {
+        ...m,
+        rowId: newId(),
+        is_ongoing: isChronic,
+        duration_days: m.duration_days ?? (isChronic ? 30 : DEFAULT_DURATION_DAYS),
+      };
+    })
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -74,6 +96,7 @@ export function EditablePrescriptionWidget({
         frequency_raw: '',
         duration_days: DEFAULT_DURATION_DAYS,
         with_food: true,
+        is_ongoing: false,
       },
     ]);
   };
@@ -105,57 +128,20 @@ export function EditablePrescriptionWidget({
     setIsSaving(true);
 
     try {
-      for (const item of items) {
-        const duration = Number(item.duration_days) || DEFAULT_DURATION_DAYS;
-        // end_date = start + days - 1, matching computeEndDate's documented rule.
-        // Using `start + days` made every course a day too long.
-        const endDate = computeEndDate(today, duration);
-        const freqCode = parseFrequency(item.frequency_raw)!;
-        const withFood = item.with_food ?? null;
-
-        // 1. Create Medicine Record in Cabinet
-        const createdMed = await medicinesRepo.createMedicine({
-          user_id: userId,
-          profile_id: profileId,
+      await recordPrescription({
+        userId,
+        profileId,
+        scheduleStartDate: today,
+        medicines: items.map((item) => ({
           medicine_name: item.medicine_name.trim(),
           strength: item.strength || null,
           frequency_raw: item.frequency_raw || null,
-          frequency_code: freqCode,
-          start_date: today,
-          end_date: endDate,
-          duration_days: duration,
-          is_ongoing: false,
-          with_food: withFood,
+          duration_days: item.is_ongoing ? null : (Number(item.duration_days) || DEFAULT_DURATION_DAYS),
+          with_food: item.with_food ?? null,
           instructions: item.instructions || null,
-        });
-
-        // 2. Generate Scheduled Dose Slots for Timetable & Today Schedule
-        const defaultTimes = defaultDoseTimes(freqCode, withFood, item.frequency_raw);
-        if (defaultTimes.length > 0) {
-          const doseRows = buildSchedule({
-            medicineId: createdMed.id,
-            startDate: today,
-            durationDays: duration,
-            isOngoing: false,
-            doseTimes: defaultTimes,
-            now: new Date(),
-            frequencyCode: freqCode,
-          });
-
-          if (doseRows.length > 0) {
-            await dosesRepo.createDoses(
-              doseRows.map((d) => ({
-                user_id: userId,
-                profile_id: profileId,
-                medicine_id: createdMed.id,
-                scheduled_date: d.scheduled_date,
-                scheduled_minutes: d.scheduled_minutes,
-                status: 'pending',
-              }))
-            );
-          }
-        }
-      }
+          is_ongoing: Boolean(item.is_ongoing),
+        })),
+      });
 
       setIsSaved(true);
       if (onAddedSuccess) {
@@ -207,7 +193,7 @@ export function EditablePrescriptionWidget({
               <th className="py-1.5 font-semibold">Medicine</th>
               <th className="py-1.5 font-semibold">Strength</th>
               <th className="py-1.5 font-semibold">Dosage / Freq</th>
-              <th className="py-1.5 font-semibold">Days</th>
+              <th className="py-1.5 font-semibold">Course / Days</th>
               <th className="py-1.5 font-semibold">Meal Relation</th>
               <th className="py-1.5"></th>
             </tr>
@@ -244,22 +230,42 @@ export function EditablePrescriptionWidget({
                     className="w-full h-8 px-2 bg-surface-sunken border border-line rounded-lg text-xs font-mono text-content focus:border-accent focus:outline-none disabled:bg-transparent disabled:border-transparent"
                   />
                 </td>
-                <td className="py-1.5 pr-2 w-16">
-                  <input
-                    type="number"
-                    disabled={isSaved}
-                    min="1"
-                    max="365"
-                    value={med.duration_days ?? DEFAULT_DURATION_DAYS}
-                    onChange={(e) =>
-                      handleFieldChange(
-                        med.rowId,
-                        'duration_days',
-                        e.target.value === '' ? DEFAULT_DURATION_DAYS : parseInt(e.target.value, 10) || DEFAULT_DURATION_DAYS,
-                      )
-                    }
-                    className="w-full h-8 px-2 bg-surface-sunken border border-line rounded-lg text-xs text-center font-bold text-content focus:border-accent focus:outline-none disabled:bg-transparent disabled:border-transparent"
-                  />
+                <td className="py-1.5 pr-2 w-32">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={isSaved}
+                      onClick={() => handleFieldChange(med.rowId, 'is_ongoing', !med.is_ongoing)}
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold transition-colors cursor-pointer shrink-0 ${
+                        med.is_ongoing
+                          ? 'bg-ok-fill text-content-onaccent shadow-2xs'
+                          : 'bg-surface-sunken border border-line text-content-muted hover:text-content'
+                      }`}
+                      title={med.is_ongoing ? 'Ongoing chronic medication' : 'Click to mark as ongoing'}
+                    >
+                      {med.is_ongoing ? 'Ongoing' : 'Course'}
+                    </button>
+                    {!med.is_ongoing ? (
+                      <input
+                        type="number"
+                        disabled={isSaved}
+                        min="1"
+                        max="365"
+                        value={med.duration_days ?? DEFAULT_DURATION_DAYS}
+                        onChange={(e) =>
+                          handleFieldChange(
+                            med.rowId,
+                            'duration_days',
+                            e.target.value === '' ? DEFAULT_DURATION_DAYS : parseInt(e.target.value, 10) || DEFAULT_DURATION_DAYS,
+                          )
+                        }
+                        className="w-14 h-8 px-1 bg-surface-sunken border border-line rounded-lg text-xs text-center font-bold text-content focus:border-accent focus:outline-none disabled:bg-transparent disabled:border-transparent"
+                        title="Days duration"
+                      />
+                    ) : (
+                      <span className="text-[10px] text-content-subtle font-medium">Chronic</span>
+                    )}
+                  </div>
                 </td>
                 <td className="py-1.5 pr-2 w-36">
                   <Select

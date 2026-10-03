@@ -30,31 +30,13 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { visitsRepo, reportsRepo, medicinesRepo, sideEffectsRepo } from '../../lib/db';
-import { todayInAppTz, formatMonthYear, fromAppDate } from '../../lib/time';
+import { getUnifiedTimeline, type TimelineItem, type TimelineEventType } from '../../domain/patientDossier';
+import { formatMonthYear, fromAppDate } from '../../lib/time';
 import { useAuth } from '../../lib/auth/AuthContext';
 import type { Tables } from '../../lib/supabase/types';
 
-type TimelineEventType = 'visit' | 'report' | 'medicine' | 'side_effect';
 type TimelineFilterType = 'all' | TimelineEventType;
 type SortOrder = 'newest' | 'oldest';
-
-interface TimelineItem {
-  id: string;
-  type: TimelineEventType;
-  date: string;
-  timeDisplay?: string;
-  title: string;
-  subtitle: string;
-  tags: string[];
-  notes?: string | null;
-  cost?: number | null;
-  linkUrl: string;
-  linkLabel: string;
-  raw: Tables<'visits'> | Tables<'reports'> | Tables<'medicines'> | Tables<'side_effects'> | Tables<'medicines'>[];
-  medicinesList?: Tables<'medicines'>[];
-  doctorName?: string | null;
-  clinicName?: string | null;
-}
 
 function formatFullDateHeader(dateStr: string): string {
   try {
@@ -122,139 +104,7 @@ export function TimelinePage() {
     if (!effectiveProfileId) return;
     setIsLoading(true);
     try {
-      const [visits, reports, medicines, sideEffects] = await Promise.all([
-        visitsRepo.listVisits(effectiveProfileId),
-        reportsRepo.listReports(effectiveProfileId),
-        medicinesRepo.listMedicines(effectiveProfileId),
-        sideEffectsRepo.listSideEffects(effectiveProfileId),
-      ]);
-
-      const timelineList: TimelineItem[] = [];
-
-      // Add Visits (Consultations)
-      for (const v of visits) {
-        timelineList.push({
-          id: `visit-${v.id}`,
-          type: 'visit',
-          date: v.visit_date,
-          timeDisplay: '09:40 AM',
-          title: v.diagnosis ? `${v.diagnosis} Consultation` : 'General Physician Consultation',
-          subtitle: `${v.doctor_name ? `Dr. ${v.doctor_name.replace(/^dr\.?\s*/i, '')}` : 'Attending Physician'}${v.clinic_name ? ` • ${v.clinic_name}` : ' • OPD Visit'}`,
-          tags: v.diagnosis ? [v.diagnosis] : ['Consultation'],
-          notes: v.doctor_advice || v.notes,
-          cost: v.visit_cost,
-          linkUrl: `/visits/${v.id}`,
-          linkLabel: 'View Visit Details',
-          raw: v,
-        });
-      }
-
-      // Add Diagnostic Reports
-      for (const r of reports) {
-        timelineList.push({
-          id: `report-${r.id}`,
-          type: 'report',
-          date: r.report_date,
-          timeDisplay: '11:15 AM',
-          title: r.title,
-          subtitle: r.lab_name ? `${r.lab_name} • Diagnostic Report` : 'Diagnostic Laboratory Report',
-          tags: ['Lab Report'],
-          notes: null,
-          cost: null,
-          linkUrl: `/reports`,
-          linkLabel: 'View Report',
-          raw: r,
-        });
-      }
-
-      // Group Medicines into Unified Prescriptions / Medication Regimens
-      // Prevents bloating the timeline with 10-15 cards for a single prescription event
-      const medGroups = new Map<string, Tables<'medicines'>[]>();
-
-      for (const m of medicines) {
-        const key = m.visit_id ? `visit-${m.visit_id}` : `date-${m.start_date}`;
-        const existing = medGroups.get(key) || [];
-        existing.push(m);
-        medGroups.set(key, existing);
-      }
-
-      for (const [key, medList] of medGroups.entries()) {
-        const firstMed = medList[0];
-        if (!firstMed) continue;
-
-        const relatedVisit = firstMed.visit_id
-          ? visits.find((v) => v.id === firstMed.visit_id)
-          : null;
-        const eventDate = relatedVisit?.visit_date || firstMed.start_date || todayInAppTz();
-        const doctorName = relatedVisit?.doctor_name
-          ? `Dr. ${relatedVisit.doctor_name.replace(/^dr\.?\s*/i, '')}`
-          : null;
-        const clinicName = relatedVisit?.clinic_name || null;
-
-        const medCount = medList.length;
-        const medNamesList = medList.map((m) => `${m.medicine_name}${m.strength ? ` ${m.strength}` : ''}`);
-        const previewSummary =
-          medNamesList.slice(0, 3).join(', ') + (medCount > 3 ? ` + ${medCount - 3} more` : '');
-
-        const ongoingCount = medList.filter((m) => m.is_ongoing).length;
-        const courseCount = medList.filter((m) => !m.is_ongoing && m.duration_days).length;
-
-        const tags: string[] = [
-          `${medCount} ${medCount === 1 ? 'medicine' : 'medicines'}`,
-        ];
-        if (ongoingCount > 0) tags.push(`${ongoingCount} ongoing`);
-        if (courseCount > 0) tags.push(`${courseCount} short course`);
-
-        const notesText =
-          relatedVisit?.doctor_advice ||
-          medList.map((m) => m.instructions).filter(Boolean).slice(0, 2).join(' • ') ||
-          null;
-
-        timelineList.push({
-          id: `prescription-${key}`,
-          type: 'medicine',
-          date: eventDate,
-          timeDisplay: '10:30 AM',
-          title:
-            medCount === 1
-              ? `${firstMed.medicine_name} ${firstMed.strength || ''}`
-              : `Prescription • ${medCount} Medications`,
-          subtitle: doctorName
-            ? `Prescribed by ${doctorName}${clinicName ? ` (${clinicName})` : ''} • ${previewSummary}`
-            : `Medication Regimen • ${previewSummary}`,
-          tags,
-          notes: notesText,
-          cost: null,
-          linkUrl: relatedVisit ? `/visits/${relatedVisit.id}` : `/medicines/cabinet`,
-          linkLabel: relatedVisit ? 'View Consultation' : 'View in Cabinet',
-          raw: medList.length === 1 ? firstMed : medList,
-          medicinesList: medList,
-          doctorName,
-          clinicName,
-        });
-      }
-
-      // Add Side Effects / Symptoms
-      for (const s of sideEffects) {
-        const effDate = s.occurred_at ? s.occurred_at.split('T')[0] : s.created_at.split('T')[0];
-        timelineList.push({
-          id: `side-${s.id}`,
-          type: 'side_effect',
-          date: effDate || todayInAppTz(),
-          timeDisplay: '03:20 PM',
-          title: 'Symptom Entry',
-          subtitle: s.severity ? `Severity: ${s.severity}` : 'Patient log',
-          tags: [s.severity ? `${s.severity} severity` : 'Mild'],
-          notes: s.note,
-          cost: null,
-          linkUrl: `/symptoms`,
-          linkLabel: 'View Symptoms',
-          raw: s,
-        });
-      }
-
-      // Sort newest to oldest
-      timelineList.sort((a, b) => b.date.localeCompare(a.date));
+      const timelineList = await getUnifiedTimeline(effectiveProfileId);
       setItems(timelineList);
     } catch (err) {
       console.error('Failed to load timeline:', err);
