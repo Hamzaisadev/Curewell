@@ -50,6 +50,9 @@ const ShareManagementPage = lazy(() =>
 const PublicShareView = lazy(() =>
   import('./pages/share/PublicShareView').then((m) => ({ default: m.PublicShareView }))
 );
+const DoctorPortalPage = lazy(() =>
+  import('./pages/share/DoctorPortalPage').then((m) => ({ default: m.DoctorPortalPage }))
+);
 const ShareVerifyPage = lazy(() =>
   import('./pages/share/ShareVerifyPage').then((m) => ({ default: m.ShareVerifyPage }))
 );
@@ -185,6 +188,9 @@ export function AppRoutes() {
             not captured by `:token`. */}
         <Route path="/share/verify" element={<ShareVerifyPage />} />
         <Route path="/share/:token" element={<PublicShareView />} />
+        {/* Ephemeral Clinician Portal (ADR 0002) */}
+        <Route path="/view/:token" element={<DoctorPortalPage />} />
+        <Route path="/share/view/:token" element={<DoctorPortalPage />} />
 
         {/* Home: landing for guests, dashboard for signed-in users */}
         <Route path="/" element={<HomeRoute />} />

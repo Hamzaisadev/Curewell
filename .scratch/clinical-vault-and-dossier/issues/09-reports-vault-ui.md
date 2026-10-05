@@ -1,6 +1,6 @@
 # Issue 09: Longitudinal Diagnostic Dossier Vault UI
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 08
 

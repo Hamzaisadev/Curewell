@@ -1,6 +1,6 @@
 # Issue 11: Doctor-Ready Ephemeral Web Viewer Page & Dossier Exporter
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 08, 09, 10
 
