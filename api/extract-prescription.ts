@@ -38,7 +38,10 @@ Critical rules:
    - Search the prescription image thoroughly for the consultation/visit date (check top header, 'Date:', near doctor signature/stamp, or bottom footer).
    - Format the date in standardized YYYY-MM-DD format (e.g. 2026-08-23).
    - If no date is written on the prescription, return null (the server will automatically default to the upload date).
-5. Accuracy & Minimizing User Effort:
+5. BRAND & ACTIVE GENERIC RESOLUTION:
+   - For every prescribed medicine, extract the written commercial brand name into medicine_name (e.g. "Risek 20mg", "Panadol 500mg", "Lipiget 20mg").
+   - If recognized, identify the active generic pharmacological ingredient into generic_name (e.g. "Omeprazole", "Paracetamol", "Atorvastatin"). If unknown, obscure, or unreadable, return null.
+6. Accuracy & Minimizing User Effort:
    - Never invent a diagnosis. If no reason for the visit is written, return null.
    - Never guess a medicine name. If handwriting is ambiguous, return your closest reading and mark confidence: "low".
    - If nothing is readable in the photo, return readable: false with empty arrays.`;
@@ -59,6 +62,7 @@ const RESPONSE_SCHEMA = {
         type: 'object',
         properties: {
           medicine_name: { type: 'string' },
+          generic_name: { type: 'string', nullable: true },
           strength: { type: 'string', nullable: true },
           form: { type: 'string', nullable: true },
           dose_amount: { type: 'string', nullable: true },

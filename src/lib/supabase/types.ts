@@ -25,6 +25,7 @@ export type Database = {
           emergency_contact_name: string | null;
           emergency_contact_phone: string | null;
           is_default: boolean;
+          onboarding_completed?: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -43,6 +44,7 @@ export type Database = {
           emergency_contact_name?: string | null;
           emergency_contact_phone?: string | null;
           is_default?: boolean;
+          onboarding_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -61,6 +63,7 @@ export type Database = {
           emergency_contact_name?: string | null;
           emergency_contact_phone?: string | null;
           is_default?: boolean;
+          onboarding_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };

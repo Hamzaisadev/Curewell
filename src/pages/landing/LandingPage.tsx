@@ -1,11 +1,13 @@
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { ClinicalProtocolMarquee } from './components/ClinicalProtocolMarquee';
-import { ClinicalBentoGrid } from './components/ClinicalBentoGrid';
+import { InteractiveStoryScroller } from './components/InteractiveStoryScroller';
+import { SentinelInteractiveRadar } from './components/SentinelInteractiveRadar';
 import { ProblemVsSolutionSection } from './components/ProblemVsSolutionSection';
 import { ShifaAiClinicalTerminal } from './components/ShifaAiClinicalTerminal';
 import { ComparisonMatrixSection } from './components/ComparisonMatrixSection';
-import { VitalsTelemetrySection } from './components/VitalsTelemetrySection';
+import { VitalsTrajectoryLab } from './components/VitalsTrajectoryLab';
+import { DoctorPerspectiveSection } from './components/DoctorPerspectiveSection';
 import { PrivacyVaultSection } from './components/PrivacyVaultSection';
 import { TestimonialsSection } from './components/TestimonialsSection';
 import { FaqSection } from './components/FaqSection';
@@ -15,45 +17,51 @@ import { Footer } from './components/Footer';
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden selection:bg-teal-100 selection:text-teal-900 font-sans">
-      {/* 1. Header Navigation */}
+      {/* 1. Header Navigation with Floating Glass Bar & Continuous Progress Bar */}
       <Navbar />
 
       <main>
-        {/* 2. Hero Section with 3D Perspective Vault Stage & Proof Metrics */}
+        {/* 2. Act I: The Inciting Reality (Tactile Paper-to-Enclave Hero & Rolling Proof Metrics) */}
         <HeroSection />
 
         {/* 3. Clinical Protocol Infinite Marquee */}
         <ClinicalProtocolMarquee />
 
-        {/* 4. The Clinical Bento Grid — Interactive Living Health Vault */}
-        <ClinicalBentoGrid />
+        {/* 4. The 4-Act Clinical Storyboard Scroller (Optical Intake, Sentinel Radar, Lab Velocity, Consultation Dossier) */}
+        <InteractiveStoryScroller />
 
-        {/* 5. Problem vs Solution: Broken Paper Reality vs Curewell Standard */}
+        {/* 5. Act III Interactive Drug Collision Sandbox (Sentinel Radar) */}
+        <SentinelInteractiveRadar />
+
+        {/* 6. Problem vs Solution: Broken Paper Reality vs Curewell Standard */}
         <ProblemVsSolutionSection />
 
-        {/* 6. Shifa AI Clinical Intelligence Co-Pilot Terminal */}
+        {/* 7. Shifa AI Clinical Intelligence Co-Pilot Terminal */}
         <ShifaAiClinicalTerminal />
 
-        {/* 7. Comparison Matrix: Generic AI vs Curewell + Shifa AI */}
+        {/* 8. Comparison Matrix: Deterministic Grounding vs Generative Hallucinations */}
         <ComparisonMatrixSection />
 
-        {/* 8. Interactive Clinical Vitals Telemetry Lab & Automatic Staging */}
-        <VitalsTelemetrySection />
+        {/* 9. Interactive Vitals Trajectory Lab & AHA/ACC/ADA Telemetry Staging */}
+        <VitalsTrajectoryLab />
 
-        {/* 9. Bank-Grade Security & Zero-Knowledge Privacy Vault */}
+        {/* 10. Act V: The Clinical Handshake (Patient Mobile View vs Doctor 30-Sec Brief) */}
+        <DoctorPerspectiveSection />
+
+        {/* 11. Act VI: Bank-Grade Sovereign Security & Zero-Knowledge Privacy Vault */}
         <PrivacyVaultSection />
 
-        {/* 10. Patient & Physician Testimonials */}
+        {/* 12. Patient, Caregiver & Specialist Physician Clinical Testimonials */}
         <TestimonialsSection />
 
-        {/* 11. Frequently Asked Questions Accordion */}
+        {/* 13. Frequently Asked Questions Accordion with Category Filters */}
         <FaqSection />
 
-        {/* 12. Final Conversion Call to Action */}
+        {/* 14. Final Conversion Call to Action (Pristine Light Theme) */}
         <FinalCtaSection />
       </main>
 
-      {/* 13. Clinical Disclaimer, Sitemap & Network Telemetry */}
+      {/* 15. Clinical Disclaimer, Sitemap & Network Telemetry */}
       <Footer />
     </div>
   );

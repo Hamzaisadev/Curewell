@@ -41,8 +41,8 @@ const TimelinePage = lazy(() =>
 const VisitDetailPage = lazy(() =>
   import('./pages/visits/VisitDetailPage').then((m) => ({ default: m.VisitDetailPage }))
 );
-const DoctorBriefPage = lazy(() =>
-  import('./pages/doctor/DoctorBriefPage').then((m) => ({ default: m.DoctorBriefPage }))
+const DoctorVisitCompanionPage = lazy(() =>
+  import('./pages/doctor/DoctorVisitCompanionPage').then((m) => ({ default: m.DoctorVisitCompanionPage }))
 );
 const ShareManagementPage = lazy(() =>
   import('./pages/share/ShareManagementPage').then((m) => ({ default: m.ShareManagementPage }))
@@ -76,26 +76,23 @@ const AuthCallbackPage = lazy(() =>
 const AssistantPage = lazy(() =>
   import('./pages/assistant/AssistantPage').then((m) => ({ default: m.AssistantPage }))
 );
-const FinancePage = lazy(() =>
-  import('./pages/finance/FinancePage').then((m) => ({ default: m.FinancePage }))
-);
 const DoctorDirectoryPage = lazy(() =>
   import('./pages/doctor/DoctorDirectoryPage').then((m) => ({ default: m.DoctorDirectoryPage }))
 );
 const VitalsTrackerPage = lazy(() =>
   import('./pages/vitals/VitalsTrackerPage').then((m) => ({ default: m.VitalsTrackerPage }))
 );
-const DoctorQuestionsPage = lazy(() =>
-  import('./pages/doctor/DoctorQuestionsPage').then((m) => ({ default: m.DoctorQuestionsPage }))
-);
-const SecondOpinionPage = lazy(() =>
-  import('./pages/doctor/SecondOpinionPage').then((m) => ({ default: m.SecondOpinionPage }))
-);
 const LandingPage = lazy(() =>
   import('./pages/landing/LandingPage').then((m) => ({ default: m.LandingPage }))
 );
 const NotFoundPage = lazy(() =>
   import('./pages/error/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
+);
+const MobileCompanionPage = lazy(() =>
+  import('./pages/companion/MobileCompanionPage').then((m) => ({ default: m.MobileCompanionPage }))
+);
+const DownloadApkPage = lazy(() =>
+  import('./pages/download/DownloadApkPage').then((m) => ({ default: m.DownloadApkPage }))
 );
 
 /**
@@ -148,6 +145,18 @@ function HomeRoute() {
   const { user, isLoading } = useAuth();
   if (isLoading) return <RouteLoadingFallback />;
   return user ? <DashboardPage /> : <LandingPage />;
+}
+
+function CompanionRoute() {
+  const { user, isLoading } = useAuth();
+  const searchParams = new URLSearchParams(window.location.search);
+  const pairToken = searchParams.get('pair');
+
+  if (isLoading) return <RouteLoadingFallback />;
+  if (!user && !pairToken) {
+    return <Navigate to="/login" state={{ from: '/companion' }} replace />;
+  }
+  return <MobileCompanionPage />;
 }
 
 export function AppRoutes() {
@@ -319,17 +328,7 @@ export function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/finances"
-          element={
-            <ProtectedRoute>
-              <FinancePage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Doctor tools. One canonical path each — `/doctor`, `/brief`,
-            `/doctor-brief`, `/finance` and `/chat` were duplicate aliases. */}
+        {/* Unified Doctor Visit Companion */}
         <Route
           path="/doctors"
           element={
@@ -339,26 +338,10 @@ export function AppRoutes() {
           }
         />
         <Route
-          path="/doctor/brief"
+          path="/doctor/visit-prep"
           element={
             <ProtectedRoute>
-              <DoctorBriefPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/doctor/questions"
-          element={
-            <ProtectedRoute>
-              <DoctorQuestionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/doctor/second-opinion"
-          element={
-            <ProtectedRoute>
-              <SecondOpinionPage />
+              <DoctorVisitCompanionPage />
             </ProtectedRoute>
           }
         />
@@ -405,13 +388,22 @@ export function AppRoutes() {
           }
         />
 
-        {/* Redirects for the retired aliases, so existing links and bookmarks
-            keep working instead of hitting the 404 page. */}
+        {/* Mobile Companion PWA & QR Pairing */}
+        <Route path="/companion" element={<CompanionRoute />} />
+        <Route path="/mobile" element={<Navigate to="/companion" replace />} />
+        <Route path="/download" element={<DownloadApkPage />} />
+        <Route path="/download/apk" element={<DownloadApkPage />} />
+
+        {/* Redirects for retired tools and aliases so no links 404 */}
         <Route path="/chat" element={<Navigate to="/assistant" replace />} />
-        <Route path="/finance" element={<Navigate to="/finances" replace />} />
-        <Route path="/doctor" element={<Navigate to="/doctor/brief" replace />} />
-        <Route path="/brief" element={<Navigate to="/doctor/brief" replace />} />
-        <Route path="/doctor-brief" element={<Navigate to="/doctor/brief" replace />} />
+        <Route path="/doctor/questions" element={<Navigate to="/doctor/visit-prep?tab=questions" replace />} />
+        <Route path="/doctor/second-opinion" element={<Navigate to="/doctor/visit-prep?tab=share" replace />} />
+        <Route path="/doctor/brief" element={<Navigate to="/doctor/visit-prep?tab=brief" replace />} />
+        <Route path="/brief" element={<Navigate to="/doctor/visit-prep?tab=brief" replace />} />
+        <Route path="/doctor-brief" element={<Navigate to="/doctor/visit-prep?tab=brief" replace />} />
+        <Route path="/doctor" element={<Navigate to="/doctor/visit-prep" replace />} />
+        <Route path="/finances" element={<Navigate to="/" replace />} />
+        <Route path="/finance" element={<Navigate to="/" replace />} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

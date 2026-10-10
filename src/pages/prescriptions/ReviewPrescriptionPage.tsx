@@ -34,6 +34,7 @@ import type { ProcessedImage } from '../../lib/files/imagePipeline';
 interface MedicineDraft {
   id: string;
   medicine_name: string;
+  generic_name?: string | null;
   strength?: string;
   form?: string;
   dose_amount?: string;
@@ -162,6 +163,7 @@ export function ReviewPrescriptionPage() {
       return {
         id: `draft-${idx}-${draftSessionId}`,
         medicine_name: m.medicine_name || '',
+        generic_name: m.generic_name || null,
         strength: m.strength || '',
         form: m.form || 'tablet',
         dose_amount: m.dose_amount || '',
@@ -195,6 +197,7 @@ export function ReviewPrescriptionPage() {
       {
         id: nid,
         medicine_name: '',
+        generic_name: null,
         strength: '',
         form: 'tablet',
         dose_amount: '',
@@ -621,6 +624,11 @@ export function ReviewPrescriptionPage() {
                           <span className="text-sm font-bold text-content truncate">
                             {m.medicine_name.trim() || `Prescribed Medicine #${idx + 1}`}
                           </span>
+                          {m.generic_name && (
+                            <Badge tone="neutral" size="sm" className="shrink-0 text-2xs font-normal">
+                              Active: {m.generic_name}
+                            </Badge>
+                          )}
                           {isLowConf && (
                             <Badge tone="warn" size="sm" className="shrink-0">
                               Verify Details
@@ -647,6 +655,11 @@ export function ReviewPrescriptionPage() {
                               onChange={(e) => handleUpdateMedicine(m.id, { medicine_name: e.target.value })}
                               placeholder="e.g. Sizodon Plus, Augmentin"
                             />
+                            {isLowConf && (
+                              <p className="text-2xs text-warn-text mt-1">
+                                Handwriting was ambiguous. Please confirm spelling from prescription.
+                              </p>
+                            )}
                           </Field>
                         </div>
                         <div className="sm:col-span-5">

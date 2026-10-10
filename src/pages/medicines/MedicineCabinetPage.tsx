@@ -17,6 +17,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { PackageIcon, PlusIcon, CheckIcon, MedicineIcon } from '../../components/ui/icons';
 import { MedicineOrderModal } from '../../components/medicines/MedicineOrderModal';
+import { BrandMatcherModal } from '../../components/medicines/BrandMatcherModal';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { medicinesRepo } from '../../lib/db';
 import { readInventory, writeInventory } from '../../lib/inventory';
@@ -57,6 +58,7 @@ export function MedicineCabinetPage() {
   const [refillAmount, setRefillAmount] = useState<number>(30);
   const [orderTarget, setOrderTarget] = useState<Medicine | null>(null);
   const [discontinueTarget, setDiscontinueTarget] = useState<Medicine | null>(null);
+  const [brandMatcherState, setBrandMatcherState] = useState<{ open: boolean; initialBrandA?: string }>({ open: false });
   const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'risk' } | null>(null);
 
   const location = useLocation();
@@ -194,9 +196,18 @@ export function MedicineCabinetPage() {
         title="Medicine cabinet"
         description="What you are taking, how much is left, and when to buy more."
         action={
-          <Link to="/prescriptions/new" className="hidden sm:block">
-            <Button leftIcon={<PlusIcon size={17} />}>Add prescription</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setBrandMatcherState({ open: true })}
+              leftIcon={<MedicineIcon size={16} />}
+            >
+              Compare Brands
+            </Button>
+            <Link to="/prescriptions/new" className="hidden sm:block">
+              <Button leftIcon={<PlusIcon size={17} />}>Add prescription</Button>
+            </Link>
+          </div>
         }
       />
 
@@ -544,6 +555,13 @@ export function MedicineCabinetPage() {
         medicine={orderTarget}
         profileId={effectiveProfileId}
         onStockUpdated={loadMedicines}
+      />
+
+      {/* Pharmacy Brand & Active Ingredient Comparator */}
+      <BrandMatcherModal
+        open={brandMatcherState.open}
+        initialBrandA={brandMatcherState.initialBrandA}
+        onClose={() => setBrandMatcherState({ open: false })}
       />
 
       <ConfirmDialog

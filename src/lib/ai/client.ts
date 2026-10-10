@@ -5,6 +5,8 @@ import type {
   ExtractLabReportResponse,
   ExplainMedicineRequest,
   ExplainMedicineResponse,
+  CompareMedicinesRequest,
+  CompareMedicinesResponse,
 } from '../../../api/_lib/schemas';
 import { supabase } from '../supabase/client';
 
@@ -148,5 +150,34 @@ export async function explainMedicine(
     // Ignore quota issues
   }
 
+  return result.data;
+}
+
+/**
+ * Calls POST /api/compare-medicines to factually compare active ingredients of two brands.
+ */
+export async function compareMedicines(
+  payload: CompareMedicinesRequest
+): Promise<CompareMedicinesResponse> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || '';
+
+  const res = await fetch('/api/compare-medicines', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(
+      errorJson.error || 'Could not compare medications right now. Please try again.'
+    );
+  }
+
+  const result: ExtractionResult<CompareMedicinesResponse> = await res.json();
   return result.data;
 }

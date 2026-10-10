@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '../../components/layout/AppShell';
 import { PatientInfoCard } from './components/PatientInfoCard';
+import { ActiveProfileBanner } from '../../components/profile/ActiveProfileBanner';
+import { ShifaMedicalPassportModal } from '../../components/onboarding/ShifaMedicalPassportModal';
+import { ShifaPassportBanner } from '../../components/onboarding/ShifaPassportBanner';
 import { MedicationScheduleCard } from './components/MedicationScheduleCard';
 import { BloodPressureTrendCard } from './components/BloodPressureTrendCard';
 import { BloodGlucoseTrendCard } from './components/BloodGlucoseTrendCard';
 import { AdherenceHabitsCard } from './components/AdherenceHabitsCard';
 import { UpNextCard } from './components/UpNextCard';
 import { QuickVitalsModal } from '../../components/vitals/QuickVitalsModal';
+import { useAuth } from '../../lib/auth/AuthContext';
 import {
   HeartPulseIcon,
   DropletIcon,
@@ -16,6 +20,8 @@ import {
 } from '../../components/ui/icons';
 
 export function DashboardPage() {
+  const { profile } = useAuth();
+  const [passportModalOpen, setPassportModalOpen] = useState(false);
   const [vitalsModal, setVitalsModal] = useState<{ open: boolean; type: 'glucose' | 'bp' }>({
     open: false,
     type: 'bp',
@@ -23,9 +29,32 @@ export function DashboardPage() {
   const [vitalsRefreshKey, setVitalsRefreshKey] = useState(0);
   const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
 
+  useEffect(() => {
+    if (!profile) return;
+    const isCompleted = profile.onboarding_completed;
+    const isDismissed = sessionStorage.getItem(`curewell_onboarding_dismissed_${profile.id}`);
+
+    const hasAnyMedicalData = Boolean(
+      profile.chronic_conditions ||
+      profile.allergies ||
+      (profile.blood_group && profile.blood_group !== 'unknown') ||
+      profile.emergency_contact_phone
+    );
+
+    if (!isCompleted && !isDismissed && !hasAnyMedicalData) {
+      setPassportModalOpen(true);
+    }
+  }, [profile]);
+
   return (
     <AppShell>
       <div className="space-y-6 pb-20">
+        {/* ── Caregiver Persona Guardrail Banner ───────────────────── */}
+        <ActiveProfileBanner />
+
+        {/* ── Shifa Medical Passport Onboarding Banner (if uncompleted) ── */}
+        <ShifaPassportBanner onOpenPassport={() => setPassportModalOpen(true)} />
+
         {/* ── Patient Identity & Circadian Greeting ────────────────── */}
         <PatientInfoCard />
 
@@ -107,6 +136,22 @@ export function DashboardPage() {
           onSaved={() => setVitalsRefreshKey((prev) => prev + 1)}
         />
       )}
+
+      {/* Shifa Medical Passport Modal */}
+      <ShifaMedicalPassportModal
+        isOpen={passportModalOpen}
+        onClose={() => {
+          setPassportModalOpen(false);
+          if (profile?.id) {
+            sessionStorage.setItem(`curewell_onboarding_dismissed_${profile.id}`, 'true');
+          }
+        }}
+        onCompleted={() => {
+          setPassportModalOpen(false);
+          setVitalsRefreshKey((prev) => prev + 1);
+          setScheduleRefreshKey((prev) => prev + 1);
+        }}
+      />
     </AppShell>
   );
 }

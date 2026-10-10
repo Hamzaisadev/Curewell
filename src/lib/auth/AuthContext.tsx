@@ -32,7 +32,27 @@ function friendlyError(error: AuthError | Error): string {
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
+  /** Active selected profile (the person whose care is being managed right now) */
   profile: Tables<'profiles'> | null;
+  activeProfile: Tables<'profiles'> | null;
+  /** All profiles under this caregiver account */
+  profiles: Tables<'profiles'>[];
+  /** Switch the active profile by ID */
+  switchProfile: (profileId: string) => Promise<void>;
+  /** Add a dependent family profile */
+  createFamilyProfile: (data: {
+    fullName: string;
+    relationship: 'parent' | 'child' | 'spouse' | 'other';
+    chronicConditions?: string;
+    dateOfBirth?: string;
+    sex?: 'male' | 'female' | 'other' | 'undisclosed';
+    bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'unknown';
+    allergies?: string;
+  }) => Promise<Tables<'profiles'>>;
+  /** Update any family profile */
+  updateFamilyProfile: (id: string, updates: Partial<Tables<'profiles'>>) => Promise<Tables<'profiles'>>;
+  /** Delete a dependent family profile */
+  deleteFamilyProfile: (profileId: string) => Promise<void>;
   isLoading: boolean;
   isGuest: boolean;
   /** True when signup succeeded but the user must verify their email first. */
@@ -86,7 +106,7 @@ const DEV_TEST_USER: User = {
 const DEV_TEST_PROFILE: Tables<'profiles'> = {
   id: '00000000-0000-0000-0000-000000000001',
   user_id: '00000000-0000-0000-0000-000000000001',
-  full_name: 'Test Patient',
+  full_name: 'Test Patient (Self)',
   relationship: 'self',
   sex: 'male',
   date_of_birth: '1990-01-01',
@@ -98,6 +118,27 @@ const DEV_TEST_PROFILE: Tables<'profiles'> = {
   emergency_contact_name: null,
   emergency_contact_phone: null,
   is_default: true,
+  onboarding_completed: true,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+const DEV_TEST_DEPENDENT_PROFILE: Tables<'profiles'> = {
+  id: '00000000-0000-0000-0000-000000000002',
+  user_id: '00000000-0000-0000-0000-000000000001',
+  full_name: 'Muhammad Ali (Father)',
+  relationship: 'parent',
+  sex: 'male',
+  date_of_birth: '1958-05-12',
+  blood_group: 'O+',
+  height_cm: 170,
+  weight_kg: 74,
+  allergies: 'Penicillin',
+  chronic_conditions: 'Type 2 Diabetes, Hypertension',
+  emergency_contact_name: 'Test Patient',
+  emergency_contact_phone: '+923001234567',
+  is_default: false,
+  onboarding_completed: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -109,44 +150,64 @@ const DEV_TEST_PROFILE: Tables<'profiles'> = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(DISABLE_AUTH ? DEV_TEST_USER : null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Tables<'profiles'> | null>(DISABLE_AUTH ? DEV_TEST_PROFILE : null);
+  const [profiles, setProfiles] = useState<Tables<'profiles'>[]>(
+    DISABLE_AUTH ? [DEV_TEST_PROFILE, DEV_TEST_DEPENDENT_PROFILE] : []
+  );
+  const [activeProfile, setActiveProfile] = useState<Tables<'profiles'> | null>(
+    DISABLE_AUTH ? DEV_TEST_PROFILE : null
+  );
   const [isLoading, setIsLoading] = useState(!DISABLE_AUTH);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
 
+  // 100% backward-compatible alias for existing consumers
+  const profile = activeProfile;
+
   // -----------------------------------------------------------------------
-  // Profile fetching — tries remote, falls back to local store
+  // Profile fetching — lists all profiles under caregiver account
   // -----------------------------------------------------------------------
 
   const fetchProfile = useCallback(async (authUser: User | null) => {
     if (DISABLE_AUTH) {
-      setProfile(DEV_TEST_PROFILE);
+      setProfiles([DEV_TEST_PROFILE, DEV_TEST_DEPENDENT_PROFILE]);
+      setActiveProfile(DEV_TEST_PROFILE);
       return;
     }
 
     if (!authUser) {
-      setProfile(null);
+      setProfiles([]);
+      setActiveProfile(null);
       return;
     }
 
     try {
-      let p = await profilesRepo.getDefaultProfile(authUser.id);
-      if (!p) {
-        // The database trigger should have created the profile on signup.
-        // If it doesn't exist yet (e.g. trigger hasn't been deployed), create
-        // it client-side as a fallback.
-        p = await profilesRepo.updateProfile(authUser.id, {
-          id: authUser.id,
-          user_id: authUser.id,
-          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Patient',
-          is_default: true,
-          sex: authUser.user_metadata?.sex || 'undisclosed',
-          date_of_birth: authUser.user_metadata?.date_of_birth || null,
-        });
+      let list = await profilesRepo.listProfiles(authUser.id);
+      if (!list || list.length === 0) {
+        let p = await profilesRepo.getDefaultProfile(authUser.id);
+        if (!p) {
+          // The database trigger should have created the profile on signup.
+          // Fallback creation for self profile.
+          p = await profilesRepo.updateProfile(authUser.id, {
+            id: authUser.id,
+            user_id: authUser.id,
+            full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Patient',
+            relationship: 'self',
+            is_default: true,
+            sex: authUser.user_metadata?.sex || 'undisclosed',
+            date_of_birth: authUser.user_metadata?.date_of_birth || null,
+          });
+        }
+        list = [p];
       }
-      setProfile(p);
+
+      setProfiles(list);
+
+      // Restore previously selected active profile from localStorage if valid
+      const storedActiveId = localStorage.getItem(`curewell_active_profile_id_${authUser.id}`);
+      const selected = list.find((p) => p.id === storedActiveId) || list.find((p) => p.is_default) || list[0] || null;
+      setActiveProfile(selected);
     } catch (err) {
-      console.warn('Error loading user profile:', err);
+      console.warn('Error loading user profiles:', err);
     }
   }, []);
 
@@ -157,7 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (DISABLE_AUTH) {
       setUser(DEV_TEST_USER);
-      setProfile(DEV_TEST_PROFILE);
+      setProfiles([DEV_TEST_PROFILE, DEV_TEST_DEPENDENT_PROFILE]);
+      setActiveProfile(DEV_TEST_PROFILE);
       setIsLoading(false);
       return;
     }
@@ -210,7 +272,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           break;
 
         case 'SIGNED_OUT':
-          setProfile(null);
+          setActiveProfile(null);
+          setProfiles([]);
           setNeedsEmailVerification(false);
           setPendingVerificationEmail(null);
           setIsLoading(false);
@@ -371,6 +434,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   // -----------------------------------------------------------------------
+  // Caregiver Multi-Profile Operations
+  // -----------------------------------------------------------------------
+
+  const switchProfile = useCallback(async (profileId: string) => {
+    const target = profiles.find((p) => p.id === profileId);
+    if (!target) {
+      console.warn(`Profile with ID ${profileId} not found in user profiles.`);
+      return;
+    }
+    setActiveProfile(target);
+    if (user) {
+      localStorage.setItem(`curewell_active_profile_id_${user.id}`, target.id);
+    }
+  }, [profiles, user]);
+
+  const createFamilyProfile = useCallback(
+    async (data: {
+      fullName: string;
+      relationship: 'parent' | 'child' | 'spouse' | 'other';
+      chronicConditions?: string;
+      dateOfBirth?: string;
+      sex?: 'male' | 'female' | 'other' | 'undisclosed';
+      bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'unknown';
+      allergies?: string;
+    }) => {
+      const targetUserId = user?.id || (DISABLE_AUTH ? DEV_TEST_USER.id : '');
+      if (!targetUserId) throw new Error('Must be signed in to add a family profile.');
+
+      const newProfile = await profilesRepo.createProfile({
+        user_id: targetUserId,
+        full_name: data.fullName.trim(),
+        relationship: data.relationship,
+        chronic_conditions: data.chronicConditions?.trim() || null,
+        date_of_birth: data.dateOfBirth || null,
+        sex: data.sex || 'undisclosed',
+        blood_group: data.bloodGroup || 'unknown',
+        allergies: data.allergies?.trim() || null,
+        is_default: false,
+      });
+
+      setProfiles((prev) => [...prev, newProfile]);
+      setActiveProfile(newProfile);
+      if (user) {
+        localStorage.setItem(`curewell_active_profile_id_${user.id}`, newProfile.id);
+      }
+      return newProfile;
+    },
+    [user]
+  );
+
+  const updateFamilyProfile = useCallback(
+    async (id: string, updates: Partial<Tables<'profiles'>>) => {
+      const updated = await profilesRepo.updateProfile(id, updates);
+      setProfiles((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      setActiveProfile((curr) => (curr?.id === id ? updated : curr));
+      return updated;
+    },
+    []
+  );
+
+  const deleteFamilyProfile = useCallback(
+    async (profileId: string) => {
+      const target = profiles.find((p) => p.id === profileId);
+      if (!target) return;
+      if (target.is_default || target.relationship === 'self') {
+        throw new Error('Cannot delete your primary profile.');
+      }
+
+      await profilesRepo.deleteProfile(profileId);
+      const remaining = profiles.filter((p) => p.id !== profileId);
+      setProfiles(remaining);
+
+      // If currently active profile was deleted, switch back to default profile
+      if (activeProfile?.id === profileId) {
+        const defaultP = remaining.find((p) => p.is_default) || remaining[0] || null;
+        setActiveProfile(defaultP);
+        if (user && defaultP) {
+          localStorage.setItem(`curewell_active_profile_id_${user.id}`, defaultP.id);
+        }
+      }
+    },
+    [profiles, activeProfile?.id, user]
+  );
+
+  // -----------------------------------------------------------------------
   // Sign out
   // -----------------------------------------------------------------------
 
@@ -384,7 +532,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // that leaves you signed in is worse than no button.
       setUser(null);
       setSession(null);
-      setProfile(null);
+      setProfiles([]);
+      setActiveProfile(null);
       setNeedsEmailVerification(false);
       setPendingVerificationEmail(null);
     }
@@ -436,6 +585,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         profile,
+        activeProfile,
+        profiles,
+        switchProfile,
+        createFamilyProfile,
+        updateFamilyProfile,
+        deleteFamilyProfile,
         isLoading,
         isGuest: !user,
         needsEmailVerification,

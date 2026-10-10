@@ -2,10 +2,10 @@
   "name": "Curewell — Personal Health & Prescription Records",
   "short_name": "Curewell",
   "description": "Personal medical records, prescription digitization, dose reminders, and lab report tracking.",
-  "start_url": "/",
+  "start_url": "/companion",
   "display": "standalone",
-  "background_color": "#F8FAFC",
-  "theme_color": "#0F766E",
+  "background_color": "#020617",
+  "theme_color": "#0D9488",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -19,6 +19,29 @@
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's Doses",
+      "short_name": "Doses",
+      "description": "View and log today's scheduled medicines",
+      "url": "/companion",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Record Vitals",
+      "short_name": "Vitals",
+      "description": "10-second blood pressure and glucose logger",
+      "url": "/companion",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Emergency Medical ID",
+      "short_name": "Emergency SOS",
+      "description": "Offline emergency medical card and blood group",
+      "url": "/companion",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
     }
   ]
 }

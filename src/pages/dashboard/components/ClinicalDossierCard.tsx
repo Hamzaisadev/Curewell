@@ -85,7 +85,7 @@ export function ClinicalDossierCard() {
         {/* ── Action Links ──────────────────────────────────────────── */}
         <div className="space-y-2">
           <Link
-            to="/doctor/questions"
+            to="/doctor/visit-prep?tab=questions"
             className="flex items-center justify-between p-2.5 rounded-xl bg-surface-sunken/60 dark:bg-ink-900/30 border border-line hover:border-brand-500/40 transition-all group"
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -103,7 +103,7 @@ export function ClinicalDossierCard() {
           </Link>
 
           <Link
-            to="/doctor/second-opinion"
+            to="/doctor/visit-prep?tab=share"
             className="flex items-center justify-between p-2.5 rounded-xl bg-surface-sunken/60 dark:bg-ink-900/30 border border-line hover:border-brand-500/40 transition-all group"
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -143,8 +143,8 @@ export function ClinicalDossierCard() {
       {/* ── Footer ────────────────────────────────────────────────── */}
       <div className="pt-2 mt-3 border-t border-line/40 flex items-center justify-between text-2xs text-content-subtle">
         <span>Encrypted &amp; patient-controlled</span>
-        <Link to="/doctor/brief" className="font-bold text-brand-600 hover:underline flex items-center gap-0.5">
-          <span>Doctor Brief</span>
+        <Link to="/doctor/visit-prep?tab=brief" className="font-bold text-brand-600 hover:underline flex items-center gap-0.5">
+          <span>Doctor Companion</span>
           <ChevronRightIcon size={12} />
         </Link>
       </div>

@@ -1163,3 +1163,47 @@ export function EmptyIllustration({ className = '' }: { className?: string }) {
     </svg>
   );
 }
+
+export function AndroidIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 16v-6a7 7 0 0 1 14 0v6" />
+      <path d="M6 10h12" />
+      <path d="M9 3l1.5 3" />
+      <path d="M15 3l-1.5 3" />
+      <circle cx="9" cy="9" r="1" fill="currentColor" />
+      <circle cx="15" cy="9" r="1" fill="currentColor" />
+      <path d="M8 16v4" />
+      <path d="M16 16v4" />
+    </Icon>
+  );
+}
+
+export function AppleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 20.94c1.88 0 3.05-.9 4.31-.9 1.23 0 2.25.9 4.19.9 2.5 0 4.5-2.07 4.5-5.63 0-3.32-2.19-5.06-4.22-5.06-1.56 0-2.82.9-3.78.9-.96 0-2.22-.9-3.78-.9-2.34 0-4.72 1.94-4.72 5.06 0 3.56 2 5.63 4.5 5.63h1z" />
+      <path d="M15 2c0 2-1.5 3.5-3.5 3.5 0-2 1.5-3.5 3.5-3.5z" />
+    </Icon>
+  );
+}
+
+export function QrCodeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect width="5" height="5" x="3" y="3" rx="1" />
+      <rect width="5" height="5" x="16" y="3" rx="1" />
+      <rect width="5" height="5" x="3" y="16" rx="1" />
+      <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+      <path d="M21 21v.01" />
+      <path d="M12 7v3a2 2 0 0 1-2 2H7" />
+      <path d="M3 12h.01" />
+      <path d="M12 3h.01" />
+      <path d="M12 16v.01" />
+      <path d="M16 12h1" />
+      <path d="M21 12v.01" />
+      <path d="M12 21v-1" />
+    </Icon>
+  );
+}
+

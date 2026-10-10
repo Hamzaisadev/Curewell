@@ -12,8 +12,9 @@ export function HeroSection() {
 
   return (
     <section
+      id="hero"
       ref={containerRef as React.RefObject<HTMLElement | null>}
-      className="relative pt-32 sm:pt-40 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden bg-white text-slate-900 border-b border-slate-200/80"
+      className="relative pt-32 sm:pt-40 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden bg-white text-slate-900 border-b border-slate-200/80 scroll-mt-28"
     >
       {/* 1. Ambient Blueprint Grid & Reactive Spotlight Glow */}
       <HeroBackground smoothPixelX={smoothPixelX} smoothPixelY={smoothPixelY} />
@@ -23,7 +24,7 @@ export function HeroSection() {
         {/* Kinetic Staggered Typography & CTAs */}
         <HeroHeadline />
 
-        {/* 3. Interactive 3D Perspective Vault Stage & Telemetry Centerpiece */}
+        {/* 3. Interactive Tactile Paper-to-Enclave Hero Artifact */}
         <HeroVisualStage springX={springX} springY={springY} />
 
         {/* 4. Glassmorphic Proof Metrics Strip with Rolling Counters */}

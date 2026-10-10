@@ -11,6 +11,8 @@ dist-ssr/
 build/
 out/
 *.local
+*.apk
+!public/downloads/Curewell.apk
 
 # TypeScript Build Info
 *.tsbuildinfo

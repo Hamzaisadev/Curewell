@@ -1,6 +1,6 @@
 import { supabase } from '../supabase/client';
 import type { Tables, InsertTables, UpdateTables } from '../supabase/types';
-import { getLocalItems, insertLocalItem, updateLocalItem } from './localStore';
+import { getLocalItems, insertLocalItem, updateLocalItem, newId, deleteLocalItem } from './localStore';
 import { listWithFallback } from './offlineFallback';
 
 export type Profile = Tables<'profiles'>;
@@ -24,6 +24,7 @@ function blankProfile(userId: string): Profile {
     emergency_contact_name: null,
     emergency_contact_phone: null,
     is_default: true,
+    onboarding_completed: false,
     created_at: nowIso,
     updated_at: nowIso,
   };
@@ -117,4 +118,51 @@ export async function updateProfile(id: string, updates: ProfileUpdate): Promise
     ...updates,
     id,
   } as Profile);
+}
+
+export async function createProfile(profileData: ProfileInsert): Promise<Profile> {
+  const id = profileData.id || newId();
+  const nowIso = new Date().toISOString();
+  const payload: ProfileInsert = {
+    ...profileData,
+    id,
+    is_default: profileData.is_default ?? false,
+    relationship: profileData.relationship || 'other',
+    created_at: profileData.created_at || nowIso,
+    updated_at: profileData.updated_at || nowIso,
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    if (data) return data;
+  } catch (err) {
+    console.warn('createProfile remote insert failed, saving to local store:', err);
+  }
+
+  return insertLocalItem<Profile>('profiles', {
+    ...blankProfile(payload.user_id),
+    ...payload,
+    id,
+  } as Profile);
+}
+
+export async function deleteProfile(profileId: string): Promise<void> {
+  if (!profileId) return;
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', profileId);
+
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    console.warn('deleteProfile remote failed, deleting from local store:', err);
+  }
+  deleteLocalItem<Profile>('profiles', profileId);
 }

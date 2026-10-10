@@ -11,6 +11,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { MedicineOrderModal } from '../../components/medicines/MedicineOrderModal';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { DoseCard } from '../../components/ui/DoseCard';
+import { ActiveProfileBanner } from '../../components/profile/ActiveProfileBanner';
 import { getSlotMeta } from '../../components/ui/slotMeta';
 import {
   CalendarIcon,
@@ -784,6 +785,11 @@ export function TodaySchedulePage() {
           tone={toast.tone}
         />
       )}
+
+      {/* Caregiver Persona Guardrail Banner */}
+      <div className="mb-4">
+        <ActiveProfileBanner />
+      </div>
 
       {/* Bento Health OS Top Control Strip */}
       <div className="p-3 sm:p-4 px-4 sm:px-6 rounded-3xl bg-surface-raised border border-line shadow-2xs mb-6 overflow-visible relative z-30">

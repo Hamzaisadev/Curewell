@@ -9,8 +9,13 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Toast } from '../../components/ui/Toast';
+import { Badge } from '../../components/ui/Badge';
 import { Disclaimer } from '../../components/ui/Disclaimer';
-import { DoctorIcon, ReceiptIcon } from '../../components/ui/icons';
+import { DoctorIcon, FileTextIcon, PlusIcon, UsersIcon, TrashIcon, CheckIcon, SparklesIcon, ShieldIcon } from '../../components/ui/icons';
+import { AddFamilyProfileModal } from '../../components/profile/AddFamilyProfileModal';
+import { ShifaMedicalPassportModal } from '../../components/onboarding/ShifaMedicalPassportModal';
+import { MobileCompanionModal } from '../../components/companion/MobileCompanionModal';
+import { useAuth } from '../../lib/auth/AuthContext';
 import {
   profilesRepo,
   visitsRepo,
@@ -39,15 +44,42 @@ import {
 } from '../../lib/disclaimer';
 import type { Tables } from '../../lib/supabase/types';
 
-import { useAuth } from '../../lib/auth/AuthContext';
+const RELATIONSHIP_LABELS: Record<string, string> = {
+  self: 'Primary Account (Self)',
+  parent: 'Parent',
+  child: 'Child',
+  spouse: 'Spouse',
+  other: 'Dependent / Other',
+};
+
+function formatConditions(conditions: unknown): string {
+  if (!conditions) return '';
+  if (Array.isArray(conditions)) return (conditions as string[]).join(', ');
+  if (typeof conditions === 'string') return conditions;
+  return '';
+}
 
 export function SettingsPage() {
-  const { user, profile: authProfile, refreshProfile } = useAuth();
+  const {
+    user,
+    profile: authProfile,
+    profiles,
+    activeProfile,
+    switchProfile,
+    deleteFamilyProfile,
+    refreshProfile,
+  } = useAuth();
   const [profile, setProfile] = useState<Tables<'profiles'> | null>(null);
   const [fullName, setFullName] = useState('');
   const [sex, setSex] = useState<'male' | 'female' | 'other' | 'undisclosed'>('undisclosed');
   const [allergiesText, setAllergiesText] = useState('');
   const [conditionsText, setConditionsText] = useState('');
+
+  // Family profile management state
+  const [isAddProfileModalOpen, setIsAddProfileModalOpen] = useState(false);
+  const [profileToDelete, setProfileToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isPassportModalOpen, setIsPassportModalOpen] = useState(false);
+  const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
 
   // Reminders state, loaded from and saved to reminder_settings.
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -74,7 +106,7 @@ export function SettingsPage() {
     async function loadSettings() {
       if (!effectiveUserId) return;
       try {
-        const p = await profilesRepo.getDefaultProfile(effectiveUserId);
+        const p = authProfile ? authProfile : await profilesRepo.getDefaultProfile(effectiveUserId);
         if (p) {
           setProfile(p);
           setFullName(p.full_name || '');
@@ -107,7 +139,30 @@ export function SettingsPage() {
       }
     }
     loadSettings();
-  }, [effectiveUserId, effectiveProfileId]);
+  }, [effectiveUserId, effectiveProfileId, authProfile]);
+
+  const handleDeleteProfile = async () => {
+    if (!profileToDelete) return;
+    try {
+      await deleteFamilyProfile(profileToDelete.id);
+      setToastMessage(`Profile for "${profileToDelete.name}" was removed.`);
+      setProfileToDelete(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete profile';
+      setErrorMessage(msg);
+      setProfileToDelete(null);
+    }
+  };
+
+  const handleSwitchProfile = async (targetId: string, targetName: string) => {
+    try {
+      await switchProfile(targetId);
+      setToastMessage(`Switched active profile to ${targetName}.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to switch profile';
+      setErrorMessage(msg);
+    }
+  };
 
   /** Asks the browser for permission before enabling, so the toggle is honest. */
   const handleToggleNotifications = async (next: boolean) => {
@@ -419,9 +474,177 @@ export function SettingsPage() {
       )}
 
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* Family Profiles & Caregiver Network Card */}
+        <Card
+          header={
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-teal-50 text-teal-700">
+                    <UsersIcon size={18} />
+                  </span>
+                  <h2 className="text-base font-bold text-ink-900">Family Profiles & Caregiver Network</h2>
+                </div>
+                <p className="text-xs text-ink-500 mt-1">
+                  Manage profiles for family members under your care. Data, prescriptions, and lab tests remain strictly isolated per person.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsAddProfileModalOpen(true)}
+                className="self-start sm:self-auto shrink-0"
+              >
+                <PlusIcon size={16} className="mr-1.5" />
+                Add Family Member
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-3">
+            {profiles.length === 0 ? (
+              <div className="text-center py-6 text-sm text-ink-500">
+                No profiles loaded yet.
+              </div>
+            ) : (
+              <div className="divide-y divide-line">
+                {profiles.map((p: Tables<'profiles'>) => {
+                  const isActive = p.id === activeProfile?.id;
+                  const isPrimary = p.relationship === 'self' || p.is_default;
+                  const label = RELATIONSHIP_LABELS[p.relationship || 'other'] || p.relationship;
+                  const initials = p.full_name
+                    ? p.full_name
+                        .split(' ')
+                        .map((n: string) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()
+                    : 'U';
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isActive ? 'bg-teal-50/40 -mx-4 sm:-mx-6 px-4 sm:px-6 rounded-xl' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${
+                            isActive
+                              ? 'bg-teal-600 text-white border-teal-700 shadow-xs'
+                              : 'bg-surface-hover text-content-muted border-line'
+                          }`}
+                        >
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-sm text-ink-900 truncate">
+                              {p.full_name}
+                            </span>
+                            <Badge
+                              tone={isActive ? 'ok' : 'neutral'}
+                              size="sm"
+                            >
+                              {label}
+                            </Badge>
+                            {isActive && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded-full">
+                                <CheckIcon size={12} /> Active Now
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-ink-500 mt-0.5 flex-wrap">
+                            {p.sex && p.sex !== 'undisclosed' && (
+                              <span className="capitalize">{p.sex}</span>
+                            )}
+                            {p.blood_group && (
+                              <span>Blood: <strong className="text-ink-700">{p.blood_group}</strong></span>
+                            )}
+                            {p.chronic_conditions && (
+                              <span
+                                className="truncate max-w-xs text-ink-600"
+                                title={formatConditions(p.chronic_conditions)}
+                              >
+                                Conditions: {formatConditions(p.chronic_conditions)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                        {!isActive && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleSwitchProfile(p.id, p.full_name)}
+                          >
+                            Switch to Profile
+                          </Button>
+                        )}
+                        {!isPrimary && (
+                          <button
+                            type="button"
+                            onClick={() => setProfileToDelete({ id: p.id, name: p.full_name })}
+                            aria-label={`Remove profile for ${p.full_name}`}
+                            className="p-1.5 rounded-lg text-ink-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Remove family profile"
+                          >
+                            <TrashIcon size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-line text-xs text-ink-500 flex items-center justify-between">
+              <span>
+                Tip: You can also switch between profiles instantly from the top-bar profile selector anywhere in Curewell.
+              </span>
+            </div>
+          </div>
+        </Card>
+
         {/* Patient Clinical Profile Card */}
         <Card header={<h2 className="text-base font-bold text-ink-900">Patient Profile & Clinical Context</h2>}>
           <div className="space-y-4">
+            {/* Shifa Interactive Passport Launch Banner */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-500/10 via-brand-500/5 to-emerald-500/10 border border-teal-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
+                  <SparklesIcon size={20} className="animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-teal-800 dark:text-teal-200 uppercase tracking-wider flex items-center gap-1">
+                      <ShieldIcon size={12} /> Shifa Health Passport
+                    </span>
+                    {profile?.onboarding_completed && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                        Active & Guarded
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-600 dark:text-content-muted mt-0.5">
+                    Launch the guided, fun wizard to update blood group, chronic conditions, and emergency contacts.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPassportModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+              >
+                <SparklesIcon size={14} />
+                <span>Open Shifa Wizard</span>
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field id="set-name" label="Full Name" required>
                 <Input
@@ -584,16 +807,16 @@ export function SettingsPage() {
             </Link>
 
             <Link
-              to="/finances"
+              to="/doctor/visit-prep"
               className="p-3.5 rounded-xl border border-teal-200 bg-teal-50/60 hover:bg-teal-100/70 transition-all flex items-center justify-between"
             >
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-lg bg-teal-100/80 text-teal-800 shrink-0">
-                  <ReceiptIcon size={20} />
+                  <FileTextIcon size={20} />
                 </div>
                 <div>
-                  <span className="font-bold text-ink-900 block text-sm">Financial Tracker</span>
-                  <span className="text-ink-500 text-[11px]">Track consultation fees, medicine costs & lab budgets</span>
+                  <span className="font-bold text-ink-900 block text-sm">Doctor Visit Companion</span>
+                  <span className="text-ink-500 text-[11px]">Consultation talking points, clinical brief &amp; second opinion</span>
                 </div>
               </div>
               <span className="font-bold text-teal-800">&rarr;</span>
@@ -627,6 +850,56 @@ export function SettingsPage() {
               >
                 Restore / Import Backup
               </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Mobile Companion Card */}
+        <Card
+          header={
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-teal-50 text-teal-700">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-base font-bold text-ink-900">Mobile Companion & App Pair</h2>
+                  <p className="text-xs text-ink-500">
+                    Offline medication checklist, 10-second vitals logger, and medical emergency card on your phone.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setIsCompanionModalOpen(true)}
+                className="self-start sm:self-auto shrink-0"
+              >
+                Show Pairing QR
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-3 text-xs text-ink-600 leading-relaxed">
+            <p>
+              Pair your iPhone or Android phone to access today&apos;s doses offline with a tactile 4-digit PIN or Face ID. Zero app store download needed—just scan the QR code and tap &quot;Add to Home Screen&quot;.
+            </p>
+            <div className="flex items-center gap-3 pt-1">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsCompanionModalOpen(true)}
+              >
+                Scan QR to Install on Phone
+              </Button>
+              <Link
+                to="/companion"
+                className="text-teal-700 hover:text-teal-800 font-semibold underline text-xs ml-2"
+              >
+                Open Mobile Companion in browser &rarr;
+              </Link>
             </div>
           </div>
         </Card>
@@ -694,6 +967,57 @@ export function SettingsPage() {
         tone="danger"
         confirmLabel="Permanently Delete Everything"
         onConfirm={handleWipeAllRecords}
+      />
+
+      {/* Remove Family Profile Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(profileToDelete)}
+        onOpenChange={(open) => !open && setProfileToDelete(null)}
+        title="Remove Family Profile"
+        description={`Are you sure you want to remove the profile for ${profileToDelete?.name}? Their prescriptions, doses, and medical history will be disconnected.`}
+        tone="danger"
+        confirmLabel="Remove Profile"
+        onConfirm={handleDeleteProfile}
+      />
+
+      {/* Add Family Member Modal */}
+      <AddFamilyProfileModal
+        isOpen={isAddProfileModalOpen}
+        onClose={() => setIsAddProfileModalOpen(false)}
+        onProfileCreated={(name) => setToastMessage(`Profile for "${name}" created successfully.`)}
+      />
+
+      {/* Shifa Medical Passport Modal */}
+      <ShifaMedicalPassportModal
+        isOpen={isPassportModalOpen}
+        onClose={() => setIsPassportModalOpen(false)}
+        onCompleted={async () => {
+          setIsPassportModalOpen(false);
+          await refreshProfile();
+          if (effectiveUserId) {
+            const p = await profilesRepo.getDefaultProfile(effectiveUserId);
+            if (p) {
+              setProfile(p);
+              setFullName(p.full_name || '');
+              setSex(p.sex || 'undisclosed');
+              setAllergiesText(
+                Array.isArray(p.allergies) ? (p.allergies as string[]).join(', ') : (p.allergies as string) || ''
+              );
+              setConditionsText(
+                Array.isArray(p.chronic_conditions)
+                  ? (p.chronic_conditions as string[]).join(', ')
+                  : (p.chronic_conditions as string) || ''
+              );
+            }
+          }
+          setToastMessage('Medical Passport updated successfully.');
+        }}
+      />
+
+      {/* Mobile Companion Pairing QR Modal */}
+      <MobileCompanionModal
+        isOpen={isCompanionModalOpen}
+        onClose={() => setIsCompanionModalOpen(false)}
       />
     </AppShell>
   );

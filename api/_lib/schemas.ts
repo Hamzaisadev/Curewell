@@ -69,8 +69,11 @@ export const extractedMedicineItemSchema = z.preprocess((val: any) => {
       }
     }
 
+    const generic_name = val.generic_name || val.generic || val.salt || val.molecule || null;
+
     return {
       medicine_name: String(medicine_name),
+      generic_name: generic_name ? String(generic_name) : null,
       strength: strength ? String(strength) : null,
       form: form ? String(form) : null,
       dose_amount: dose_amount ? String(dose_amount) : null,
@@ -84,6 +87,7 @@ export const extractedMedicineItemSchema = z.preprocess((val: any) => {
   return val;
 }, z.object({
   medicine_name: z.string(),
+  generic_name: z.string().nullable().optional(),
   strength: z.string().nullable().optional(),
   form: z.string().nullable().optional(),
   dose_amount: z.string().nullable().optional(),
@@ -302,3 +306,32 @@ export const checkInteractionsResponseSchema = z.object({
 
 export type CheckInteractionsRequest = z.infer<typeof checkInteractionsRequestSchema>;
 export type CheckInteractionsResponse = z.infer<typeof checkInteractionsResponseSchema>;
+
+// ==========================================
+// 5. Compare Medicines (Brand Matcher) Schemas
+// ==========================================
+export const compareMedicinesRequestSchema = z.object({
+  brand_a: z.string().min(1, 'Brand A is required'),
+  brand_b: z.string().min(1, 'Brand B is required'),
+});
+
+export const compareMedicinesResponseSchema = z.object({
+  brand_a: z.object({
+    brand_name: z.string(),
+    generic_name: z.string().nullable().optional(),
+    strength: z.string().nullable().optional(),
+    form: z.string().nullable().optional(),
+  }),
+  brand_b: z.object({
+    brand_name: z.string(),
+    generic_name: z.string().nullable().optional(),
+    strength: z.string().nullable().optional(),
+    form: z.string().nullable().optional(),
+  }),
+  is_same_active_ingredient: z.boolean(),
+  comparison_summary: z.string(),
+  pharmacist_notice: z.string(),
+});
+
+export type CompareMedicinesRequest = z.infer<typeof compareMedicinesRequestSchema>;
+export type CompareMedicinesResponse = z.infer<typeof compareMedicinesResponseSchema>;

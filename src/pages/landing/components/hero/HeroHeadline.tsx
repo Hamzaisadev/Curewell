@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'motion/react';
-import { ArrowRightIcon, SparklesIcon, CheckCircleIcon, ActivityIcon } from '../../../../components/ui/icons';
+import { ArrowRightIcon, SparklesIcon, CheckCircleIcon, ActivityIcon, ShieldIcon } from '../../../../components/ui/icons';
 
-// Stagger animation container
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -15,22 +14,22 @@ const containerVariants: Variants = {
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 22 },
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
       type: 'spring',
       damping: 24,
-      stiffness: 150,
+      stiffness: 160,
     },
   },
 };
 
 export function HeroHeadline() {
-  const scrollToConsole = (e: React.MouseEvent) => {
+  const scrollToDemo = (e: React.MouseEvent) => {
     e.preventDefault();
-    const el = document.getElementById('interactive-console') || document.getElementById('bento-vault');
+    const el = document.getElementById('story-scroller') || document.getElementById('interactive-console');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
@@ -54,15 +53,15 @@ export function HeroHeadline() {
           </span>
 
           <span className="text-xs font-semibold text-slate-800 tracking-tight">
-            Personal Health Vault
+            Personal Clinical Health Vault
           </span>
           <span className="text-slate-300 text-xs">•</span>
           <span className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700">
             <SparklesIcon className="w-3.5 h-3.5 text-teal-600 animate-pulse" />
             <span>Shifa AI Co-Pilot</span>
           </span>
-          <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-teal-100/70 text-teal-800">
-            v4.0
+          <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-teal-100/70 text-teal-800 border border-teal-200/50">
+            FHIR R4
           </span>
         </div>
       </motion.div>
@@ -76,7 +75,7 @@ export function HeroHeadline() {
         <br />
         <span className="relative inline-block mt-1 sm:mt-2">
           <span className="bg-gradient-to-r from-teal-800 via-teal-600 to-emerald-600 bg-clip-text text-transparent">
-            Digitized in Seconds.
+            Digitized with Clinical Rigor.
           </span>
           {/* Animated decorative trajectory underline */}
           <motion.svg
@@ -87,7 +86,7 @@ export function HeroHeadline() {
             initial={{ pathLength: 0, opacity: 0 }}
             whileInView={{ pathLength: 1, opacity: 1 }}
             viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 1.4, delay: 0.35, ease: 'easeOut' }}
+            transition={{ duration: 1.4, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
             <motion.path
               d="M0 6 Q 75 0, 150 6 T 300 6"
@@ -105,8 +104,8 @@ export function HeroHeadline() {
         className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto mb-9 leading-relaxed font-normal"
       >
         Stop digging through crumpled paper slips and scattered WhatsApp labs.
-        Curewell brings your prescriptions, circadian schedules, and blood tests into one private,
-        patient-governed vault with <strong className="text-slate-900 font-semibold">zero silent AI commits</strong>.
+        Curewell decomposes trade names into pharmacological molecules, tracks biomarker velocity,
+        and organizes your care with <strong className="text-slate-900 font-semibold">zero silent AI commits</strong>.
       </motion.p>
 
       {/* 4. Action CTAs with Spring Micro-Interactions */}
@@ -119,7 +118,6 @@ export function HeroHeadline() {
           to="/signup"
           className="group relative w-full sm:w-auto px-8 py-3.5 text-sm sm:text-base font-bold text-white bg-gradient-to-r from-teal-700 via-teal-700 to-teal-800 hover:from-teal-800 hover:to-teal-900 rounded-xl shadow-[0_4px_20px_rgba(13,148,136,0.3)] hover:shadow-[0_8px_30px_rgba(13,148,136,0.45)] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 overflow-hidden"
         >
-          {/* Light sweep sheen across button on hover */}
           <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
           <span className="relative z-10">Create Free Vault</span>
           <ArrowRightIcon className="relative z-10 w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-200" />
@@ -127,11 +125,11 @@ export function HeroHeadline() {
 
         {/* Secondary CTA: Interactive Console Trigger */}
         <button
-          onClick={scrollToConsole}
-          className="group w-full sm:w-auto px-7 py-3.5 text-sm sm:text-base font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-teal-300 rounded-xl shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 text-center flex items-center justify-center gap-2"
+          onClick={scrollToDemo}
+          className="group w-full sm:w-auto px-7 py-3.5 text-sm sm:text-base font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-teal-300 rounded-xl shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 text-center flex items-center justify-center gap-2 cursor-pointer"
         >
           <ActivityIcon className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
-          <span>Explore Interactive Console</span>
+          <span>Explore Clinical Journey</span>
         </button>
       </motion.div>
 
@@ -145,7 +143,7 @@ export function HeroHeadline() {
           <span>No credit card required</span>
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <CheckCircleIcon className="w-3.5 h-3.5 text-teal-600" />
+          <ShieldIcon className="w-3.5 h-3.5 text-teal-600" />
           <span>Zero-knowledge client encryption</span>
         </span>
         <span className="inline-flex items-center gap-1.5">

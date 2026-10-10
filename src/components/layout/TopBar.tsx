@@ -5,6 +5,8 @@ import { clsx } from 'clsx';
 import { Logo } from '../ui/Logo';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { PRIMARY_NAV, SECONDARY_NAV, isNavItemActive } from './navigation';
+import { ProfileSwitcher } from '../profile/ProfileSwitcher';
+import { MobileCompanionModal } from '../companion/MobileCompanionModal';
 import {
   SearchIcon,
   PlusIcon,
@@ -12,6 +14,7 @@ import {
   SettingsIcon,
   FileTextIcon,
   LogOutIcon,
+  AndroidIcon,
 } from '../ui/icons';
 
 const menuPanel = clsx(
@@ -29,6 +32,7 @@ const menuItem = clsx(
 export function TopBar() {
   const location = useLocation();
   const { user, profile, isGuest, signOut } = useAuth();
+  const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
 
   // Radix closes on select, but a route change driven by anything else (back
   // button, redirect) should close it too.
@@ -195,7 +199,22 @@ export function TopBar() {
               Sign in
             </Link>
           ) : (
-            <DropdownMenu.Root key={`user-${menuKey}`}>
+            <>
+              <ProfileSwitcher />
+
+              {/* Mobile Companion & APK Button */}
+              <button
+                type="button"
+                onClick={() => setIsCompanionModalOpen(true)}
+                title="Get Curewell Phone App & Android APK"
+                aria-label="Curewell Mobile App & Android APK"
+                className="inline-flex items-center gap-1.5 h-10 px-2.5 rounded-[var(--radius-md)] text-xs font-semibold text-content-muted hover:text-content hover:bg-surface-hover border border-line/60 transition-colors"
+              >
+                <AndroidIcon size={16} className="text-teal-600 dark:text-teal-400" />
+                <span className="hidden sm:inline">Phone App / APK</span>
+              </button>
+
+              <DropdownMenu.Root key={`user-${menuKey}`}>
               <DropdownMenu.Trigger
                 className={clsx(
                   'inline-flex items-center gap-1.5 h-11 px-2 rounded-[var(--radius-md)] transition-colors',
@@ -233,10 +252,20 @@ export function TopBar() {
                   </DropdownMenu.Item>
 
                   <DropdownMenu.Item asChild>
-                    <Link to="/doctor/brief" className={menuItem}>
+                    <Link to="/doctor/visit-prep" className={menuItem}>
                       <FileTextIcon size={17} className="shrink-0 text-content-subtle" />
-                      Doctor summary
+                      Doctor visit companion
                     </Link>
+                  </DropdownMenu.Item>
+
+                  <DropdownMenu.Item
+                    className={menuItem}
+                    onSelect={() => setIsCompanionModalOpen(true)}
+                  >
+                    <svg className="w-4 h-4 text-content-subtle shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Mobile Companion QR
                   </DropdownMenu.Item>
 
                   <DropdownMenu.Separator className="my-1 h-px bg-line" />
@@ -254,7 +283,8 @@ export function TopBar() {
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
-          )}
+          </>
+        )}
 
           <Link
             to="/prescriptions/new"
@@ -266,6 +296,11 @@ export function TopBar() {
           </Link>
         </div>
       </div>
+
+      <MobileCompanionModal
+        isOpen={isCompanionModalOpen}
+        onClose={() => setIsCompanionModalOpen(false)}
+      />
     </header>
   );
 }

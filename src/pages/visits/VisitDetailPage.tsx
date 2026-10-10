@@ -681,12 +681,12 @@ export function VisitDetailPage() {
 
               <div className="space-y-2 text-xs">
                 <Link
-                  to="/doctor/brief"
+                  to="/doctor/visit-prep?tab=brief"
                   className="flex items-center justify-between p-2.5 rounded-xl bg-surface-sunken hover:bg-surface-hover transition-colors font-medium text-content"
                 >
                   <span className="flex items-center gap-2">
                     <FileText size={14} className="text-teal-600" />
-                    <span>Print Full Clinical Dossier</span>
+                    <span>Doctor Visit Companion (Brief &amp; Prep)</span>
                   </span>
                   <ChevronRight size={13} className="text-content-subtle" />
                 </Link>

@@ -197,16 +197,19 @@ export function SymptomTriagePage() {
     return correlations;
   }, [events, activeMedsList, combinedSymptomText, symptomInput]);
 
-  // Dynamic Patient-Friendly Health Assessment
+  // Dynamic Non-Diagnostic Health Summary & Doctor Discussion Points
   const triageAssessment = useMemo(() => {
     if (events.length === 0 && !symptomInput.trim()) {
       return {
         level: 'green' as const,
-        badgeLabel: 'Healthy & Normal',
+        badgeLabel: 'Log Empty',
         headline: 'No symptoms logged yet',
-        summary: 'Enter what you are feeling to see personalized health guidance and comfort tips.',
-        homeCare: ['Stay hydrated with plenty of water', 'Maintain your regular routine and rest'],
-        nextRedFlags: ['Sudden severe chest pain', 'Difficulty breathing', 'Confusion or fainting'],
+        summary: 'Enter what you are experiencing to organize your symptoms and generate questions for your doctor.',
+        doctorQuestions: [
+          'What could be the primary cause of these symptoms?',
+          'Are there any specific activities or foods I should avoid while feeling this way?',
+        ],
+        nextRedFlags: ['Sudden severe chest tightness or pain', 'Difficulty breathing or shortness of breath', 'Confusion or fainting'],
         specialist: 'General Physician / Family Doctor',
       };
     }
@@ -214,12 +217,14 @@ export function SymptomTriagePage() {
     if (redFlagResult.isEmergency) {
       return {
         level: 'red' as const,
-        badgeLabel: 'Urgent Attention Needed',
-        headline: 'Please seek medical care immediately',
-        summary: `Your symptoms match urgent warning signs (${redFlagResult.matchedLabels.join(', ')}). Please visit the nearest emergency room or call for an ambulance without delay.`,
-        homeCare: ['Rest quietly in a comfortable position', 'Do not attempt to drive yourself to the clinic', 'Have someone stay with you'],
-        nextRedFlags: ['Loss of consciousness', 'Difficulty speaking or catching your breath', 'Severe worsening pain'],
-        specialist: 'Emergency Room / Urgent Care Clinic',
+        badgeLabel: 'Emergency Warning Signs',
+        headline: 'Immediate Emergency Care Recommended',
+        summary: `Your symptoms match emergency warning criteria (${redFlagResult.matchedLabels.join(', ')}). Please visit the nearest emergency room or call for medical help immediately.`,
+        doctorQuestions: [
+          'Immediate evaluation required — do not delay emergency consultation.',
+        ],
+        nextRedFlags: ['Loss of consciousness or severe confusion', 'Severe difficulty breathing or speaking', 'Sudden numbness, weakness, or intense pain'],
+        specialist: 'Emergency Room / Urgent Care Center',
       };
     }
 
@@ -237,18 +242,18 @@ export function SymptomTriagePage() {
     if (hasSevere || (hasFever && hasVomit) || (hasFever && hasHeadache && count >= 2) || (hasModerate && count >= 2) || count >= 3) {
       return {
         level: 'amber' as const,
-        badgeLabel: 'Doctor Visit Recommended',
-        headline: 'Consider seeing a doctor in the next 24–48 hours',
-        summary: `You have logged ${count > 1 ? `${count} symptoms` : 'a moderate/strong symptom'}. While not an emergency, having a doctor examine you will help ensure you recover quickly and safely.`,
-        homeCare: [
-          'Hydration: Drink plenty of clean water, clear broths, or ORS in small sips.',
-          'Rest: Avoid heavy physical activity and get extra sleep.',
-          'Fever / Pain: Paracetamol (Panadol) with food if recommended by your doctor.',
+        badgeLabel: 'Doctor Consultation Recommended',
+        headline: 'Consider scheduling a consultation with your doctor',
+        summary: `You have recorded ${count > 1 ? `${count} symptoms` : 'a moderate or notable symptom'}. Preparing this structured record will help your doctor evaluate your condition accurately.`,
+        doctorQuestions: [
+          'Could these symptoms be related to any of my currently prescribed medicines or a recent dosage change?',
+          'Are there any diagnostic tests (such as blood or imaging tests) we should consider?',
+          'What specific changes or warning signs should prompt an immediate clinic or emergency visit?',
         ],
         nextRedFlags: [
-          'Inability to keep liquids down for more than 12 hours',
-          'High fever rising above 102°F that doesn’t come down with medication',
-          'Sudden confusion, stiff neck, or extreme weakness',
+          'Inability to keep liquids down or persistent vomiting',
+          'High fever that does not respond to prescribed medication',
+          'Sudden confusion, stiff neck, or extreme dizziness',
         ],
         specialist: hasVomit ? 'Gastroenterologist or General Physician' : hasRespiratory ? 'Pulmonologist or ENT Specialist' : 'Family Physician / General Doctor',
       };
@@ -256,15 +261,15 @@ export function SymptomTriagePage() {
 
     return {
       level: 'green' as const,
-      badgeLabel: 'Mild — Home Care & Rest',
-      headline: 'Your symptoms look mild and manageable',
-      summary: 'With good rest, hydration, and observation, mild symptoms usually improve over the next 1–2 days.',
-      homeCare: [
-        'Drink 8–10 glasses of water throughout the day.',
-        'Get at least 7–8 hours of sound, restful sleep.',
-        'Take a break from screens and strenuous physical work.',
+      badgeLabel: 'Symptom Recorded',
+      headline: 'Symptom entry recorded in your health log',
+      summary: 'Keep track of how you feel over time. If symptoms persist, change, or cause concern, discuss them with your physician.',
+      doctorQuestions: [
+        'How long do mild episodes of this symptom typically take to resolve on their own?',
+        'Are there any lifestyle or dietary adjustments suitable for my medical history?',
+        'At what point should I schedule a follow-up appointment if it does not improve?',
       ],
-      nextRedFlags: ['Sudden spike in high fever', 'Persistent vomiting or inability to drink fluids', 'Worsening pain despite rest'],
+      nextRedFlags: ['Sudden spike in high fever', 'Difficulty breathing or sudden shortness of breath', 'Worsening pain or new onset weakness'],
       specialist: 'General Physician / Family Doctor',
     };
   }, [events, symptomInput, severity, timeLabel, redFlagResult, combinedSymptomText]);
@@ -685,27 +690,27 @@ export function SymptomTriagePage() {
                 <p className="text-xs sm:text-sm opacity-90 leading-relaxed pt-0.5">{triageAssessment.summary}</p>
               </div>
 
-              {/* What You Can Do (Home Comfort & Care) */}
+              {/* Questions to Discuss with Your Doctor */}
               <div className="space-y-2.5">
                 <h4 className="text-xs sm:text-sm font-bold text-content flex items-center gap-2">
-                  <CheckIcon size={16} className="text-ok-text" /> What you can do right now:
+                  <StethoscopeIcon size={16} className="text-accent" /> Questions to ask your doctor:
                 </h4>
                 <div className="space-y-2 text-xs sm:text-sm">
-                  {triageAssessment.homeCare.map((step, idx) => (
+                  {triageAssessment.doctorQuestions.map((question, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 p-3 rounded-xl bg-surface-sunken border border-line text-content">
-                      <span className="w-5 h-5 rounded-full bg-ok-bg text-ok-text border border-ok-border font-bold text-2xs flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="w-5 h-5 rounded-full bg-accent-subtle text-accent border border-accent/20 font-bold text-2xs flex items-center justify-center shrink-0 mt-0.5">
                         {idx + 1}
                       </span>
-                      <span className="leading-relaxed">{step}</span>
+                      <span className="leading-relaxed font-medium">{question}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Signs to Watch Out For */}
+              {/* Signs That Require Urgent Emergency Care */}
               <div className="space-y-2.5 pt-2 border-t border-line">
                 <h4 className="text-xs sm:text-sm font-bold text-content flex items-center gap-2">
-                  <AlertTriangleIcon size={15} className="text-warn-text" /> When to see a doctor (Signs to watch):
+                  <AlertTriangleIcon size={15} className="text-warn-text" /> Urgent warning signs (Seek immediate care if observed):
                 </h4>
                 <ul className="space-y-1.5 text-xs text-content-muted pl-1">
                   {triageAssessment.nextRedFlags.map((sign, sIdx) => (

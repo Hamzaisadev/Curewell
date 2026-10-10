@@ -439,11 +439,11 @@ export function DoctorDirectoryPage() {
               {/* Modal Footer */}
               <div className="pt-3 border-t border-ink-200 flex items-center justify-between shrink-0">
                 <Link
-                  to="/doctor/brief"
+                  to="/doctor/visit-prep?tab=brief"
                   className="text-xs font-bold text-teal-800 hover:underline flex items-center gap-1.5"
                 >
                   <PrinterIcon size={14} />
-                  <span>Export Doctor Brief</span>
+                  <span>Doctor Visit Companion</span>
                 </Link>
 
                 <Button variant="primary" size="sm" onClick={() => setSelectedDoctor(null)}>
