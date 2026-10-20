@@ -3,7 +3,8 @@
   "appId": "com.curewell.health",
   "appName": "Curewell",
   "version": "4.0.0",
-  "timestamp": "2026-10-20T17:31:08.959971+00:00",
+  "architecture": "React Native (Hermes) + Native Android Widget & Offline AlarmManager",
+  "timestamp": "2026-10-20T19:13:06Z",
   "file": "/downloads/Curewell.apk",
-  "sizeBytes": 13765774
+  "sizeBytes": 69010523
 }
