@@ -16,6 +16,11 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './src/lib/supabase';
 import {
+  enqueueMobileSyncEvent,
+  subscribeMobileRealtimeEvents,
+  flushOfflineOutbox,
+} from './src/lib/realtimeSync';
+import {
   syncAndroidHomeWidget,
   triggerNativeDoseNotification,
   scheduleNativeOfflineAlarm,
@@ -249,6 +254,102 @@ export default function App() {
     await AsyncStorage.setItem(STORAGE_KEYS.DOSES, JSON.stringify(updated));
   };
 
+  // Real-time Bi-Directional Supabase WebSocket Subscription + Offline Outbox Status
+  useEffect(() => {
+    const unsubscribe = subscribeMobileRealtimeEvents(
+      async (event) => {
+        if (event.type === 'DOSE_STATUS_CHANGED') {
+          const targetMedLower = (event.medicineName || '').trim().toLowerCase();
+          setDoses((prev) => {
+            const next = prev.map((d) => {
+              const nameMatch =
+                targetMedLower &&
+                d.medicineName.trim().toLowerCase() === targetMedLower &&
+                Math.abs(d.scheduledMinutes - event.scheduledMinutes) <= 120;
+              if (d.id === event.doseId || nameMatch) {
+                return {
+                  ...d,
+                  status: event.status,
+                  skipReason: event.skipReason || undefined,
+                };
+              }
+              return d;
+            });
+            void AsyncStorage.setItem(STORAGE_KEYS.DOSES, JSON.stringify(next));
+            return next;
+          });
+          Vibration.vibrate(30);
+          showToast(
+            `Live WebSocket Sync: ${event.medicineName} marked as ${event.status} on Web`
+          );
+        } else if (event.type === 'MEDICINE_CREATED') {
+          const m = event.medicine;
+          const bucket: TimeBucket =
+            m.frequency_code === 'HS'
+              ? 'Bedtime'
+              : m.frequency_code === 'TID'
+              ? 'Afternoon'
+              : 'Morning';
+          const mins = bucket === 'Bedtime' ? 1350 : bucket === 'Afternoon' ? 840 : 480;
+          const timeStr =
+            bucket === 'Bedtime' ? '10:30 PM' : bucket === 'Afternoon' ? '02:00 PM' : '08:00 AM';
+
+          const newSlot: DoseSlot = {
+            id: m.id,
+            medicineName: m.medicine_name,
+            genericName: m.generic_name || 'Prescribed Regimen',
+            strength: m.strength || m.dose_amount || '500mg',
+            bucket,
+            scheduledTime: m.scheduledTime || timeStr,
+            scheduledMinutes: m.scheduledMinutes ?? mins,
+            mealRelation: m.with_food === false ? 'Before Food' : 'After Food',
+            status: 'pending',
+          };
+
+          setDoses((prev) => {
+            if (prev.some((d) => d.id === newSlot.id || d.medicineName.toLowerCase() === newSlot.medicineName.toLowerCase())) {
+              return prev;
+            }
+            const next = [...prev, newSlot].sort(
+              (a, b) => a.scheduledMinutes - b.scheduledMinutes
+            );
+            void AsyncStorage.setItem(STORAGE_KEYS.DOSES, JSON.stringify(next));
+            return next;
+          });
+
+          // Automatically arm Native Offline AlarmManager for the new medicine from Web
+          const target = new Date();
+          target.setHours(Math.floor(newSlot.scheduledMinutes / 60), newSlot.scheduledMinutes % 60, 0, 0);
+          if (target.getTime() <= Date.now()) {
+            target.setDate(target.getDate() + 1);
+          }
+          await scheduleNativeOfflineAlarm(
+            Math.floor(Math.random() * 5000) + 3000,
+            target.getTime(),
+            `Time for ${newSlot.medicineName} (${newSlot.strength})`,
+            `${newSlot.bucket} Dose • Take ${newSlot.mealRelation} (${newSlot.scheduledTime})`
+          );
+
+          Vibration.vibrate([0, 40, 60, 40]);
+          showToast(
+            `Live WebSocket Sync: ${newSlot.medicineName} added from Web & Alarm Armed!`
+          );
+        }
+      },
+      (connected, outboxCount) => {
+        if (outboxCount > 0) {
+          setSyncStatus(`Offline Outbox: ${outboxCount} action(s) queued for sync`);
+        } else if (connected) {
+          setSyncStatus('Live WebSocket Sync Active (Web <-> Android)');
+        } else {
+          setSyncStatus('Offline-First Local Vault Active');
+        }
+      }
+    );
+
+    return unsubscribe;
+  }, [showToast]);
+
   const handleTakeDose = async (id: string) => {
     Vibration.vibrate([0, 40, 60, 40]);
     const target = doses.find((d) => d.id === id);
@@ -257,26 +358,68 @@ export default function App() {
     );
     await persistDoses(updated);
     if (target) {
-      showToast(`Logged ${target.medicineName} ${target.strength} as Taken`);
+      showToast(`Logged ${target.medicineName} ${target.strength} as Taken (Synced to Web)`);
+      const todayStr = new Date().toISOString().slice(0, 10);
+      await enqueueMobileSyncEvent({
+        type: 'DOSE_STATUS_CHANGED',
+        profileId: activeProfile.id,
+        doseId: target.id,
+        medicineName: target.medicineName,
+        strength: target.strength,
+        scheduledDate: todayStr,
+        scheduledMinutes: target.scheduledMinutes,
+        status: 'taken',
+        takenAt: new Date().toISOString(),
+      });
     }
   };
 
   const handleResetDose = async (id: string) => {
+    const target = doses.find((d) => d.id === id);
     const updated = doses.map((d) =>
       d.id === id ? { ...d, status: 'pending' as const, skipReason: undefined } : d
     );
     await persistDoses(updated);
+    if (target) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      await enqueueMobileSyncEvent({
+        type: 'DOSE_STATUS_CHANGED',
+        profileId: activeProfile.id,
+        doseId: target.id,
+        medicineName: target.medicineName,
+        strength: target.strength,
+        scheduledDate: todayStr,
+        scheduledMinutes: target.scheduledMinutes,
+        status: 'pending',
+        takenAt: null,
+      });
+    }
   };
 
   const handleConfirmSkip = async (reason: string) => {
     if (!skipTargetId) return;
     Vibration.vibrate(50);
+    const target = doses.find((d) => d.id === skipTargetId);
     const updated = doses.map((d) =>
       d.id === skipTargetId ? { ...d, status: 'skipped' as const, skipReason: reason } : d
     );
     await persistDoses(updated);
     setSkipTargetId(null);
-    showToast(`Dose marked as skipped (${reason})`);
+    showToast(`Dose marked as skipped (${reason}) & synced to Web`);
+    if (target) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      await enqueueMobileSyncEvent({
+        type: 'DOSE_STATUS_CHANGED',
+        profileId: activeProfile.id,
+        doseId: target.id,
+        medicineName: target.medicineName,
+        strength: target.strength,
+        scheduledDate: todayStr,
+        scheduledMinutes: target.scheduledMinutes,
+        status: 'skipped',
+        skipReason: reason,
+      });
+    }
   };
 
   const handleAddMedicine = async () => {
@@ -303,7 +446,30 @@ export default function App() {
     setNewMedName('');
     setNewMedGeneric('');
     setShowAddMedModal(false);
-    showToast(`Added ${slot.medicineName} to ${slot.bucket} schedule & Android Widget`);
+    showToast(`Added ${slot.medicineName} to schedule, Widget & synced to Web!`);
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    await enqueueMobileSyncEvent({
+      type: 'MEDICINE_CREATED',
+      profileId: activeProfile.id,
+      medicine: {
+        id: slot.id,
+        medicine_name: slot.medicineName,
+        generic_name: slot.genericName,
+        strength: slot.strength,
+        form: 'Tablet',
+        dose_amount: '1 tab',
+        frequency_code: slot.bucket === 'Bedtime' ? 'HS' : 'OD',
+        frequency_raw: 'Once daily',
+        with_food: slot.mealRelation !== 'Before Food',
+        start_date: todayStr,
+        is_ongoing: true,
+        duration_days: 30,
+        scheduledMinutes: slot.scheduledMinutes,
+        scheduledTime: slot.scheduledTime,
+        bucket: slot.bucket,
+      },
+    });
   };
 
   // Vitals Evaluation

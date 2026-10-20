@@ -2,6 +2,7 @@ import { supabase } from '../supabase/client';
 import type { Tables, InsertTables, UpdateTables } from '../supabase/types';
 import { getLocalItems, updateLocalItem, deleteLocalItem, newId } from './localStore';
 import { getWithFallback, insertWithFallback, listWithFallback } from './offlineFallback';
+import { broadcastCurewellSyncEvent } from '../realtime/curewellRealtimeSync';
 
 export type Medicine = Tables<'medicines'>;
 export type MedicineInsert = InsertTables<'medicines'>;
@@ -42,7 +43,7 @@ export async function createMedicine(medicine: MedicineInsert): Promise<Medicine
     is_otc: medicine.is_otc ?? false,
   };
 
-  return insertWithFallback<Medicine>(
+  const created = await insertWithFallback<Medicine>(
     'createMedicine',
     'medicines',
     () => supabase.from('medicines').insert(payload).select().single(),
@@ -54,6 +55,26 @@ export async function createMedicine(medicine: MedicineInsert): Promise<Medicine
         updated_at: new Date().toISOString(),
       }) as Medicine
   );
+
+  void broadcastCurewellSyncEvent({
+    type: 'MEDICINE_CREATED',
+    profileId: created.profile_id,
+    medicine: {
+      id: created.id,
+      medicine_name: created.medicine_name,
+      strength: created.strength,
+      form: created.form,
+      dose_amount: created.dose_amount,
+      frequency_code: created.frequency_code,
+      frequency_raw: created.frequency_raw,
+      with_food: created.with_food,
+      start_date: created.start_date,
+      is_ongoing: created.is_ongoing,
+      duration_days: created.duration_days,
+    },
+  });
+
+  return created;
 }
 
 export async function updateMedicine(id: string, updates: MedicineUpdate): Promise<Medicine> {

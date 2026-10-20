@@ -2,6 +2,7 @@ import { supabase } from '../supabase/client';
 import type { Tables, InsertTables, UpdateTables } from '../supabase/types';
 import { getLocalItems, setLocalItems, updateLocalItem, newId } from './localStore';
 import { listWithFallback } from './offlineFallback';
+import { broadcastCurewellSyncEvent } from '../realtime/curewellRealtimeSync';
 
 export type Dose = Tables<'doses'>;
 export type DoseInsert = InsertTables<'doses'>;
@@ -155,6 +156,9 @@ export async function updateDoseStatus(
     updates.skipped_reason = null;
   }
 
+  const localUpdated = updateLocalItem<Dose>('doses', id, updates as Partial<Dose>);
+  let resolvedDose: Dose | null = localUpdated;
+
   try {
     const { data, error } = await supabase
       .from('doses')
@@ -164,16 +168,33 @@ export async function updateDoseStatus(
       .single();
 
     if (error) throw new Error(error.message);
-    if (data) return data;
+    if (data) resolvedDose = data;
   } catch (err) {
     console.warn('updateDoseStatus failed, updating local store:', err);
   }
 
-  const localUpdated = updateLocalItem<Dose>('doses', id, updates as Partial<Dose>);
-  if (!localUpdated) {
+  if (!resolvedDose) {
     throw new Error(`Could not record this dose: no dose found with id ${id}.`);
   }
-  return localUpdated;
+
+  const medicines = getLocalItems<Tables<'medicines'>>('medicines');
+  const med = medicines.find((m) => m.id === resolvedDose.medicine_id);
+
+  void broadcastCurewellSyncEvent({
+    type: 'DOSE_STATUS_CHANGED',
+    profileId: resolvedDose.profile_id,
+    doseId: resolvedDose.id,
+    medicineId: resolvedDose.medicine_id,
+    medicineName: med?.medicine_name || 'Medication',
+    strength: med?.strength || undefined,
+    scheduledDate: resolvedDose.scheduled_date,
+    scheduledMinutes: resolvedDose.scheduled_minutes,
+    status,
+    takenAt: resolvedDose.taken_at,
+    skipReason: resolvedDose.skipped_reason,
+  });
+
+  return resolvedDose;
 }
 
 export async function getDoseById(id: string): Promise<Dose | null> {

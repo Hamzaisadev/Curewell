@@ -82,6 +82,7 @@ import {
 } from '../../domain/medicationRegimen';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { dosesRepo, medicinesRepo } from '../../lib/db';
+import { subscribeToCurewellRealtime } from '../../lib/realtime/curewellRealtimeSync';
 import { readInventory } from '../../lib/inventory';
 import * as inventoryLib from '../../lib/inventory';
 import { staggerContainer, staggerItem } from '../../lib/motion';
@@ -280,6 +281,54 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
   useEffect(() => {
     loadData(selectedDate);
   }, [loadData, selectedDate]);
+
+  // Real-time WebSocket subscription: immediately reflect Android Companion dose & medicine actions
+  useEffect(() => {
+    const unsubscribe = subscribeToCurewellRealtime((event) => {
+      if (event.type === 'DOSE_STATUS_CHANGED') {
+        const targetMedNameLower = (event.medicineName || '').trim().toLowerCase();
+        setDoses((prev) =>
+          prev.map((d) => {
+            const med = medicinesMap[d.medicine_id];
+            const nameMatches =
+              med &&
+              targetMedNameLower &&
+              (med.medicine_name || '').trim().toLowerCase() === targetMedNameLower &&
+              Math.abs(d.scheduled_minutes - event.scheduledMinutes) <= 120;
+            if (d.id === event.doseId || nameMatches) {
+              return {
+                ...d,
+                status: event.status,
+                taken_at:
+                  event.status === 'taken'
+                    ? event.takenAt || new Date().toISOString()
+                    : null,
+                skipped_reason:
+                  event.status === 'skipped' ? event.skipReason || null : null,
+              };
+            }
+            return d;
+          })
+        );
+        void loadData(selectedDate);
+        if (event.source === 'android') {
+          setToast({
+            tone: 'ok',
+            message: `Live Sync (Android App): ${event.medicineName} marked as ${event.status}.`,
+          });
+        }
+      } else if (event.type === 'MEDICINE_CREATED') {
+        void loadData(selectedDate);
+        if (event.source === 'android') {
+          setToast({
+            tone: 'ok',
+            message: `Live Sync (Android App): Added ${event.medicine.medicine_name} to schedule.`,
+          });
+        }
+      }
+    });
+    return unsubscribe;
+  }, [loadData, selectedDate, medicinesMap]);
 
   // Inventory Helper Accessors
   const countFor = useCallback((medId: string): number => inventory[medId] ?? 0, [inventory]);
