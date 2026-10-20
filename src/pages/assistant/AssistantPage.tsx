@@ -44,6 +44,7 @@ import { InChatSearchBar } from '../../components/assistant/InChatSearchBar';
 import { ChatMessageRenderer } from '../../components/assistant/ChatMessageRenderer';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { supabase } from '../../lib/supabase/client';
+import { resolveApiUrl } from '../../lib/ai/client';
 import type { Tables } from '../../lib/supabase/types';
 
 interface Message {
@@ -919,7 +920,7 @@ export function AssistantPage() {
           image_mime: null,
         }));
 
-      const response = await fetch('/api/chat-assistant', {
+      const response = await fetch(resolveApiUrl('/api/chat-assistant'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

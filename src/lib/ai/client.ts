@@ -10,6 +10,29 @@ import type {
 } from '../../../api/_lib/schemas';
 import { supabase } from '../supabase/client';
 
+/**
+ * Resolves the API endpoint URL for both web and native Android (Capacitor) environments.
+ * When running inside the packaged Android APK (`https://localhost`), relative `/api/...`
+ * requests are routed to the live Curewell backend.
+ */
+export function resolveApiUrl(path: string): string {
+  const configuredBase = import.meta.env.VITE_API_BASE_URL;
+  if (configuredBase) {
+    return `${configuredBase.replace(/\/$/, '')}${path}`;
+  }
+  if (typeof window !== 'undefined') {
+    const isCapacitorNative =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
+      window.location.origin === 'https://localhost' ||
+      window.location.protocol === 'capacitor:';
+    if (isCapacitorNative) {
+      return `https://curewell-gamma.vercel.app${path}`;
+    }
+  }
+  return path;
+}
+
 export interface ExtractionResult<T> {
   data: T;
   raw_response: unknown;
@@ -25,7 +48,7 @@ export async function extractPrescription(
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || '';
 
-  const res = await fetch('/api/extract-prescription', {
+  const res = await fetch(resolveApiUrl('/api/extract-prescription'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -56,7 +79,7 @@ export async function extractLabReport(
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || '';
 
-  const res = await fetch('/api/extract-lab-report', {
+  const res = await fetch(resolveApiUrl('/api/extract-lab-report'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -126,7 +149,7 @@ export async function explainMedicine(
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || '';
 
-  const res = await fetch('/api/explain-medicine', {
+  const res = await fetch(resolveApiUrl('/api/explain-medicine'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -162,7 +185,7 @@ export async function compareMedicines(
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || '';
 
-  const res = await fetch('/api/compare-medicines', {
+  const res = await fetch(resolveApiUrl('/api/compare-medicines'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

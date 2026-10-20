@@ -3,6 +3,8 @@ name: Build Android APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'public/downloads/**'
   workflow_dispatch:
 
 permissions:
@@ -11,6 +13,10 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://ivxmyzxdxyxsfrdwhcpi.supabase.co
+      VITE_SUPABASE_ANON_KEY: sb_publishable_iUJnCRnqEu5Svl0b2VE7_A_7DrbHVTG
+      VITE_API_BASE_URL: https://curewell-gamma.vercel.app
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,7 +24,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
@@ -27,26 +33,47 @@ jobs:
       - name: Build web application
         run: npm run build
 
-      - name: Set up Java JDK 17
+      - name: Set up Java JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 17
+          java-version: 21
+          cache: 'gradle'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK Licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      - name: Ensure gradlew is executable
+        run: chmod +x android/gradlew
+
       - name: Build Debug APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Copy APK to public/downloads
+        run: |
+          mkdir -p public/downloads
+          cp android/app/build/outputs/apk/debug/app-debug.apk public/downloads/Curewell.apk
+          SIZE=$(stat -c%s public/downloads/Curewell.apk)
+          cat <<EOF > public/downloads/status.json
+          {
+            "built": true,
+            "appId": "com.curewell.health",
+            "appName": "Curewell",
+            "version": "4.0.0",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "file": "/downloads/Curewell.apk",
+            "sizeBytes": $SIZE
+          }
+          EOF
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Curewell-Debug-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Curewell-APK
+          path: public/downloads/Curewell.apk
           if-no-files-found: error
           retention-days: 30

@@ -1,7 +1,24 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { UnauthorizedError } from './auth.js';
 
+export function setCorsHeaders(res: ServerResponse): void {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+export function handleCorsPreflight(req: IncomingMessage, res: ServerResponse): boolean {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return true;
+  }
+  return false;
+}
+
 export function sendJson(res: ServerResponse, statusCode: number, payload: unknown): void {
+  setCorsHeaders(res);
   res.statusCode = statusCode;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(payload));

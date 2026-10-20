@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { getGeminiClient, withModelFallback } from './_lib/gemini.js';
 import { checkRateLimit } from './_lib/rateLimit.js';
 import { verifyAuthToken } from './_lib/auth.js';
-import { readJsonBody, sendError, sendJson } from './_lib/http.js';
+import { handleCorsPreflight, readJsonBody, sendError, sendJson } from './_lib/http.js';
 import { executeClinicalRag } from './_lib/rag/retrieval.js';
 import { z } from 'zod';
 
@@ -90,6 +90,7 @@ const chatRequestSchema = z.object({
 });
 
 export default async function handler(req: IncomingMessage & { body?: unknown }, res: ServerResponse) {
+  if (handleCorsPreflight(req, res)) return;
   if (req.method !== 'POST') {
     sendJson(res, 405, { error: 'Method not allowed' });
     return;
@@ -278,6 +279,7 @@ ${ragResult.retrievedPatientEvidence.length > 0 ? ragResult.retrievedPatientEvid
         'Cache-Control': 'no-cache, no-transform',
         Connection: 'keep-alive',
         'X-Accel-Buffering': 'no',
+        'Access-Control-Allow-Origin': '*',
       });
 
       let accumulated = '';
