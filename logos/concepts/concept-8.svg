@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw8-blade-1" x1="140" y1="140" x2="260" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#0D9488" />
+    </linearGradient>
+    <linearGradient id="cw8-blade-2" x1="260" y1="140" x2="380" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#14B8A6" />
+    </linearGradient>
+    <linearGradient id="cw8-blade-3" x1="260" y1="260" x2="380" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14B8A6" />
+      <stop offset="100%" stop-color="#2DD4BF" />
+    </linearGradient>
+    <linearGradient id="cw8-blade-4" x1="140" y1="260" x2="260" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#115E59" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <filter id="cw8-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F766E" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: 4 Precision Interlocking Vault Aperture Blades -->
+  <g id="icon" filter="url(#cw8-shadow)">
+    <!-- Top-Left Blade -->
+    <path d="M140 140 H230 C230 189.7 189.7 230 140 230 V140 Z" fill="url(#cw8-blade-1)" />
+    <!-- Top-Right Blade -->
+    <path d="M274 140 H364 V230 C314.3 230 274 189.7 274 140 Z" fill="url(#cw8-blade-2)" />
+    <!-- Bottom-Right Blade -->
+    <path d="M364 274 V364 H274 C274 314.3 314.3 274 364 274 Z" fill="url(#cw8-blade-3)" />
+    <!-- Bottom-Left Blade -->
+    <path d="M230 364 H140 V274 C189.7 274 230 314.3 230 364 Z" fill="url(#cw8-blade-4)" />
+
+    <!-- Center Cross Carved in Negative Space + Central Spark -->
+    <rect x="230" y="244" width="44" height="16" rx="4" fill="#0D9488" />
+    <rect x="244" y="230" width="16" height="44" rx="4" fill="#0D9488" />
+    <circle cx="252" cy="252" r="5" fill="#FFFFFF" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="80" font-weight="800" letter-spacing="-0.03em" fill="#0F172A">
+      Cure<tspan fill="#0D9488">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" letter-spacing="0.24em" fill="#64748B">
+      SECURITY &amp; MEDICAL RECORDS
+    </text>
+  </g>
+</svg>

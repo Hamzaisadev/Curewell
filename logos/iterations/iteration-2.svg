@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <!-- Organic Emerald-Teal Deep Ramp -->
+    <linearGradient id="cw-it2-shield" x1="140" y1="110" x2="370" y2="410" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="45%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#064E3B" />
+    </linearGradient>
+    <linearGradient id="cw-it2-beam" x1="200" y1="200" x2="310" y2="310" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A7F3D0" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+    <filter id="cw-it2-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#059669" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Vibrant Botanical-Teal Cyber Shield -->
+  <g id="icon" filter="url(#cw-it2-glow)">
+    <!-- Outer Shield -->
+    <path d="M256 116 L376 172 V292 C376 348 324 394 256 412 C188 394 136 348 136 292 V172 L256 116 Z" fill="url(#cw-it2-shield)" />
+    <!-- Mint Bevel Stroke -->
+    <path d="M256 122 L370 176 V292 C370 344 320 388 256 405 C192 388 142 344 142 292 V176 L256 122 Z" stroke="#6EE7B7" stroke-opacity="0.4" stroke-width="2" />
+
+    <!-- Concentric Hex Vault Lines -->
+    <path d="M256 156 L340 196 V284 C340 324 302 358 256 372 C210 358 172 324 172 284 V196 L256 156 Z" stroke="#A7F3D0" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="8 6" />
+
+    <!-- Center Cross -->
+    <path d="M256 206 V306 M206 256 H306" stroke="url(#cw-it2-beam)" stroke-width="14" stroke-linecap="round" />
+    
+    <!-- Central White Node -->
+    <circle cx="256" cy="256" r="14" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="6" fill="#059669" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" letter-spacing="-0.035em" fill="#0F172A">
+      CURE<tspan fill="#10B981">WELL</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.28em" fill="#475569">
+      ZERO-KNOWLEDGE HEALTH VAULT
+    </text>
+  </g>
+</svg>

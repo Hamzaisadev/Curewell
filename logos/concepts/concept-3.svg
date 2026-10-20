@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw3-loop-grad-1" x1="120" y1="180" x2="380" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF" />
+      <stop offset="40%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#115E59" />
+    </linearGradient>
+    <linearGradient id="cw3-accent" x1="180" y1="150" x2="320" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5EEAD4" />
+      <stop offset="100%" stop-color="#14B8A6" />
+    </linearGradient>
+    <filter id="cw3-drop" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F766E" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Infinite Dose Capsule + Heartbeat Pulse -->
+  <g id="icon" filter="url(#cw3-drop)">
+    <!-- Ambient Circle Backing Plate -->
+    <rect x="112" y="116" width="280" height="280" rx="80" fill="#F0FDFA" />
+    <rect x="113" y="117" width="278" height="278" rx="79" stroke="#CCFBF1" stroke-width="2" />
+
+    <!-- Dynamic Flowing Ribbon: Capsule loop with integrated medical cross pulse -->
+    <!-- Left Loop (Pill Curve) -->
+    <path d="M220 200 C175 200 150 225 150 256 C150 287 175 312 220 312 C255 312 270 290 285 270 L305 242 C320 222 335 200 370 200 C415 200 440 225 440 256" stroke="none" />
+    
+    <!-- Bold Smooth Infinity / Pulse Path -->
+    <path d="M190 256 C190 220 216 194 252 194 C282 194 300 212 316 234 L324 246 C340 268 358 286 388 286 C424 286 450 260 450 224" stroke="none" />
+
+    <!-- Elegant Curving Pill / Heart Cross Construct -->
+    <!-- Left Pod: Healthcare Pill Half -->
+    <path d="M174 256 C174 216 206 184 246 184 C272 184 294 198 308 220 L278 244 C270 234 258 228 246 228 C230.5 228 218 240.5 218 256 C218 271.5 230.5 284 246 284 C258 284 270 278 278 268 L308 292 C294 314 272 328 246 328 C206 328 174 296 174 256 Z" fill="url(#cw3-loop-grad-1)" />
+
+    <!-- Right Wing: Medical Cross Leaf Blossom -->
+    <path d="M280 184 H324 C332.8 184 340 191.2 340 200 V236 H376 C384.8 236 392 243.2 392 252 V260 C392 268.8 384.8 276 376 276 H340 V312 C340 320.8 332.8 328 324 328 H316 C307.2 328 300 320.8 300 312 V276 H276 L280 236 L300 236 V200 C300 191.2 291.2 184 280 184 Z" fill="url(#cw3-accent)" />
+    
+    <!-- Central Vital Pulse Spark -->
+    <circle cx="256" cy="256" r="14" fill="#0D9488" />
+    <circle cx="256" cy="256" r="6" fill="#FFFFFF" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="275" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="76" font-weight="600" letter-spacing="-0.025em" fill="#0F172A">
+      Cure<tspan fill="#0D9488" font-weight="800">well</tspan>
+    </text>
+    <text x="444" y="322" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="18" font-weight="500" letter-spacing="0.22em" fill="#0D9488">
+      SMART DOSE &amp; HEALTH COMPANION
+    </text>
+
+    <!-- Gentle Wave Baseline Accent -->
+    <path d="M444 338 C470 338 480 344 506 344 C532 344 542 338 568 338" stroke="#2DD4BF" stroke-width="3" stroke-linecap="round" />
+  </g>
+</svg>

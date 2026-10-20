@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw13-fold-1" x1="160" y1="160" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#0D9488" />
+    </linearGradient>
+    <linearGradient id="cw13-fold-2" x1="256" y1="160" x2="352" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#14B8A6" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <linearGradient id="cw13-fold-3" x1="256" y1="256" x2="352" y2="352" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#115E59" />
+    </linearGradient>
+    <linearGradient id="cw13-fold-4" x1="160" y1="256" x2="256" y2="352" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#134E4A" />
+    </linearGradient>
+    <filter id="cw13-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0D9488" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Impossible Isometric Folded Ribbon Cross -->
+  <g id="icon" filter="url(#cw13-shadow)">
+    <!-- Segment Top-Left -->
+    <path d="M214 136 H298 V220 H214 Z" fill="url(#cw13-fold-1)" />
+    <!-- Segment Top-Right Extrusion -->
+    <path d="M298 136 L376 214 V298 L298 220 Z" fill="url(#cw13-fold-2)" />
+    <!-- Segment Bottom-Right Loop -->
+    <path d="M298 298 H214 V376 H298 Z" fill="url(#cw13-fold-3)" />
+    <!-- Segment Bottom-Left Extrusion -->
+    <path d="M214 376 L136 298 V214 L214 298 Z" fill="url(#cw13-fold-4)" />
+
+    <!-- Center Overlap Cutout creating Medical Plus -->
+    <rect x="226" y="244" width="60" height="24" rx="4" fill="#FFFFFF" />
+    <rect x="244" y="226" width="24" height="60" rx="4" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="5" fill="#0D9488" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" letter-spacing="-0.04em" fill="#0F172A">
+      Cure<tspan fill="#0D9488">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.25em" fill="#0F766E">
+      CONTINUOUS DIGITAL HEALTH
+    </text>
+  </g>
+</svg>

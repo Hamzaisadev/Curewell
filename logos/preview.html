@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logo Preview — Iterations (Phase 3)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 2.5rem;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  body.light { background: #f8fafc; color: #0f172a; }
+  body.dark { background: #070d18; color: #f8fafc; }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
+  .subtitle { font-size: 1rem; opacity: 0.7; margin-top: 0.35rem; }
+  
+  .toggle-btn {
+    padding: 0.65rem 1.4rem;
+    border: 1.5px solid currentColor;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .toggle-btn:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+  .card {
+    border: 1px solid rgba(128, 128, 128, 0.18);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+  }
+  .card-img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem;
+    min-height: 250px;
+    flex: 1;
+  }
+  body.light .card-img { background: #ffffff; }
+  body.dark .card-img { background: #131c2e; }
+  .card-img img {
+    max-width: 100%;
+    max-height: 200px;
+    height: auto;
+  }
+  .card-info {
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid rgba(128, 128, 128, 0.15);
+  }
+  body.light .card-info { background: #f1f5f9; }
+  body.dark .card-info { background: #0c1424; }
+  .card-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(13, 148, 136, 0.15);
+    color: #0D9488;
+    margin-bottom: 0.5rem;
+  }
+  body.dark .card-badge {
+    background: rgba(45, 212, 191, 0.2);
+    color: #2DD4BF;
+  }
+  .card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+  .card-desc {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    line-height: 1.45;
+  }
+
+  /* Favicon strip */
+  .favicon-section {
+    padding-top: 2rem;
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+  }
+  .favicon-section h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+  }
+  .favicon-strip {
+    display: flex;
+    gap: 3rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .favicon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .favicon-sizes {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-end;
+    padding: 1.25rem 1.5rem;
+    border-radius: 14px;
+    border: 1px solid rgba(128, 128, 128, 0.15);
+  }
+  body.light .favicon-sizes { background: #ffffff; }
+  body.dark .favicon-sizes { background: #131c2e; }
+  .favicon-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .favicon-label {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body class="light">
+  <div class="header">
+    <div>
+      <h1>Curewell — Phase 3: Refinement</h1>
+      <p class="subtitle">Blue completely purged — Pure Medical Teal, Mint Glow &amp; Dark Ink Slate</p>
+    </div>
+    <button class="toggle-btn" onclick="document.body.classList.toggle('dark'); document.body.classList.toggle('light'); this.textContent = document.body.classList.contains('dark') ? '☀️ Light Mode' : '🌙 Dark Mode';">🌙 Dark Mode</button>
+  </div>
+
+  <div class="grid">
+    <!-- Iteration 1 (Primary fix of Concept 15) -->
+    <div class="card">
+      <div class="card-img">
+        <img src="iterations/iteration-1.svg" alt="iteration-1">
+      </div>
+      <div class="card-info">
+        <span class="card-badge">Primary Fix</span>
+        <div class="card-title">Iteration 1: Clean Medical Teal &amp; Dark Slate Ink</div>
+        <div class="card-desc">Zero blue. Shield converted to deep forest teal (#042F2E to #0D9488), telemetry lines in bright mint glow (#5EEAD4), "WELL" in brand teal (#0D9488), and subtitle in deep teal (#0F766E).</div>
+      </div>
+    </div>
+
+    <!-- Iteration 2 (Emerald & Warm Slate) -->
+    <div class="card">
+      <div class="card-img">
+        <img src="iterations/iteration-2.svg" alt="iteration-2">
+      </div>
+      <div class="card-info">
+        <span class="card-badge">Vibrant Emerald</span>
+        <div class="card-title">Iteration 2: High-Vibrancy Emerald &amp; Slate Subtitle</div>
+        <div class="card-desc">Shield and "WELL" tuned to energetic emerald (#10B981) with a soft neutral slate subtitle (#475569) for higher corporate contrast.</div>
+      </div>
+    </div>
+
+    <!-- Iteration 3 (TitleCase Curewell) -->
+    <div class="card">
+      <div class="card-img">
+        <img src="iterations/iteration-3.svg" alt="iteration-3">
+      </div>
+      <div class="card-info">
+        <span class="card-badge">TitleCase</span>
+        <div class="card-title">Iteration 3: TitleCase "Curewell" Lockup</div>
+        <div class="card-desc">The same pure teal/mint shield paired with friendly, approachable TitleCase typography ("Curewell") instead of ALL CAPS.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="favicon-section">
+    <h2>Favicon &amp; App Icon Legibility Check</h2>
+    <div class="favicon-strip">
+      <div class="favicon-item">
+        <div style="font-size: 0.9rem; font-weight: 600;">Standalone Shield Icon (Icon Mark)</div>
+        <div class="favicon-sizes">
+          <div class="favicon-cell">
+            <img src="iterations/icon-1.svg" width="64" height="64" alt="64px">
+            <div class="favicon-label">64px</div>
+          </div>
+          <div class="favicon-cell">
+            <img src="iterations/icon-1.svg" width="32" height="32" alt="32px">
+            <div class="favicon-label">32px</div>
+          </div>
+          <div class="favicon-cell">
+            <img src="iterations/icon-1.svg" width="16" height="16" alt="16px">
+            <div class="favicon-label">16px</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

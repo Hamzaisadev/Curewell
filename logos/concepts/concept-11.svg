@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw11-dna-1" x1="120" y1="120" x2="380" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+    <filter id="cw11-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#0D9488" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Intertwining DNA Strands Forming Dynamic Cross -->
+  <g id="icon" filter="url(#cw11-shadow)">
+    <!-- Rounded Background Container -->
+    <rect x="112" y="116" width="280" height="280" rx="60" fill="#F8FAFC" />
+    <rect x="113" y="117" width="278" height="278" rx="59" stroke="#E2E8F0" stroke-width="2" />
+
+    <!-- Symmetrical DNA Helix Figure-8 Ribbon -->
+    <path d="M190 170 C240 170 270 210 256 256 C242 302 272 342 322 342" stroke="url(#cw11-dna-1)" stroke-width="18" stroke-linecap="round" />
+    <path d="M322 170 C272 170 242 210 256 256 C270 302 240 342 190 342" stroke="url(#cw11-dna-1)" stroke-width="18" stroke-linecap="round" />
+
+    <!-- Base-Pair Connectors Forming Orthogonal Cross Arms -->
+    <line x1="200" y1="256" x2="312" y2="256" stroke="#0D9488" stroke-width="14" stroke-linecap="round" />
+    <line x1="256" y1="200" x2="256" y2="312" stroke="#0D9488" stroke-width="14" stroke-linecap="round" />
+
+    <!-- Core Health Node -->
+    <circle cx="256" cy="256" r="10" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="5" fill="#38BDF8" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="80" font-weight="800" letter-spacing="-0.03em" fill="#0F172A">
+      Cure<tspan fill="#0284C7">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.28em" fill="#0D9488">
+      PRECISION HEALTH ARCHITECTURE
+    </text>
+  </g>
+</svg>

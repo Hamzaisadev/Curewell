@@ -107,15 +107,26 @@ self.addEventListener('fetch', (event) => {
 // Notifications
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const action = event.action;
+  const data = event.notification.data || {};
+  const destinationUrl = data.routeUrl || '/today';
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
+          if (action) {
+            client.postMessage({
+              type: 'NOTIFICATION_ACTION',
+              action,
+              data,
+            });
+          }
           return client.focus();
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow('/medicines');
+        return self.clients.openWindow(destinationUrl);
       }
     })
   );

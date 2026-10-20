@@ -176,6 +176,47 @@ export async function updateDoseStatus(
   return localUpdated;
 }
 
+export async function getDoseById(id: string): Promise<Dose | null> {
+  const localDoses = getLocalItems<Dose>('doses');
+  const localMatch = localDoses.find((d) => d.id === id);
+  if (localMatch) return localMatch;
+
+  try {
+    const { data, error } = await supabase
+      .from('doses')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('getDoseById remote lookup failed:', err);
+  }
+  return null;
+}
+
+export async function snoozeDose(id: string, snoozeMinutes: number = 15): Promise<Dose> {
+  const snoozedUntil = new Date(Date.now() + snoozeMinutes * 60 * 1000).toISOString();
+  const updates: Partial<Dose> = { snoozed_until: snoozedUntil };
+
+  try {
+    const { data, error } = await supabase
+      .from('doses')
+      .update({ snoozed_until: snoozedUntil })
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error && data) return data;
+  } catch (err) {
+    console.warn('snoozeDose remote update failed, updating local store:', err);
+  }
+
+  const localUpdated = updateLocalItem<Dose>('doses', id, updates);
+  if (!localUpdated) {
+    throw new Error(`Could not snooze dose: no dose found with id ${id}.`);
+  }
+  return localUpdated;
+}
+
 /**
  * Deletes still-pending doses from `fromDate` onward, used when a medicine's
  * schedule changes. Taken and skipped doses are preserved as history.

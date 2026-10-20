@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw15-shield-grad" x1="120" y1="120" x2="380" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="50%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <linearGradient id="cw15-beam" x1="200" y1="200" x2="310" y2="310" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#2DD4BF" />
+    </linearGradient>
+    <filter id="cw15-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#0284C7" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Cyber-Vault Hex Shield with Encrypted Cross Core -->
+  <g id="icon" filter="url(#cw15-glow)">
+    <!-- Outer Faceted Shield Path -->
+    <path d="M256 116 L376 172 V292 C376 348 324 394 256 412 C188 394 136 348 136 292 V172 L256 116 Z" fill="url(#cw15-shield-grad)" />
+    <path d="M256 122 L370 176 V292 C370 344 320 388 256 405 C192 388 142 344 142 292 V176 L256 122 Z" stroke="#38BDF8" stroke-opacity="0.4" stroke-width="2" />
+
+    <!-- Concentric Hex Shield Lines -->
+    <path d="M256 156 L340 196 V284 C340 324 302 358 256 372 C210 358 172 324 172 284 V196 L256 156 Z" stroke="#2DD4BF" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="8 6" />
+
+    <!-- Center Laser Cross -->
+    <path d="M256 206 V306 M206 256 H306" stroke="url(#cw15-beam)" stroke-width="14" stroke-linecap="round" />
+    
+    <!-- Central Biometric Core -->
+    <circle cx="256" cy="256" r="14" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="6" fill="#0284C7" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" letter-spacing="-0.035em" fill="#0F172A">
+      CURE<tspan fill="#0284C7">WELL</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.3em" fill="#0369A1">
+      ZERO-KNOWLEDGE HEALTH VAULT
+    </text>
+  </g>
+</svg>

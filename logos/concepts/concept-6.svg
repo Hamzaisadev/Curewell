@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw6-leaf-top" x1="256" y1="110" x2="256" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="cw6-leaf-bottom" x1="256" y1="400" x2="256" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="cw6-leaf-left" x1="110" y1="256" x2="250" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#0D9488" />
+    </linearGradient>
+    <linearGradient id="cw6-leaf-right" x1="400" y1="256" x2="260" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="cw6-softglow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#059669" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: 4-Way Botanical Sprout Cross -->
+  <g id="icon" filter="url(#cw6-softglow)">
+    <!-- Top Leaf Petal -->
+    <path d="M256 112 C256 112 216 172 216 216 C216 238 234 256 256 256 C278 256 296 238 296 216 C296 172 256 112 256 112 Z" fill="url(#cw6-leaf-top)" />
+    
+    <!-- Bottom Leaf Petal -->
+    <path d="M256 400 C256 400 296 340 296 296 C296 274 278 256 256 256 C234 256 216 274 216 296 C216 340 256 400 256 400 Z" fill="url(#cw6-leaf-bottom)" />
+
+    <!-- Left Leaf Petal -->
+    <path d="M112 256 C112 256 172 296 216 296 C238 296 256 278 256 256 C256 234 238 216 216 216 C172 216 112 256 112 256 Z" fill="url(#cw6-leaf-left)" />
+
+    <!-- Right Leaf Petal -->
+    <path d="M400 256 C400 256 340 216 296 216 C274 216 256 234 256 256 C256 278 274 296 296 296 C340 296 400 256 400 256 Z" fill="url(#cw6-leaf-right)" />
+
+    <!-- Central Floating Dewdrop -->
+    <circle cx="256" cy="256" r="14" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="7" fill="#10B981" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="276" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="700" letter-spacing="-0.03em" fill="#064E3B">
+      Cure<tspan fill="#10B981" font-weight="800">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" letter-spacing="0.24em" fill="#059669">
+      NATURAL CARE &amp; VITALITY
+    </text>
+  </g>
+</svg>

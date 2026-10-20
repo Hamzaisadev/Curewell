@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw-ico-shield-grad" x1="140" y1="110" x2="370" y2="410" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="45%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#042F2E" />
+    </linearGradient>
+    <linearGradient id="cw-ico-beam" x1="200" y1="200" x2="310" y2="310" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5EEAD4" />
+      <stop offset="100%" stop-color="#14B8A6" />
+    </linearGradient>
+    <filter id="cw-ico-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0D9488" flood-opacity="0.28" />
+    </filter>
+  </defs>
+
+  <g id="icon" filter="url(#cw-ico-glow)">
+    <!-- Outer Faceted Shield Path -->
+    <path d="M256 90 L396 156 V298 C396 364 334 418 256 438 C178 418 116 364 116 298 V156 L256 90 Z" fill="url(#cw-ico-shield-grad)" />
+    <!-- Luminous Mint Bevel Stroke -->
+    <path d="M256 96 L390 160 V298 C390 358 330 410 256 430 C182 410 122 358 122 298 V160 L256 96 Z" stroke="#2DD4BF" stroke-opacity="0.4" stroke-width="2.5" />
+
+    <!-- Concentric Hex Vault Telemetry Lines -->
+    <path d="M256 136 L356 184 V288 C356 336 310 376 256 392 C202 376 156 336 156 288 V184 L256 136 Z" stroke="#5EEAD4" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="8 6" />
+
+    <!-- Central Precision Medical Cross -->
+    <path d="M256 196 V316 M196 256 H316" stroke="url(#cw-ico-beam)" stroke-width="18" stroke-linecap="round" />
+    
+    <!-- Central Health Core Node -->
+    <circle cx="256" cy="256" r="16" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="7" fill="#0D9488" />
+  </g>
+</svg>

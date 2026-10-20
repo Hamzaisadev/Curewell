@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw14-sun-grad" x1="120" y1="120" x2="390" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="35%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#0D9488" />
+    </linearGradient>
+    <filter id="cw14-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#10B981" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Radiant Sunburst Capsule Rays around Medical Heart -->
+  <g id="icon" filter="url(#cw14-glow)">
+    <!-- 8 Symmetrical Radial Capsule Rays -->
+    <!-- Top & Bottom (Primary Axes) -->
+    <rect x="242" y="112" width="28" height="60" rx="14" fill="#F59E0B" />
+    <rect x="242" y="340" width="28" height="60" rx="14" fill="#0D9488" />
+    <!-- Left & Right -->
+    <rect x="112" y="242" width="60" height="28" rx="14" fill="#10B981" />
+    <rect x="340" y="242" width="60" height="28" rx="14" fill="#14B8A6" />
+    <!-- Diagonals -->
+    <g transform="rotate(45, 256, 256)">
+      <rect x="246" y="118" width="20" height="52" rx="10" fill="#FBBF24" />
+      <rect x="246" y="342" width="20" height="52" rx="10" fill="#0F766E" />
+      <rect x="118" y="246" width="52" height="20" rx="10" fill="#34D399" />
+      <rect x="342" y="246" width="52" height="20" rx="10" fill="#2DD4BF" />
+    </g>
+
+    <!-- Center Core Sun Sanctuary -->
+    <circle cx="256" cy="256" r="48" fill="#FFFFFF" />
+    <!-- Radiant Cross Inside Sanctuary -->
+    <path d="M256 226 V286 M226 256 H286" stroke="#0D9488" stroke-width="12" stroke-linecap="round" />
+    <circle cx="256" cy="256" r="6" fill="#F59E0B" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" letter-spacing="-0.03em" fill="#0F172A">
+      Cure<tspan fill="#10B981">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.25em" fill="#F59E0B">
+      RADIANT HEALTH &amp; LONGEVITY
+    </text>
+  </g>
+</svg>

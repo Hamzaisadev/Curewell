@@ -1,30 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
   <defs>
-    <linearGradient id="curewell-brand-grad" x1="2" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+    <!-- 100% Blue Removed: Pure Clinical Teal, Emerald & Deep Forest Ink -->
+    <linearGradient id="cw-it1-shield-grad" x1="140" y1="110" x2="370" y2="410" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#0D9488" />
-      <stop offset="100%" stop-color="#0F766E" />
+      <stop offset="45%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#042F2E" />
     </linearGradient>
-    <linearGradient id="curewell-dot-grad" x1="12" y1="22" x2="32" y2="22" gradientUnits="userSpaceOnUse">
+    <linearGradient id="cw-it1-beam" x1="200" y1="200" x2="310" y2="310" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#5EEAD4" />
-      <stop offset="50%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#14B8A6" />
     </linearGradient>
-    <filter id="curewell-logo-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0F766E" flood-opacity="0.25" />
+    <filter id="cw-it1-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0D9488" flood-opacity="0.28" />
     </filter>
   </defs>
 
-  <!-- Mark Icon -->
-  <g transform="translate(2, 2)">
-    <rect x="2" y="2" width="40" height="40" rx="12" fill="url(#curewell-brand-grad)" filter="url(#curewell-logo-shadow)" />
-    <rect x="3.5" y="3.5" width="37" height="37" rx="10.5" stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="1" />
-    <path d="M22 12V32M12 22H32" stroke="white" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
-    <circle cx="22" cy="22" r="3" fill="url(#curewell-dot-grad)" />
-    <circle cx="22" cy="22" r="1.3" fill="#0F766E" />
+  <!-- Icon Mark: Hex Shield with Pure Emerald & Medical Teal Geometry -->
+  <g id="icon" filter="url(#cw-it1-glow)">
+    <!-- Outer Faceted Shield Path -->
+    <path d="M256 116 L376 172 V292 C376 348 324 394 256 412 C188 394 136 348 136 292 V172 L256 116 Z" fill="url(#cw-it1-shield-grad)" />
+    <!-- Luminous Mint Bevel Stroke -->
+    <path d="M256 122 L370 176 V292 C370 344 320 388 256 405 C192 388 142 344 142 292 V176 L256 122 Z" stroke="#2DD4BF" stroke-opacity="0.35" stroke-width="2" />
+
+    <!-- Concentric Hex Vault Telemetry Lines (Pure Mint / Emerald) -->
+    <path d="M256 156 L340 196 V284 C340 324 302 358 256 372 C210 358 172 324 172 284 V196 L256 156 Z" stroke="#5EEAD4" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="8 6" />
+
+    <!-- Central Precision Medical Cross (Mint Glow) -->
+    <path d="M256 206 V306 M206 256 H306" stroke="url(#cw-it1-beam)" stroke-width="14" stroke-linecap="round" />
+    
+    <!-- Central Health Core Node -->
+    <circle cx="256" cy="256" r="14" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="6" fill="#0D9488" />
   </g>
 
-  <!-- Wordmark Text -->
-  <text x="54" y="31" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="23" font-weight="800" fill="#0F172A" letter-spacing="-0.035em">
-    Cure<tspan fill="#0D9488">well</tspan>
-  </text>
+  <!-- Wordmark Text Lockup (Dark Ink + Signature Teal) -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" letter-spacing="-0.035em" fill="#0F172A">
+      CURE<tspan fill="#0D9488">WELL</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.3em" fill="#0F766E">
+      ZERO-KNOWLEDGE HEALTH VAULT
+    </text>
+  </g>
 </svg>

@@ -15,8 +15,9 @@ import { Toast } from '../../components/ui/Toast';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { Disclaimer } from '../../components/ui/Disclaimer';
-import { MedicineIcon } from '../../components/ui/icons';
+import { MedicineIcon, SparklesIcon } from '../../components/ui/icons';
 import { MedicineOrderModal } from '../../components/medicines/MedicineOrderModal';
+import { BrandMatcherModal } from '../../components/medicines/BrandMatcherModal';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { medicinesRepo, sideEffectsRepo, visitsRepo } from '../../lib/db';
 import { discontinueMedication } from '../../domain/medicationRegimen';
@@ -55,6 +56,7 @@ export function MedicineDetailPage() {
   // Discontinue Dialog
   const [isDiscontinueOpen, setIsDiscontinueOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [isBrandMatcherOpen, setIsBrandMatcherOpen] = useState(false);
   const [inventoryCount, setInventoryCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -410,6 +412,16 @@ export function MedicineDetailPage() {
                 >
                   Record In-Store Purchase
                 </Button>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  size="sm"
+                  onClick={() => setIsBrandMatcherOpen(true)}
+                  leftIcon={<SparklesIcon size={14} className="text-accent" />}
+                  className="text-xs text-accent hover:text-accent-hover font-semibold"
+                >
+                  Compare Brands & Generics
+                </Button>
               </div>
             </div>
           </Card>
@@ -517,6 +529,17 @@ export function MedicineDetailPage() {
         onStockUpdated={(newStock) => {
           setInventoryCount(newStock);
           setToastMessage(`Cabinet updated: ${newStock} tablets in stock.`);
+        }}
+      />
+
+      {/* Pharmacy Brand & Active Ingredient Comparator */}
+      <BrandMatcherModal
+        open={isBrandMatcherOpen}
+        initialBrandA={`${medicine.medicine_name}${medicine.strength ? ' ' + medicine.strength : ''}`}
+        profileId={effectiveProfileId}
+        onClose={() => setIsBrandMatcherOpen(false)}
+        onOrderAlternative={() => {
+          loadData();
         }}
       />
 

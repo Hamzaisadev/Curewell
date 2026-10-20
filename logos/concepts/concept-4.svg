@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <!-- Facet Gradients for Hex Clinical Prism -->
+    <linearGradient id="cw4-facet-top" x1="252" y1="124" x2="252" y2="244" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5EEAD4" />
+      <stop offset="100%" stop-color="#14B8A6" />
+    </linearGradient>
+    <linearGradient id="cw4-facet-left" x1="140" y1="190" x2="252" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <linearGradient id="cw4-facet-right" x1="252" y1="190" x2="364" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#115E59" />
+      <stop offset="100%" stop-color="#134E4A" />
+    </linearGradient>
+    <filter id="cw4-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0D9488" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Hex Clinical Prism & Center Health Core -->
+  <g id="icon" filter="url(#cw4-shadow)">
+    <!-- Outer Hexagon Shape -->
+    <!-- Top Face -->
+    <path d="M252 124 L356 184 L252 244 L148 184 Z" fill="url(#cw4-facet-top)" />
+    
+    <!-- Left Face -->
+    <path d="M148 184 L252 244 L252 368 L148 308 Z" fill="url(#cw4-facet-left)" />
+    
+    <!-- Right Face -->
+    <path d="M252 244 L356 184 L356 308 L252 368 Z" fill="url(#cw4-facet-right)" />
+
+    <!-- Center Floating Medical Cross (Precise, Sharp, Glowing) -->
+    <g transform="translate(252, 252)">
+      <!-- Cross Horizontal -->
+      <path d="M-36 -12 H36 C39.3 -12 42 -9.3 42 -6 V6 C42 9.3 39.3 12 36 12 H-36 C-39.3 12 -42 9.3 -42 6 V-6 C-42 -9.3 -39.3 -12 -36 -12 Z" fill="#FFFFFF" />
+      <!-- Cross Vertical -->
+      <path d="M-12 -36 V36 C-12 39.3 -9.3 42 -6 42 H6 C9.3 42 12 39.3 12 36 V-36 C12 -39.3 9.3 -42 6 -42 H-6 C-9.3 -42 -12 -39.3 -12 -36 Z" fill="#FFFFFF" />
+      
+      <!-- Core Glow Dot -->
+      <circle cx="0" cy="0" r="6" fill="#0D9488" />
+    </g>
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="275" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="80" font-weight="800" letter-spacing="-0.04em" fill="#0F172A">
+      Cure<tspan fill="#0D9488">well</tspan>
+    </text>
+    <text x="444" y="322" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.28em" fill="#0F766E">
+      HEALTH &amp; PRESCRIPTION VAULT
+    </text>
+
+    <!-- Sleek Tech Bracket Accent -->
+    <path d="M444 336 H760" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round" />
+    <path d="M444 336 H520" stroke="#0D9488" stroke-width="3" stroke-linecap="round" />
+  </g>
+</svg>

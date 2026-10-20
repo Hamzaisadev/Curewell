@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <filter id="cw12-subtle" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F766E" flood-opacity="0.12" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: Organic Balanced Zen Stones in Cross Composition -->
+  <g id="icon" filter="url(#cw12-subtle)">
+    <!-- Vertical Spine Pebbles -->
+    <!-- Top Stone -->
+    <ellipse cx="256" cy="168" rx="36" ry="26" fill="#5EEAD4" />
+    <!-- Center Stone (Intersection) -->
+    <ellipse cx="256" cy="256" rx="46" ry="34" fill="#0D9488" />
+    <!-- Bottom Stone -->
+    <ellipse cx="256" cy="344" rx="58" ry="36" fill="#134E4A" />
+
+    <!-- Horizontal Wing Pebbles -->
+    <!-- Left Stone -->
+    <ellipse cx="168" cy="256" rx="34" ry="26" fill="#14B8A6" />
+    <!-- Right Stone -->
+    <ellipse cx="344" cy="256" rx="34" ry="26" fill="#2DD4BF" />
+
+    <!-- Center Balance Point (Pure White Dot) -->
+    <circle cx="256" cy="256" r="8" fill="#FFFFFF" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="78" font-weight="400" letter-spacing="-0.01em" fill="#1E293B">
+      Cure<tspan font-weight="700" fill="#0D9488">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="500" letter-spacing="0.28em" fill="#64748B">
+      HOLISTIC BALANCE &amp; CARE
+    </text>
+  </g>
+</svg>

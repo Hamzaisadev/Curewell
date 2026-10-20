@@ -1,16 +1,46 @@
 /**
- * Local notification delivery.
+ * Local & Native notification delivery for Curewell / Medfolio.
  *
- * `showNotification` via the service worker is preferred (it survives the tab
- * being backgrounded), with a constructor fallback. Neither path may hang: the
- * previous version awaited `navigator.serviceWorker.ready`, which never resolves
- * when no service worker is registered, so notifications silently never fired.
+ * Provides a unified notification interface across Web (PWA / Service Worker)
+ * and Native Android / Capacitor (LocalNotifications, Exact Alarms, Channels).
  */
+
+import {
+  isCapacitor,
+  checkNotificationPermissions,
+  requestNotificationPermissions,
+  sendUnifiedLocalNotification,
+  scheduleRecurringDailySlotAlarms,
+  initNativeNotifications,
+} from './nativeNotifications';
+
+export * from './nativeNotifications';
 
 const SW_READY_TIMEOUT_MS = 3000;
 
+let cachedNativePermission: NotificationPermission | null = null;
+
+// Proactively update native permission cache on load if in Capacitor
+if (typeof window !== 'undefined' && isCapacitor()) {
+  checkNotificationPermissions().then((status) => {
+    cachedNativePermission =
+      status.display === 'granted'
+        ? 'granted'
+        : status.display === 'denied'
+        ? 'denied'
+        : 'default';
+  }).catch(() => {
+    // Ignore error
+  });
+}
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null;
+  // Also initialize native channels and action listeners
+  initNativeNotifications().catch((err) => {
+    console.warn('initNativeNotifications failed during SW registration:', err);
+  });
+
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null;
 
   try {
     return await navigator.serviceWorker.register('/sw.js');
@@ -20,23 +50,51 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
+/**
+ * Requests notification permissions across both Native Android (Android 13+ POST_NOTIFICATIONS)
+ * and Web browsers.
+ */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (!('Notification' in window)) {
-    return 'denied';
+  const result = await requestNotificationPermissions();
+  const perm: NotificationPermission =
+    result.display === 'granted'
+      ? 'granted'
+      : result.display === 'denied'
+      ? 'denied'
+      : 'default';
+
+  cachedNativePermission = perm;
+
+  // If granted, proactively ensure recurring daily dose slot alarms are active
+  if (perm === 'granted') {
+    scheduleRecurringDailySlotAlarms().catch((err) => {
+      console.warn('scheduleRecurringDailySlotAlarms after permission grant failed:', err);
+    });
   }
-  return Notification.requestPermission();
+
+  return perm;
 }
 
+/**
+ * Synchronous permission check. Returns 'granted', 'denied', or 'default'.
+ */
 export function notificationPermission(): NotificationPermission {
-  return 'Notification' in window ? Notification.permission : 'denied';
+  if (isCapacitor()) {
+    return cachedNativePermission ?? 'default';
+  }
+
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    return Notification.permission;
+  }
+
+  return 'denied';
 }
 
 /** Resolves the SW registration, or null if none arrives promptly. */
 async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null;
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null;
 
   try {
-    // `ready` never settles without a registration, so it is raced against a timeout.
     return await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<null>((resolve) => setTimeout(() => resolve(null), SW_READY_TIMEOUT_MS)),
@@ -46,11 +104,27 @@ async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
   }
 }
 
+/**
+ * Sends a local notification.
+ * In Capacitor Android: routes to native NotificationManager with high-priority channel & actions.
+ * In Web: routes to Service Worker showNotification with fallback to Notification constructor.
+ */
 export async function sendLocalNotification(
   title: string,
-  options?: NotificationOptions
+  options?: NotificationOptions & { doseId?: string; profileId?: string; routeUrl?: string }
 ): Promise<boolean> {
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
+  if (isCapacitor()) {
+    return sendUnifiedLocalNotification(title, {
+      body: options?.body,
+      tag: options?.tag,
+      doseId: options?.doseId,
+      profileId: options?.profileId,
+      routeUrl: options?.routeUrl || '/today',
+    });
+  }
+
+  // Web path
+  if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
     return false;
   }
 
@@ -70,8 +144,7 @@ export async function sendLocalNotification(
     }
   }
 
-  // Fallback path — reached when there is no service worker, which previously
-  // hung forever instead.
+  // Fallback path
   try {
     new Notification(title, baseOptions);
     return true;

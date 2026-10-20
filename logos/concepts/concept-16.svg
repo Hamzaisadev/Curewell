@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <filter id="cw16-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.12" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: The Masterpiece Negative Space CW Cross -->
+  <g id="icon" filter="url(#cw16-shadow)">
+    <!-- Dark Ink Precision Block (The 'C' Segment) -->
+    <path d="M246 128 C175 128 128 175 128 256 C128 337 175 384 246 384 H246 V324 C205 324 184 298 184 256 C184 214 205 188 246 188 V128 Z" fill="#0F172A" />
+
+    <!-- Teal Precision Block (The 'W' Segment) -->
+    <path d="M266 128 V188 C307 188 328 214 328 256 C328 298 307 324 266 324 V384 C337 384 384 337 384 256 C384 175 337 128 266 128 Z" fill="#0D9488" />
+
+    <!-- Pure Negative Space Cross carved directly through the vertical channel -->
+    <rect x="246" y="226" width="20" height="60" fill="#FFFFFF" />
+    <rect x="226" y="246" width="60" height="20" fill="#FFFFFF" />
+
+    <!-- Floating Emerald Dot above the intersection -->
+    <circle cx="256" cy="158" r="8" fill="#14B8A6" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="84" font-weight="800" letter-spacing="-0.04em" fill="#0F172A">
+      Cure<tspan fill="#0D9488">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="19" font-weight="600" letter-spacing="0.25em" fill="#64748B">
+      MEDICAL RECORDS ARCHIVE
+    </text>
+  </g>
+</svg>

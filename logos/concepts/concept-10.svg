@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw10-capsule-vert" x1="256" y1="120" x2="256" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="48%" stop-color="#0EA5E9" />
+      <stop offset="52%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0369A1" />
+    </linearGradient>
+    <linearGradient id="cw10-capsule-horiz" x1="120" y1="256" x2="390" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF" />
+      <stop offset="48%" stop-color="#14B8A6" />
+      <stop offset="52%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <filter id="cw10-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0284C7" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: 3D Intersecting Dual Capsules forming Pop Medical Cross -->
+  <g id="icon" filter="url(#cw10-shadow)">
+    <!-- Vertical Capsule -->
+    <rect x="220" y="126" width="72" height="260" rx="36" fill="url(#cw10-capsule-vert)" />
+    <!-- Vertical Divider Band -->
+    <line x1="220" y1="256" x2="292" y2="256" stroke="#FFFFFF" stroke-opacity="0.4" stroke-width="3" />
+
+    <!-- Horizontal Capsule (Crossing over with translucent blend) -->
+    <rect x="126" y="220" width="260" height="72" rx="36" fill="url(#cw10-capsule-horiz)" fill-opacity="0.9" />
+    <!-- Horizontal Divider Band -->
+    <line x1="256" y1="220" x2="256" y2="292" stroke="#FFFFFF" stroke-opacity="0.4" stroke-width="3" />
+
+    <!-- Center Intersecting Glow -->
+    <rect x="226" y="226" width="60" height="60" rx="14" fill="#FFFFFF" fill-opacity="0.35" />
+    <circle cx="256" cy="256" r="10" fill="#FFFFFF" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="280" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="88" font-weight="900" letter-spacing="-0.05em" fill="#0F172A">
+      cure<tspan fill="#06B6D4">well</tspan><tspan fill="#14B8A6">.</tspan>
+    </text>
+    <text x="446" y="328" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="19" font-weight="800" letter-spacing="0.25em" fill="#0284C7">
+      THE SMART PRESCRIPTION VAULT
+    </text>
+  </g>
+</svg>

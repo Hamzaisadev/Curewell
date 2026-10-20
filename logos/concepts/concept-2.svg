@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw2-shield-bg" x1="120" y1="110" x2="380" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#134E4A" />
+      <stop offset="60%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#0D9488" />
+    </linearGradient>
+    <linearGradient id="cw2-cross-grad" x1="190" y1="180" x2="310" y2="330" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5EEAD4" />
+      <stop offset="100%" stop-color="#2DD4BF" />
+    </linearGradient>
+    <filter id="cw2-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: The Guardian Vault Shield + Precision Cross -->
+  <g id="icon" filter="url(#cw2-shadow)">
+    <!-- Outer Shield Contour -->
+    <path d="M252 116 C316 116 380 134 380 186 C380 290 308 368 252 396 C196 368 124 290 124 186 C124 134 188 116 252 116 Z" fill="url(#cw2-shield-bg)" />
+    
+    <!-- Shield Highlight Edge -->
+    <path d="M252 120 C312 120 374 137 374 186 C374 286 304 362 252 388 C200 362 130 286 130 186 C130 137 192 120 252 120 Z" stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="2" />
+    
+    <!-- Medical Plus Inside Shield with Negative Space Center -->
+    <!-- Horizontal Cross Bar -->
+    <rect x="182" y="234" width="140" height="44" rx="14" fill="#FFFFFF" fill-opacity="0.96" />
+    <!-- Vertical Cross Bar -->
+    <rect x="230" y="186" width="44" height="140" rx="14" fill="#FFFFFF" fill-opacity="0.96" />
+    
+    <!-- Radiant Core Diamond/Heart Point -->
+    <rect x="238" y="242" width="28" height="28" rx="8" fill="url(#cw2-cross-grad)" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="275" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="78" font-weight="800" letter-spacing="-0.035em" fill="#0F172A">
+      CURE<tspan fill="#0D9488">WELL</tspan>
+    </text>
+    <text x="444" y="322" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" letter-spacing="0.26em" fill="#475569">
+      CLINICAL RECORDS &amp; VAULT
+    </text>
+    
+    <!-- Tech Dot Grid Accent -->
+    <circle cx="850" cy="248" r="4" fill="#2DD4BF" />
+    <circle cx="864" cy="248" r="4" fill="#0D9488" />
+    <circle cx="878" cy="248" r="4" fill="#0F766E" />
+  </g>
+</svg>

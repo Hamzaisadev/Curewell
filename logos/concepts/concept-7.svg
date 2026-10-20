@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw7-pulse-grad" x1="100" y1="256" x2="400" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="50%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+    <filter id="cw7-neon" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#2DD4BF" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: High-Tech Biometric Heartwave Monogram -->
+  <g id="icon">
+    <!-- Dark Tech Capsule Base -->
+    <rect x="112" y="116" width="280" height="280" rx="56" fill="#0F172A" />
+    <rect x="113" y="117" width="278" height="278" rx="55" stroke="#1E293B" stroke-width="2" />
+    
+    <!-- Coordinate Grid Lines -->
+    <path d="M152 256 H352 M252 156 V356" stroke="#1E293B" stroke-width="1.5" stroke-dasharray="4 4" />
+
+    <!-- Neon Biometric Pulse Wave forming C & Cross Peak -->
+    <path d="M150 256 H190 L210 200 L234 310 L256 160 L278 350 L300 230 L318 256 H354" stroke="url(#cw7-pulse-grad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#cw7-neon)" />
+
+    <!-- Glowing Node at Peak -->
+    <circle cx="256" cy="160" r="9" fill="#FFFFFF" />
+    <circle cx="256" cy="160" r="4" fill="#06B6D4" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" letter-spacing="-0.03em" fill="#0F172A">
+      CURE<tspan fill="#06B6D4">WELL</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.32em" fill="#0EA5E9">
+      BIOMETRIC VAULT INTELLIGENCE
+    </text>
+  </g>
+</svg>

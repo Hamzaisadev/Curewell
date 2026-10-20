@@ -1,27 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
   <defs>
-    <linearGradient id="curewell-grad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+    <linearGradient id="cw-ico-shield-grad" x1="140" y1="110" x2="370" y2="410" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#0D9488" />
-      <stop offset="100%" stop-color="#0F766E" />
+      <stop offset="45%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#042F2E" />
     </linearGradient>
-    <linearGradient id="curewell-accent" x1="14" y1="24" x2="34" y2="24" gradientUnits="userSpaceOnUse">
+    <linearGradient id="cw-ico-beam" x1="200" y1="200" x2="310" y2="310" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#5EEAD4" />
-      <stop offset="50%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#14B8A6" />
     </linearGradient>
-    <filter id="curewell-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0F766E" flood-opacity="0.3" />
+    <filter id="cw-ico-glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0D9488" flood-opacity="0.28" />
     </filter>
   </defs>
 
-  <!-- Base Rounded Card -->
-  <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#curewell-grad)" filter="url(#curewell-shadow)" />
-  <rect x="5.5" y="5.5" width="37" height="37" rx="10.5" stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="1" />
+  <g id="icon" filter="url(#cw-ico-glow)">
+    <!-- Outer Faceted Shield Path -->
+    <path d="M256 90 L396 156 V298 C396 364 334 418 256 438 C178 418 116 364 116 298 V156 L256 90 Z" fill="url(#cw-ico-shield-grad)" />
+    <!-- Luminous Mint Bevel Stroke -->
+    <path d="M256 96 L390 160 V298 C390 358 330 410 256 430 C182 410 122 358 122 298 V160 L256 96 Z" stroke="#2DD4BF" stroke-opacity="0.4" stroke-width="2.5" />
 
-  <!-- Harmonious Medical Cross -->
-  <path d="M24 13V35M13 24H35" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Concentric Hex Vault Telemetry Lines -->
+    <path d="M256 136 L356 184 V288 C356 336 310 376 256 392 C202 376 156 336 156 288 V184 L256 136 Z" stroke="#5EEAD4" stroke-opacity="0.35" stroke-width="2" stroke-dasharray="8 6" />
 
-  <!-- Wellness Glow & Core Point -->
-  <circle cx="24" cy="24" r="3.2" fill="url(#curewell-accent)" />
-  <circle cx="24" cy="24" r="1.4" fill="#0F766E" />
+    <!-- Central Precision Medical Cross -->
+    <path d="M256 196 V316 M196 256 H316" stroke="url(#cw-ico-beam)" stroke-width="18" stroke-linecap="round" />
+    
+    <!-- Central Health Core Node -->
+    <circle cx="256" cy="256" r="16" fill="#FFFFFF" />
+    <circle cx="256" cy="256" r="7" fill="#0D9488" />
+  </g>
 </svg>

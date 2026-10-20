@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw1-leaf-grad" x1="120" y1="110" x2="330" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF" />
+      <stop offset="50%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <linearGradient id="cw1-accent-grad" x1="220" y1="120" x2="340" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5EEAD4" />
+      <stop offset="100%" stop-color="#14B8A6" />
+    </linearGradient>
+    <filter id="cw1-glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F766E" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark (Medical Cross + Vitality Leaf Blossom) -->
+  <g id="icon" filter="url(#cw1-glow)">
+    <!-- Base Rounded Squircle Background -->
+    <rect x="112" y="116" width="280" height="280" rx="64" fill="url(#cw1-leaf-grad)" />
+    
+    <!-- Subtle Inner Border Highlight -->
+    <rect x="113" y="117" width="278" height="278" rx="63" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2" />
+    
+    <!-- Medical Cross Stem (Left, Bottom, Vertical Base) -->
+    <path d="M216 220 H180 C171.163 220 164 227.163 164 236 V276 C164 284.837 171.163 292 180 292 H216 V328 C216 336.837 223.163 344 232 344 H272 C280.837 344 288 336.837 288 328 V292 H324 C332.837 292 340 284.837 340 276 V236 C340 227.163 332.837 220 324 220 H288 V184 C288 175.163 280.837 168 272 168 H232 C223.163 168 216 175.163 216 184 V220 Z" fill="#FFFFFF" fill-opacity="0.95" />
+
+    <!-- Organic Living Leaf Accent (Top-Right Arm Transformation) -->
+    <path d="M288 220 C288 180 320 168 340 168 C340 188 328 220 288 220 Z" fill="url(#cw1-accent-grad)" />
+    
+    <!-- Central Vital Pulse Spark -->
+    <circle cx="252" cy="256" r="8" fill="#0D9488" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="275" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="78" font-weight="700" letter-spacing="-0.03em" fill="#0F172A">
+      Cure<tspan fill="#0D9488" font-weight="800">well</tspan>
+    </text>
+    <text x="444" y="322" font-family="'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif" font-size="19" font-weight="600" letter-spacing="0.22em" fill="#64748B">
+      PERSONAL HEALTH VAULT
+    </text>
+    
+    <!-- Subtle Modern Baseline Pill Dot -->
+    <circle cx="835" cy="265" r="7" fill="#14B8A6" />
+  </g>
+</svg>

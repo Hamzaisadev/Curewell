@@ -11,10 +11,34 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Toast } from '../../components/ui/Toast';
 import { Badge } from '../../components/ui/Badge';
 import { Disclaimer } from '../../components/ui/Disclaimer';
-import { DoctorIcon, FileTextIcon, PlusIcon, UsersIcon, TrashIcon, CheckIcon, SparklesIcon, ShieldIcon } from '../../components/ui/icons';
+import {
+  DoctorIcon,
+  FileTextIcon,
+  PlusIcon,
+  UsersIcon,
+  TrashIcon,
+  CheckIcon,
+  SparklesIcon,
+  ShieldIcon,
+  MessageSquareIcon,
+  PhoneIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExternalLinkIcon,
+} from '../../components/ui/icons';
 import { AddFamilyProfileModal } from '../../components/profile/AddFamilyProfileModal';
 import { ShifaMedicalPassportModal } from '../../components/onboarding/ShifaMedicalPassportModal';
 import { MobileCompanionModal } from '../../components/companion/MobileCompanionModal';
+import { FamilyPassModal } from '../../components/monetization/FamilyPassModal';
+import {
+  getCaregiverPreferences,
+  saveCaregiverPreferences,
+  isFamilyPassActive,
+  generateCaregiverAlertMessage,
+  generateWhatsAppAlertUrl,
+  checkOverdueDosesForProfile,
+  type OverdueDoseItem,
+} from '../../lib/caregiver/alerts';
 import { useAuth } from '../../lib/auth/AuthContext';
 import {
   profilesRepo,
@@ -99,6 +123,20 @@ export function SettingsPage() {
 
   const fileImportInputRef = useRef<HTMLInputElement>(null);
 
+  // Caregiver WhatsApp alerts state
+  const [caregiverEnabled, setCaregiverEnabled] = useState(false);
+  const [caregiverName, setCaregiverName] = useState('');
+  const [caregiverPhone, setCaregiverPhone] = useState('');
+  const [caregiverRelationship, setCaregiverRelationship] = useState('caregiver');
+  const [caregiverThreshold, setCaregiverThreshold] = useState(60);
+  const [isSavingCaregiver, setIsSavingCaregiver] = useState(false);
+  const [overdueDoses, setOverdueDoses] = useState<OverdueDoseItem[]>([]);
+  const [isLoadingOverdue, setIsLoadingOverdue] = useState(false);
+
+  // Monetization / Family Pass modal state
+  const [isFamilyPassOpen, setIsFamilyPassOpen] = useState(false);
+  const [familyPassActive, setFamilyPassActiveState] = useState(() => isFamilyPassActive());
+
   const effectiveUserId = user?.id || authProfile?.user_id || '';
   const effectiveProfileId = authProfile?.id || effectiveUserId;
 
@@ -137,9 +175,37 @@ export function SettingsPage() {
       } catch (err) {
         console.error('Failed to load reminder settings:', err);
       }
+
+      // Load caregiver preferences for target profile
+      const targetProfileId = activeProfile?.id || effectiveProfileId;
+      const cPrefs = getCaregiverPreferences(targetProfileId);
+      setCaregiverEnabled(cPrefs.enabled);
+      setCaregiverName(cPrefs.caregiverName || activeProfile?.emergency_contact_name || '');
+      setCaregiverPhone(cPrefs.caregiverPhone || activeProfile?.emergency_contact_phone || '');
+      setCaregiverRelationship(cPrefs.relationship || 'caregiver');
+      setCaregiverThreshold(cPrefs.overdueThresholdMinutes || 60);
+
+      // Check current overdue doses for active profile
+      const pName = activeProfile?.full_name || authProfile?.full_name || 'Patient';
+      setIsLoadingOverdue(true);
+      try {
+        const list = await checkOverdueDosesForProfile(
+          targetProfileId,
+          pName,
+          cPrefs.caregiverPhone || activeProfile?.emergency_contact_phone || '',
+          { thresholdMinutes: cPrefs.overdueThresholdMinutes || 60 }
+        );
+        setOverdueDoses(list);
+      } catch (err) {
+        console.warn('Failed to load overdue doses:', err);
+      } finally {
+        setIsLoadingOverdue(false);
+      }
+
+      setFamilyPassActiveState(isFamilyPassActive());
     }
     loadSettings();
-  }, [effectiveUserId, effectiveProfileId, authProfile]);
+  }, [effectiveUserId, effectiveProfileId, authProfile, activeProfile?.id]);
 
   const handleDeleteProfile = async () => {
     if (!profileToDelete) return;
@@ -221,6 +287,52 @@ export function SettingsPage() {
     setToastMessage(
       shown ? 'Test notification sent.' : 'Your browser would not display the notification.'
     );
+  };
+
+  const handleSaveCaregiverAlerts = () => {
+    setIsSavingCaregiver(true);
+    try {
+      const targetProfileId = activeProfile?.id || effectiveProfileId;
+      saveCaregiverPreferences(
+        {
+          enabled: caregiverEnabled,
+          caregiverName: caregiverName.trim(),
+          caregiverPhone: caregiverPhone.trim(),
+          relationship: caregiverRelationship,
+          overdueThresholdMinutes: caregiverThreshold,
+          notifyOnMissedDose: true,
+        },
+        targetProfileId
+      );
+      setToastMessage('Caregiver WhatsApp alert preferences saved.');
+
+      // Refresh overdue doses with updated settings
+      const pName = activeProfile?.full_name || authProfile?.full_name || 'Patient';
+      checkOverdueDosesForProfile(targetProfileId, pName, caregiverPhone.trim(), {
+        thresholdMinutes: caregiverThreshold,
+      }).then(setOverdueDoses);
+    } catch (err) {
+      console.error('Failed to save caregiver alerts:', err);
+      setErrorMessage('Could not save caregiver preferences. Please try again.');
+    } finally {
+      setIsSavingCaregiver(false);
+    }
+  };
+
+  const handleTestCaregiverWhatsApp = () => {
+    if (!caregiverPhone.trim()) {
+      setErrorMessage('Please provide a caregiver WhatsApp phone number first.');
+      return;
+    }
+    const pName = activeProfile?.full_name || authProfile?.full_name || 'Patient';
+    const alertUrl = generateWhatsAppAlertUrl(caregiverPhone.trim(), {
+      profileName: pName,
+      medicineName: 'Amoxicillin',
+      doseAmount: '500mg',
+      scheduledTime: '08:00 AM',
+    });
+    window.open(alertUrl, '_blank', 'noopener,noreferrer');
+    setToastMessage('Opening WhatsApp to send test caregiver alert...');
   };
 
   const handleSaveProfile = async () => {
@@ -455,6 +567,35 @@ export function SettingsPage() {
       <PageHeader
         title="Settings & Privacy"
         description="Manage your clinical profile, notification reminders, data exports, and privacy controls."
+        action={
+          <div className="flex items-center gap-2">
+            {familyPassActive ? (
+              <button
+                type="button"
+                onClick={() => setIsFamilyPassOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs font-bold shadow-2xs hover:bg-emerald-500/25 transition-all cursor-pointer"
+              >
+                <SparklesIcon size={14} className="text-amber-500" />
+                <span>Curewell Family Pass</span>
+                <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full font-semibold">
+                  Active
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsFamilyPassOpen(true)}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-sm active:scale-95 transition-all cursor-pointer"
+              >
+                <SparklesIcon size={14} className="text-amber-300" />
+                <span>Curewell Family Pass</span>
+                <span className="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-semibold">
+                  ₨499/mo
+                </span>
+              </button>
+            )}
+          </div>
+        }
       />
 
       <Toast
@@ -787,6 +928,254 @@ export function SettingsPage() {
           </div>
         </Card>
 
+        {/* Caregiver & Family Missed-Dose Alerts Card */}
+        <Card
+          header={
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                  <MessageSquareIcon size={18} />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-ink-900">
+                      Caregiver &amp; Family Alerts (WhatsApp Missed-Dose)
+                    </h2>
+                    {familyPassActive ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                        Family Pass Unlocked
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300">
+                        Family Pass Feature
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-500 mt-0.5">
+                    Notify family members via WhatsApp if doses are missed past 60 minutes. Zero app install needed for caregivers.
+                  </p>
+                </div>
+              </div>
+
+              {!familyPassActive && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsFamilyPassOpen(true)}
+                  className="self-start sm:self-auto shrink-0 border-teal-500/30 text-teal-700 hover:bg-teal-50"
+                >
+                  <SparklesIcon size={14} className="mr-1.5 text-amber-500" />
+                  Upgrade to Family Pass
+                </Button>
+              )}
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            {/* Toggle Row */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl border border-line bg-surface-hover/50">
+              <div>
+                <span className="font-bold text-sm text-ink-900 block">
+                  Enable Caregiver Missed-Dose WhatsApp Alerts
+                </span>
+                <span className="text-xs text-content-muted">
+                  Sends notifications when {activeProfile?.full_name || 'the patient'} has not confirmed their scheduled medicine within {caregiverThreshold} minutes.
+                </span>
+              </div>
+              <label htmlFor="caregiver-alerts-toggle" className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  id="caregiver-alerts-toggle"
+                  type="checkbox"
+                  checked={caregiverEnabled}
+                  onChange={(e) => setCaregiverEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <span className="sr-only">Toggle Caregiver Missed-Dose Alerts</span>
+                <div className="w-11 h-6 bg-ink-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-ink-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />
+              </label>
+            </div>
+
+            {/* Caregiver Contact & Settings Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                id="caregiver-name"
+                label="Caregiver Full Name"
+                hint="e.g. Ahmed Khan (Son), Dr. Ayesha (Spouse)"
+                required
+              >
+                <Input
+                  value={caregiverName}
+                  onChange={(e) => setCaregiverName(e.target.value)}
+                  placeholder="e.g. Ahmed Khan"
+                />
+              </Field>
+
+              <Field
+                id="caregiver-phone"
+                label="Caregiver WhatsApp Number"
+                hint="Pakistani (0300 1234567) or International (+92 300 1234567)"
+                required
+              >
+                <Input
+                  type="tel"
+                  value={caregiverPhone}
+                  onChange={(e) => setCaregiverPhone(e.target.value)}
+                  placeholder="03001234567"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                id="caregiver-relationship"
+                label="Relationship to Patient"
+                hint="Primary contact role for adherence updates"
+              >
+                <Select
+                  id="caregiver-relationship"
+                  value={caregiverRelationship}
+                  onValueChange={(val) => setCaregiverRelationship(val)}
+                  options={[
+                    { value: 'son', label: 'Son' },
+                    { value: 'daughter', label: 'Daughter' },
+                    { value: 'spouse', label: 'Spouse / Partner' },
+                    { value: 'parent', label: 'Parent' },
+                    { value: 'sibling', label: 'Brother / Sister' },
+                    { value: 'nurse', label: 'Nurse / Professional Caregiver' },
+                    { value: 'caregiver', label: 'General Caregiver' },
+                    { value: 'other', label: 'Other Relative' },
+                  ]}
+                  placeholder="Select relationship"
+                />
+              </Field>
+
+              <Field
+                id="caregiver-threshold"
+                label="Overdue Alert Threshold"
+                hint="Time after scheduled dose before alert triggers"
+              >
+                <Select
+                  id="caregiver-threshold"
+                  value={String(caregiverThreshold)}
+                  onValueChange={(val) => setCaregiverThreshold(Number(val) || 60)}
+                  options={[
+                    { value: '30', label: '30 minutes overdue (High vigilance)' },
+                    { value: '45', label: '45 minutes overdue' },
+                    { value: '60', label: '60 minutes overdue (Recommended default)' },
+                    { value: '90', label: '90 minutes overdue' },
+                    { value: '120', label: '120 minutes overdue (Relaxed window)' },
+                  ]}
+                  placeholder="Select threshold"
+                />
+              </Field>
+            </div>
+
+            {/* Alert Template Preview */}
+            <div className="p-3.5 rounded-xl border border-line bg-surface-hover/40 text-xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-ink-900 flex items-center gap-1.5">
+                  <MessageSquareIcon size={14} className="text-emerald-600" />
+                  Standard WhatsApp Notification Template:
+                </span>
+                <span className="text-[10px] text-content-muted uppercase tracking-wider font-semibold">
+                  Preview
+                </span>
+              </div>
+              <p className="p-3 rounded-lg bg-surface border border-line font-mono text-ink-800 leading-relaxed select-all">
+                {generateCaregiverAlertMessage({
+                  profileName: activeProfile?.full_name || authProfile?.full_name || 'Patient',
+                  medicineName: '[Medicine Name]',
+                  doseAmount: '[Dose Amount]',
+                  scheduledTime: '[Time]',
+                })}
+              </p>
+            </div>
+
+            {/* Real-time Overdue Doses Section */}
+            <div className="p-3.5 rounded-xl border border-line bg-surface space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ClockIcon size={15} className="text-teal-600 dark:text-teal-400" />
+                  <span className="text-xs font-bold text-ink-900">
+                    Today&apos;s Overdue Doses for {activeProfile?.full_name || 'Active Profile'}:
+                  </span>
+                </div>
+                {isLoadingOverdue && (
+                  <span className="text-[11px] text-content-muted">Checking schedule...</span>
+                )}
+              </div>
+
+              {overdueDoses.length === 0 ? (
+                <div className="py-2.5 px-3 rounded-lg bg-ok-bg/50 border border-ok-border text-xs text-ok-text flex items-center gap-2">
+                  <CheckCircleIcon size={14} />
+                  <span>
+                    No overdue doses currently detected today. All scheduled doses are on track or within the {caregiverThreshold}-minute window.
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {overdueDoses.map((item, idx) => (
+                    <div
+                      key={item.doseId || idx}
+                      className="p-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50/70 dark:bg-amber-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-ink-900">
+                            {item.medicineName}
+                          </span>
+                          <span className="text-[11px] text-content-muted">
+                            ({item.doseAmount})
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
+                            {item.minutesOverdue} mins overdue
+                          </span>
+                        </div>
+                        <p className="text-xs text-ink-600 mt-0.5">
+                          Scheduled for {item.scheduledTimeFormatted} • Status: {item.status}
+                        </p>
+                      </div>
+
+                      <a
+                        href={item.whatsAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors shrink-0"
+                      >
+                        <MessageSquareIcon size={14} />
+                        <span>Send WhatsApp Alert</span>
+                        <ExternalLinkIcon size={12} />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-line">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleTestCaregiverWhatsApp}
+                className="flex items-center gap-1.5"
+              >
+                <PhoneIcon size={14} className="text-emerald-600" />
+                <span>Send Test WhatsApp Alert</span>
+              </Button>
+
+              <Button
+                variant="primary"
+                size="sm"
+                loading={isSavingCaregiver}
+                onClick={handleSaveCaregiverAlerts}
+              >
+                Save Caregiver Preferences
+              </Button>
+            </div>
+          </div>
+        </Card>
+
         {/* Healthcare Management Hub */}
         <Card header={<h2 className="text-base font-bold text-ink-900">Healthcare Network & Finance Hub</h2>}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -1018,6 +1407,16 @@ export function SettingsPage() {
       <MobileCompanionModal
         isOpen={isCompanionModalOpen}
         onClose={() => setIsCompanionModalOpen(false)}
+      />
+
+      {/* Curewell Family Pass Monetization Modal */}
+      <FamilyPassModal
+        isOpen={isFamilyPassOpen}
+        onClose={() => setIsFamilyPassOpen(false)}
+        onSubscribed={() => {
+          setFamilyPassActiveState(isFamilyPassActive());
+          setToastMessage('Curewell Family Pass status updated.');
+        }}
       />
     </AppShell>
   );

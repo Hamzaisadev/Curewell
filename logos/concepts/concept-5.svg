@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512" width="1024" height="512" fill="none">
+  <defs>
+    <linearGradient id="cw5-ribbon-1" x1="120" y1="120" x2="380" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF" />
+      <stop offset="45%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <linearGradient id="cw5-ribbon-2" x1="280" y1="130" x2="160" y2="370" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5EEAD4" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#14B8A6" stop-opacity="0.3" />
+    </linearGradient>
+    <filter id="cw5-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0D9488" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Icon Mark: The Morphing C Ribbon forming an inner cross -->
+  <g id="icon" filter="url(#cw5-shadow)">
+    <!-- Base Outer Circular C Swirl -->
+    <path d="M345 180 C325 140 285 120 240 120 C165 120 115 175 115 256 C115 337 165 392 240 392 C290 392 330 368 350 326 C358 308 344 290 324 290 C310 290 298 299 290 312 C278 332 260 344 238 344 C194 344 163 306 163 256 C163 206 194 168 238 168 C262 168 280 180 294 200 C302 212 316 218 330 214 C348 208 354 194 345 180 Z" fill="url(#cw5-ribbon-1)" />
+
+    <!-- Cross Intersecting Beam inside the C counter -->
+    <rect x="200" y="238" width="130" height="36" rx="18" fill="url(#cw5-ribbon-2)" />
+    <rect x="247" y="191" width="36" height="130" rx="18" fill="url(#cw5-ribbon-2)" />
+    
+    <!-- Central Luminous Core Spark -->
+    <circle cx="265" cy="256" r="10" fill="#FFFFFF" />
+    <circle cx="265" cy="256" r="5" fill="#0D9488" />
+  </g>
+
+  <!-- Wordmark Text Lockup -->
+  <g id="wordmark">
+    <text x="440" y="278" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="82" font-weight="900" letter-spacing="-0.04em" fill="#0F172A">
+      cure<tspan fill="#0D9488">well</tspan>
+    </text>
+    <text x="444" y="324" font-family="'Inter Variable', system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" letter-spacing="0.26em" fill="#14B8A6">
+      LIVING CLINICAL VAULT
+    </text>
+  </g>
+</svg>
