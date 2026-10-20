@@ -81,5 +81,11 @@
     "typescript-eslint": "^8.24.0",
     "vite": "^6.2.0",
     "vitest": "^3.0.7"
+  },
+  "allowScripts": {
+    "@google/genai": true,
+    "core-js": true,
+    "esbuild": true,
+    "protobufjs": true
   }
 }

@@ -52,6 +52,12 @@ export function DashboardPage() {
   return (
     <AppShell>
       <div className="space-y-6 pb-20">
+        {/* ── Caregiver Persona Guardrail Banner ───────────────────── */}
+        <ActiveProfileBanner />
+
+        {/* ── Shifa Medical Passport Onboarding Banner (if uncompleted) ── */}
+        <ShifaPassportBanner onOpenPassport={() => setPassportModalOpen(true)} />
+
         {/* ── Patient Identity & Circadian Greeting ────────────────── */}
         <PatientInfoCard />
 
