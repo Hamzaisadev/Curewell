@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Logo Preview — Iterations (Phase 3)</title>
+<title>Curewell — Final Logo Assets & Export Showcase</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -43,9 +43,9 @@
     transform: translateY(-1px);
   }
 
-  .grid {
+  .showcase {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
   }
@@ -69,7 +69,7 @@
   body.dark .card-img { background: #131c2e; }
   .card-img img {
     max-width: 100%;
-    max-height: 200px;
+    max-height: 220px;
     height: auto;
   }
   .card-info {
@@ -78,7 +78,7 @@
   }
   body.light .card-info { background: #f1f5f9; }
   body.dark .card-info { background: #0c1424; }
-  .card-badge {
+  .badge {
     display: inline-block;
     padding: 0.2rem 0.6rem;
     border-radius: 6px;
@@ -90,134 +90,133 @@
     color: #0D9488;
     margin-bottom: 0.5rem;
   }
-  body.dark .card-badge {
+  body.dark .badge {
     background: rgba(45, 212, 191, 0.2);
     color: #2DD4BF;
   }
   .card-title {
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.2rem;
+    font-weight: 800;
     margin-bottom: 0.35rem;
   }
   .card-desc {
     font-size: 0.9rem;
-    opacity: 0.8;
+    opacity: 0.75;
     line-height: 1.45;
   }
 
-  /* Favicon strip */
-  .favicon-section {
-    padding-top: 2rem;
-    border-top: 1px solid rgba(128, 128, 128, 0.2);
-  }
-  .favicon-section h2 {
-    font-size: 1.35rem;
+  /* Table / Manifest */
+  .section-title {
+    font-size: 1.4rem;
     font-weight: 700;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
+    margin-top: 2rem;
   }
-  .favicon-strip {
-    display: flex;
-    gap: 3rem;
-    flex-wrap: wrap;
-    align-items: flex-end;
+  .table-box {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(128, 128, 128, 0.18);
+    margin-bottom: 2rem;
   }
-  .favicon-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
   }
-  .favicon-sizes {
-    display: flex;
-    gap: 1.25rem;
-    align-items: flex-end;
-    padding: 1.25rem 1.5rem;
-    border-radius: 14px;
-    border: 1px solid rgba(128, 128, 128, 0.15);
+  th, td {
+    padding: 0.85rem 1.25rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.12);
   }
-  body.light .favicon-sizes { background: #ffffff; }
-  body.dark .favicon-sizes { background: #131c2e; }
-  .favicon-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-  }
-  .favicon-label {
-    font-size: 0.75rem;
-    opacity: 0.6;
-    font-weight: 600;
-  }
+  body.light th { background: #f1f5f9; font-weight: 700; }
+  body.dark th { background: #131c2e; font-weight: 700; }
+  body.light tr:last-child td { border-bottom: none; }
+  body.dark tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body class="light">
   <div class="header">
     <div>
-      <h1>Curewell — Phase 3: Refinement</h1>
-      <p class="subtitle">Blue completely purged — Pure Medical Teal, Mint Glow &amp; Dark Ink Slate</p>
+      <h1>Curewell — Official Logo &amp; App Asset Export</h1>
+      <p class="subtitle">Production assets generated for Web, PWA, Android APK, and iOS Mobile</p>
     </div>
     <button class="toggle-btn" onclick="document.body.classList.toggle('dark'); document.body.classList.toggle('light'); this.textContent = document.body.classList.contains('dark') ? '☀️ Light Mode' : '🌙 Dark Mode';">🌙 Dark Mode</button>
   </div>
 
-  <div class="grid">
-    <!-- Iteration 1 (Primary fix of Concept 15) -->
+  <div class="showcase">
     <div class="card">
       <div class="card-img">
-        <img src="iterations/iteration-1.svg" alt="iteration-1">
+        <img src="export/logo.svg" alt="Curewell Combination Mark">
       </div>
       <div class="card-info">
-        <span class="card-badge">Primary Fix</span>
-        <div class="card-title">Iteration 1: Clean Medical Teal &amp; Dark Slate Ink</div>
-        <div class="card-desc">Zero blue. Shield converted to deep forest teal (#042F2E to #0D9488), telemetry lines in bright mint glow (#5EEAD4), "WELL" in brand teal (#0D9488), and subtitle in deep teal (#0F766E).</div>
+        <span class="badge">Primary Combination Mark</span>
+        <div class="card-title">Curewell Official Logo</div>
+        <div class="card-desc">Full combination mark with the Telemetry Vault Shield and signature Dark Slate / Teal typography.</div>
       </div>
     </div>
 
-    <!-- Iteration 2 (Emerald & Warm Slate) -->
     <div class="card">
       <div class="card-img">
-        <img src="iterations/iteration-2.svg" alt="iteration-2">
+        <img src="export/icon.svg" alt="Curewell Standalone Icon Mark" style="max-height: 180px;">
       </div>
       <div class="card-info">
-        <span class="card-badge">Vibrant Emerald</span>
-        <div class="card-title">Iteration 2: High-Vibrancy Emerald &amp; Slate Subtitle</div>
-        <div class="card-desc">Shield and "WELL" tuned to energetic emerald (#10B981) with a soft neutral slate subtitle (#475569) for higher corporate contrast.</div>
-      </div>
-    </div>
-
-    <!-- Iteration 3 (TitleCase Curewell) -->
-    <div class="card">
-      <div class="card-img">
-        <img src="iterations/iteration-3.svg" alt="iteration-3">
-      </div>
-      <div class="card-info">
-        <span class="card-badge">TitleCase</span>
-        <div class="card-title">Iteration 3: TitleCase "Curewell" Lockup</div>
-        <div class="card-desc">The same pure teal/mint shield paired with friendly, approachable TitleCase typography ("Curewell") instead of ALL CAPS.</div>
+        <span class="badge">Standalone Icon Mark</span>
+        <div class="card-title">Curewell Shield Icon</div>
+        <div class="card-desc">Used for favicons, mobile app launcher icons, touch icons, and splash screens.</div>
       </div>
     </div>
   </div>
 
-  <div class="favicon-section">
-    <h2>Favicon &amp; App Icon Legibility Check</h2>
-    <div class="favicon-strip">
-      <div class="favicon-item">
-        <div style="font-size: 0.9rem; font-weight: 600;">Standalone Shield Icon (Icon Mark)</div>
-        <div class="favicon-sizes">
-          <div class="favicon-cell">
-            <img src="iterations/icon-1.svg" width="64" height="64" alt="64px">
-            <div class="favicon-label">64px</div>
-          </div>
-          <div class="favicon-cell">
-            <img src="iterations/icon-1.svg" width="32" height="32" alt="32px">
-            <div class="favicon-label">32px</div>
-          </div>
-          <div class="favicon-cell">
-            <img src="iterations/icon-1.svg" width="16" height="16" alt="16px">
-            <div class="favicon-label">16px</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="section-title">📱 Exported Assets Directory Breakdown</div>
+  <div class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th>Platform / Target</th>
+          <th>File Location</th>
+          <th>Dimensions &amp; Formats</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Vector Masters</strong></td>
+          <td><code>logos/export/</code></td>
+          <td><code>logo.svg</code> (1024x512), <code>icon.svg</code> (512x512)</td>
+        </tr>
+        <tr>
+          <td><strong>Full PNG Family</strong></td>
+          <td><code>logos/export/</code></td>
+          <td>16, 32, 48, 192, 512, 1024, 2048 px (for both logo &amp; icon)</td>
+        </tr>
+        <tr>
+          <td><strong>Web &amp; Favicons</strong></td>
+          <td><code>public/</code> &amp; <code>logos/export/</code></td>
+          <td><code>favicon.ico</code> (16, 32, 48 multi-size), <code>favicon.svg</code>, <code>logo.svg</code></td>
+        </tr>
+        <tr>
+          <td><strong>PWA Web App</strong></td>
+          <td><code>public/</code></td>
+          <td><code>pwa-192x192.png</code>, <code>pwa-512x512.png</code>, <code>apple-touch-icon.png</code> (180x180)</td>
+        </tr>
+        <tr>
+          <td><strong>Android APK Mipmaps</strong></td>
+          <td><code>logos/export/android/</code></td>
+          <td>
+            <code>mdpi</code> (48px launcher, 108px fg)<br>
+            <code>hdpi</code> (72px launcher, 162px fg)<br>
+            <code>xhdpi</code> (96px launcher, 216px fg)<br>
+            <code>xxhdpi</code> (144px launcher, 324px fg)<br>
+            <code>xxxhdpi</code> (192px launcher, 432px fg)<br>
+            <code>playstore-icon-512.png</code> (512x512)
+          </td>
+        </tr>
+        <tr>
+          <td><strong>iOS Mobile App Icons</strong></td>
+          <td><code>logos/export/ios/</code></td>
+          <td>20pt, 29pt, 40pt, 60pt (@2x &amp; @3x) + 1024x1024 App Store Icon</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </body>
 </html>

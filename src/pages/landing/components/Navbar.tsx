@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useSpring } from 'motion/react';
 import { ArrowRightIcon } from '../../../components/ui/icons';
+import { Logo } from '../../../components/ui/Logo';
 
 interface NavAnchor {
   href: string;
@@ -71,10 +72,7 @@ export function Navbar() {
             className="flex items-center gap-2.5 sm:gap-3 group shrink-0 select-none mr-1 lg:mr-3"
             aria-label="Curewell Clinical Health OS"
           >
-            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-teal-700 via-teal-800 to-teal-950 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform duration-200 shrink-0">
-              <span className="text-base font-black tracking-tighter">C</span>
-              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
-            </div>
+            <Logo variant="mark" size="md" className="group-hover:scale-105 transition-transform duration-200 shrink-0" />
             <div className="flex flex-col">
               <span className="text-base sm:text-xl font-black tracking-tight text-slate-900 leading-tight flex items-center gap-1.5 whitespace-nowrap">
                 <span>Curewell</span>
