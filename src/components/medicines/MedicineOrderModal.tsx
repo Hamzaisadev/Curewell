@@ -12,7 +12,6 @@ import {
   Building2,
   Pill,
   FileText,
-  Sparkles,
   TrendingDown,
   MapPin,
   ShieldCheck,
@@ -98,13 +97,6 @@ export function MedicineOrderModal({
     }
   }, [genericAlternative]);
 
-  if (!medicine) return null;
-
-  const currentInventory = readInventory(profileId);
-  const stockCount = currentInventory[medicine.id] ?? 0;
-  const isOutOfStock = stockCount <= 0;
-  const isLowStock = stockCount > 0 && stockCount <= 5;
-
   // Selected Pharmacy details
   const activePharmacyInfo = useMemo(() => {
     if (selectedPharmacyId === 'custom') {
@@ -125,6 +117,13 @@ export function MedicineOrderModal({
       }
     );
   }, [selectedPharmacyId, customPharmacy]);
+
+  if (!medicine) return null;
+
+  const currentInventory = readInventory(profileId);
+  const stockCount = currentInventory[medicine.id] ?? 0;
+  const isOutOfStock = stockCount <= 0;
+  const isLowStock = stockCount > 0 && stockCount <= 5;
 
   // Pricing calculations
   const brandPackPrice = genericAlternative ? genericAlternative.brandPriceEst : 500;
@@ -311,7 +310,7 @@ export function MedicineOrderModal({
           <div className="rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/20 p-4 space-y-3">
             <div className="flex items-start gap-2.5">
               <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0 mt-0.5">
-                <Sparkles size={16} />
+                <TrendingDown size={16} />
               </span>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">

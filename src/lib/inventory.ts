@@ -158,6 +158,26 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Cloud persistence: Syncs single medicine stock change to Supabase.
  * Gracefully handles offline state and schema differences.
  */
+interface UntypedInventoryTable {
+  upsert: (
+    values: Record<string, unknown> | Array<Record<string, unknown>>,
+    options?: { onConflict?: string }
+  ) => Promise<{ error: { message?: string } | null }>;
+  select: (columns: string) => {
+    eq: (
+      col: string,
+      val: string
+    ) => Promise<{ data: unknown; error: { message?: string } | null }>;
+  };
+}
+
+function getInventoryTable(): UntypedInventoryTable {
+  const client = supabase as unknown as {
+    from: (table: string) => UntypedInventoryTable;
+  };
+  return client.from(CLOUD_SYNC_TABLE);
+}
+
 export async function syncMedicineStockToCloud(
   profileId: string,
   medicineId: string,
@@ -168,17 +188,15 @@ export async function syncMedicineStockToCloud(
   }
   try {
     // 1. Attempt to upsert to dedicated inventory table if present
-    const { error: dedicatedErr } = await supabase
-      .from(CLOUD_SYNC_TABLE as any)
-      .upsert(
-        {
-          profile_id: profileId,
-          medicine_id: medicineId,
-          stock_count: count,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'profile_id,medicine_id' }
-      );
+    const { error: dedicatedErr } = await getInventoryTable().upsert(
+      {
+        profile_id: profileId,
+        medicine_id: medicineId,
+        stock_count: count,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'profile_id,medicine_id' }
+    );
 
     if (!dedicatedErr) {
       return true;
@@ -214,9 +232,9 @@ export async function syncInventoryToCloud(profileId: string): Promise<boolean> 
 
     if (rows.length === 0) return true;
 
-    const { error } = await supabase
-      .from(CLOUD_SYNC_TABLE as any)
-      .upsert(rows, { onConflict: 'profile_id,medicine_id' });
+    const { error } = await getInventoryTable().upsert(rows, {
+      onConflict: 'profile_id,medicine_id',
+    });
 
     return !error;
   } catch {
@@ -230,7 +248,7 @@ export async function syncInventoryToCloud(profileId: string): Promise<boolean> 
 export async function syncInventoryFromCloud(profileId: string): Promise<PillInventory> {
   if (!profileId) return {};
   try {
-    const { data, error } = await (supabase.from as any)(CLOUD_SYNC_TABLE)
+    const { data, error } = await getInventoryTable()
       .select('medicine_id, stock_count')
       .eq('profile_id', profileId);
 

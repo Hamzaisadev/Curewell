@@ -124,7 +124,6 @@ export function FamilyPassModal({
     >
       <div
         className="relative w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header Bar */}
         <div className="relative px-5 py-5 sm:px-6 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 text-white shrink-0">
@@ -418,9 +417,9 @@ export function FamilyPassModal({
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-content-muted mb-2.5">
+                <p className="block text-xs font-bold uppercase tracking-wider text-content-muted mb-2.5">
                   Select Payment Method
-                </label>
+                </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <button
                     type="button"

@@ -205,7 +205,15 @@ export function SettingsPage() {
       setFamilyPassActiveState(isFamilyPassActive());
     }
     loadSettings();
-  }, [effectiveUserId, effectiveProfileId, authProfile, activeProfile?.id]);
+  }, [
+    effectiveUserId,
+    effectiveProfileId,
+    authProfile,
+    activeProfile?.id,
+    activeProfile?.full_name,
+    activeProfile?.emergency_contact_name,
+    activeProfile?.emergency_contact_phone,
+  ]);
 
   const handleDeleteProfile = async () => {
     if (!profileToDelete) return;

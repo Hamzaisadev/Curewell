@@ -45,7 +45,6 @@ import {
   Plus,
   ShoppingBag,
   MessageCircle,
-  Sparkles,
 } from 'lucide-react';
 import {
   todayInAppTz,
@@ -1093,7 +1092,7 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
                     initialBrandA: criticalRefillMeds[0]?.medicine_name,
                   })
                 }
-                leftIcon={<Sparkles size={14} />}
+                leftIcon={<MedicineIcon size={14} />}
                 className="text-xs font-semibold text-rose-900 dark:text-rose-200"
               >
                 Compare Brands
