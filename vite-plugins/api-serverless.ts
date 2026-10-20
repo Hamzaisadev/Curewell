@@ -1,8 +1,16 @@
 import type { Plugin, Connect } from 'vite';
+import dns from 'node:dns';
 import extractPrescriptionHandler from '../api/extract-prescription';
 import extractLabReportHandler from '../api/extract-lab-report';
 import explainMedicineHandler from '../api/explain-medicine';
 import chatAssistantHandler from '../api/chat-assistant';
+
+// Prefer IPv4 during local development to avoid undici IPv6 connection timeouts
+try {
+  dns.setDefaultResultOrder?.('ipv4first');
+} catch {
+  // Ignore in environments where not supported
+}
 
 /**
  * Vite Dev Server plugin that mounts /api/ serverless function handlers

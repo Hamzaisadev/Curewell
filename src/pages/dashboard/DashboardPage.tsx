@@ -10,6 +10,9 @@ import { BloodPressureTrendCard } from './components/BloodPressureTrendCard';
 import { BloodGlucoseTrendCard } from './components/BloodGlucoseTrendCard';
 import { AdherenceHabitsCard } from './components/AdherenceHabitsCard';
 import { UpNextCard } from './components/UpNextCard';
+import { RecentConsultationsCard } from './components/RecentConsultationsCard';
+import { ClinicalDossierCard } from './components/ClinicalDossierCard';
+import { EmergencyHotlinesStripCard } from './components/EmergencyHotlinesStripCard';
 import { QuickVitalsModal } from '../../components/vitals/QuickVitalsModal';
 import { useAuth } from '../../lib/auth/AuthContext';
 import {
@@ -49,12 +52,6 @@ export function DashboardPage() {
   return (
     <AppShell>
       <div className="space-y-6 pb-20">
-        {/* ── Caregiver Persona Guardrail Banner ───────────────────── */}
-        <ActiveProfileBanner />
-
-        {/* ── Shifa Medical Passport Onboarding Banner (if uncompleted) ── */}
-        <ShifaPassportBanner onOpenPassport={() => setPassportModalOpen(true)} />
-
         {/* ── Patient Identity & Circadian Greeting ────────────────── */}
         <PatientInfoCard />
 
@@ -125,6 +122,15 @@ export function DashboardPage() {
             <UpNextCard refreshKey={scheduleRefreshKey} />
           </div>
         </div>
+
+        {/* ── Doctor's Brief & Clinical Consultations ────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          <RecentConsultationsCard />
+          <ClinicalDossierCard />
+        </div>
+
+        {/* ── 24/7 Emergency Medical Response Hotlines ─────────────── */}
+        <EmergencyHotlinesStripCard />
       </div>
 
       {/* Quick Vitals Modal for Instant Logging */}

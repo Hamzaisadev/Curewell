@@ -1,6 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
 import fs from 'node:fs';
 import path from 'node:path';
+import dns from 'node:dns';
+
+// Ensure IPv4 is attempted first to prevent UND_ERR_CONNECT_TIMEOUT on networks
+// with broken, unrouted, or high-latency IPv6 stacks.
+try {
+  dns.setDefaultResultOrder?.('ipv4first');
+} catch {
+  // Ignore in environments where not supported
+}
 
 function loadEnvFile() {
   try {
@@ -67,15 +76,33 @@ export function getCandidateModels(): string[] {
   return Array.from(new Set(list.filter(Boolean)));
 }
 
+export function isQuotaOrDeprecationError(err: unknown): boolean {
+  if (!err) return false;
+  const status = (err as any)?.status || (err as any)?.code || (err as any)?.cause?.code;
+  const msg = err instanceof Error ? err.message : String(err);
+  const causeMsg = (err as any)?.cause ? String((err as any).cause) : '';
+  const fullText = `${msg} ${causeMsg}`;
+  return (
+    status === 429 ||
+    status === 404 ||
+    /429|404|resource_exhausted|quota|not_found|no longer available/i.test(fullText)
+  );
+}
+
 export function isRecoverableModelError(err: unknown): boolean {
   if (!err) return false;
-  const status = (err as any)?.status || (err as any)?.code;
+  const status = (err as any)?.status || (err as any)?.code || (err as any)?.cause?.code;
   const msg = err instanceof Error ? err.message : String(err);
+  const causeMsg = (err as any)?.cause ? String((err as any).cause) : '';
+  const fullText = `${msg} ${causeMsg}`;
   return (
     status === 429 ||
     status === 404 ||
     status === 503 ||
-    /429|404|503|resource_exhausted|quota|not_found|unavailable|no longer available/i.test(msg)
+    status === 'UND_ERR_CONNECT_TIMEOUT' ||
+    /429|404|503|resource_exhausted|quota|not_found|unavailable|no longer available|connect timeout|econnreset|etimedout|und_err_connect_timeout|fetch failed/i.test(
+      fullText
+    )
   );
 }
 
@@ -160,7 +187,7 @@ export async function generateStructured<T>(
         });
       } catch (err: unknown) {
         lastErr = err;
-        if (isRecoverableModelError(err)) {
+        if (isQuotaOrDeprecationError(err)) {
           throw err;
         }
         console.error(`Gemini call attempt ${attempt} for model ${model} failed:`, (err as Error)?.message || err);
