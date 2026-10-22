@@ -85,7 +85,7 @@ export function AuthCallbackPage() {
 
         timeout = setTimeout(() => {
           if (isRecovery) {
-            navigate('/settings', { replace: true });
+            navigate('/reset-password', { replace: true });
           } else {
             navigate('/', { replace: true });
           }
@@ -135,12 +135,12 @@ export function AuthCallbackPage() {
                   <CheckIcon size={32} />
                 </div>
                 <h2 className="text-xl font-black text-content">
-                  {callbackType === 'recovery' ? 'Password Reset Ready' : 'Email Verified!'}
+                  {callbackType === 'recovery' ? 'Password Reset Ready' : 'Authentication Successful!'}
                 </h2>
                 <p className="text-sm text-content-muted">
                   {callbackType === 'recovery'
                     ? 'Redirecting you to update your password...'
-                    : 'Your account is activated. Redirecting to your dashboard...'}
+                    : 'Your account is ready. Redirecting to your dashboard...'}
                 </p>
                 <div className="flex justify-center pt-2">
                   <div className="w-6 h-6 border-3 border-accent-subtle border-t-accent rounded-full animate-spin" />

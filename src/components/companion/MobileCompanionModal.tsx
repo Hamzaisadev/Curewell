@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { generateQrSvgUrl } from '../../lib/qr/qrGenerator';
-import { createCompanionPairingToken } from '../../lib/security/companionPairing';
+import { createSmartQrPairingToken } from '../../lib/security/companionPairing';
 import { Button } from '../ui/Button';
 import {
   XIcon,
@@ -11,6 +11,7 @@ import {
   DownloadIcon,
   AndroidIcon,
   ClockIcon,
+  ShieldIcon,
 } from '../ui/icons';
 
 interface MobileCompanionModalProps {
@@ -19,12 +20,14 @@ interface MobileCompanionModalProps {
 }
 
 export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalProps) {
-  const { user, activeProfile } = useAuth();
+  const { user, session, activeProfile } = useAuth();
   const [qrUrl, setQrUrl] = useState<string>('');
   const [downloadLink, setDownloadLink] = useState<string>('');
+  const [pairingCode, setPairingCode] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
-  // Build direct APK download URL & QR Code
+  // Build Smart QR Code (APK Download + Instant Account Auto-Sign-In) with Curewell Logo
   useEffect(() => {
     if (!isOpen) return;
 
@@ -34,23 +37,25 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
 
       if (user && activeProfile) {
         try {
-          const token = await createCompanionPairingToken(
-            user.id,
-            activeProfile.id,
-            activeProfile.full_name,
-            user.email
-          );
+          const { token, pairingCode: code } = await createSmartQrPairingToken({
+            userId: user.id,
+            profileId: activeProfile.id,
+            profileName: activeProfile.full_name,
+            userEmail: user.email,
+            refreshToken: session?.refresh_token,
+          });
           if (!isMounted) return;
           const fullUrl = `${baseUrl}?pair=${encodeURIComponent(token)}`;
           setDownloadLink(fullUrl);
-          setQrUrl(generateQrSvgUrl(fullUrl, 200));
+          setPairingCode(code);
+          setQrUrl(generateQrSvgUrl(fullUrl, 220, { withLogo: true }));
         } catch {
           setDownloadLink(baseUrl);
-          setQrUrl(generateQrSvgUrl(baseUrl, 200));
+          setQrUrl(generateQrSvgUrl(baseUrl, 220, { withLogo: true }));
         }
       } else {
         setDownloadLink(baseUrl);
-        setQrUrl(generateQrSvgUrl(baseUrl, 200));
+        setQrUrl(generateQrSvgUrl(baseUrl, 220, { withLogo: true }));
       }
     }
 
@@ -59,7 +64,7 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
     return () => {
       isMounted = false;
     };
-  }, [isOpen, user, activeProfile]);
+  }, [isOpen, user, session?.refresh_token, activeProfile]);
 
   const handleCopyLink = async () => {
     try {
@@ -70,6 +75,21 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
       // Fallback
     }
   };
+
+  const handleCopyCode = async () => {
+    if (!pairingCode) return;
+    try {
+      await navigator.clipboard.writeText(pairingCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2500);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const formattedCode = pairingCode
+    ? `${pairingCode.slice(0, 3)}-${pairingCode.slice(3)}`
+    : '';
 
   return (
     <RadixDialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -90,10 +110,10 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
               </span>
               <div>
                 <RadixDialog.Title className="text-base font-bold text-content tracking-tight">
-                  Install Curewell on Android
+                  Install &amp; Auto-Sign In on Phone
                 </RadixDialog.Title>
                 <p id="mobile-companion-desc" className="text-xs text-content-muted mt-0.5">
-                  Scan QR code with your phone to download the app.
+                  One Smart QR code to install the Android APK and sign in automatically.
                 </p>
               </div>
             </div>
@@ -109,31 +129,68 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
             </RadixDialog.Close>
           </div>
 
-          {/* QR Code Hero Stage */}
+          {/* Branded Smart QR Code Hero Stage */}
           <div className="flex flex-col items-center bg-surface border border-line rounded-2xl p-4 text-center space-y-3">
-            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 inline-block">
+            <div className="relative bg-white p-3 rounded-2xl shadow-md border-2 border-teal-500/30 inline-block">
               {qrUrl ? (
                 <img
                   src={qrUrl}
-                  alt="Curewell Android APK Download QR Code"
-                  className="w-40 h-40 sm:w-44 sm:h-44 object-contain"
+                  alt="Curewell Smart QR Code with Logo"
+                  className="w-44 h-44 sm:w-48 sm:h-48 object-contain"
                 />
               ) : (
-                <div className="w-40 h-40 flex items-center justify-center text-sm text-slate-400">
-                  Generating QR...
+                <div className="w-44 h-44 flex items-center justify-center text-sm text-slate-400">
+                  Generating Smart QR...
                 </div>
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Scan to Download Curewell.apk
+                Smart QR: Installs APK + Auto-Signs In
               </span>
-              <p className="text-2xs text-content-muted max-w-xs mx-auto">
-                Point your Android camera or Google Lens at this code to start download immediately on your phone.
+
+              {activeProfile && (
+                <p className="text-xs font-semibold text-content">
+                  Linked to: <span className="text-teal-600 dark:text-teal-400">{activeProfile.full_name}</span>
+                  {user?.email ? ` (${user.email})` : ''}
+                </p>
+              )}
+
+              <p className="text-2xs text-content-muted max-w-xs mx-auto leading-relaxed">
+                Scan with your phone camera to download the APK, or scan inside the Curewell app to sign in automatically without typing your password.
               </p>
             </div>
+
+            {/* 6-Digit Smart Pairing Code Pill */}
+            {formattedCode && (
+              <div className="w-full pt-2 border-t border-line flex items-center justify-between gap-2 px-2">
+                <div className="text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-content-subtle block">
+                    Quick Pairing Code
+                  </span>
+                  <span className="text-sm font-mono font-black tracking-widest text-teal-600 dark:text-teal-400">
+                    {formattedCode}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-hover border border-line text-2xs font-semibold text-content inline-flex items-center gap-1 transition-colors"
+                >
+                  {copiedCode ? (
+                    <>
+                      <CheckIcon size={12} className="text-emerald-500" /> Copied Code
+                    </>
+                  ) : (
+                    <>
+                      <CopyIcon size={12} /> Copy Code
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 3 Step Visual Guide */}
@@ -142,9 +199,9 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
               <span className="w-5 h-5 mx-auto rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 text-2xs font-bold flex items-center justify-center">
                 1
               </span>
-              <strong className="text-xs font-semibold text-content block">Scan QR</strong>
+              <strong className="text-xs font-semibold text-content block">Scan Smart QR</strong>
               <span className="text-2xs text-content-muted block leading-tight">
-                Downloads to phone
+                Opens download page
               </span>
             </div>
 
@@ -152,9 +209,9 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
               <span className="w-5 h-5 mx-auto rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 text-2xs font-bold flex items-center justify-center">
                 2
               </span>
-              <strong className="text-xs font-semibold text-content block">Open File</strong>
+              <strong className="text-xs font-semibold text-content block">Install APK</strong>
               <span className="text-2xs text-content-muted block leading-tight">
-                Tap notification
+                Tap Curewell.apk
               </span>
             </div>
 
@@ -162,22 +219,23 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
               <span className="w-5 h-5 mx-auto rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 text-2xs font-bold flex items-center justify-center">
                 3
               </span>
-              <strong className="text-xs font-semibold text-content block">Tap Install</strong>
+              <strong className="text-xs font-semibold text-content block">Auto-Sign In</strong>
               <span className="text-2xs text-content-muted block leading-tight">
-                Ready on phone!
+                1-tap or scan QR!
               </span>
             </div>
           </div>
 
-          {/* Notification Callout */}
+          {/* Full Features + Notifications Callout */}
           <div className="p-3 rounded-xl bg-teal-500/5 border border-teal-500/20 flex items-start gap-2.5">
             <ClockIcon size={16} className="text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
             <div className="text-xs space-y-0.5">
-              <strong className="font-semibold text-content block">
-                Includes Scheduled Dose Notifications
+              <strong className="font-semibold text-content block flex items-center gap-1.5">
+                <span>Dose Notifications, Quick BP/Sugar &amp; Full App</span>
+                <ShieldIcon size={13} className="text-teal-500" />
               </strong>
               <p className="text-2xs text-content-muted leading-relaxed">
-                App sends lock-screen notifications for scheduled Morning, Afternoon, and Bedtime doses.
+                Includes lock-screen dose alarms, 10-second BP &amp; blood sugar logging, plus every full Curewell feature synced live.
               </p>
             </div>
           </div>
@@ -201,11 +259,11 @@ export function MobileCompanionModal({ isOpen, onClose }: MobileCompanionModalPr
             >
               {copiedLink ? (
                 <>
-                  <CheckIcon size={14} className="mr-1.5 text-emerald-600" /> Copied
+                  <CheckIcon size={14} className="mr-1.5 text-emerald-600" /> Copied Smart Link
                 </>
               ) : (
                 <>
-                  <CopyIcon size={14} className="mr-1.5" /> Copy Link
+                  <CopyIcon size={14} className="mr-1.5" /> Copy Smart Link
                 </>
               )}
             </Button>

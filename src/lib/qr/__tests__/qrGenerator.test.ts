@@ -219,4 +219,13 @@ describe('qrGenerator', () => {
   it('rejects payloads beyond the supported version range', () => {
     expect(() => encodeQrMatrix('x'.repeat(300))).toThrow(/too long/i);
   });
+
+  it('renders a custom branded QR code with the Curewell logo in the center', () => {
+    const svg = generateQrSvg('https://curewell.app/download/apk?pair=c1.eyJ1IjoidTEifQ', 220, {
+      withLogo: true,
+    });
+    expect(svg).toContain('width="220"');
+    expect(svg).toContain('#0d9488');
+    expect(svg).toContain('<rect');
+  });
 });

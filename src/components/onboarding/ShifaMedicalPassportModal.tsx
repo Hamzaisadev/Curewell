@@ -4,8 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { profilesRepo } from '../../lib/db';
 import {
-  SparklesIcon,
-  ShieldIcon,
+  MIN_HEIGHT_CM,
+  MAX_HEIGHT_CM,
+  MIN_WEIGHT_KG,
+  MAX_WEIGHT_KG,
+  sanitizeHeightCm,
+  sanitizeWeightKg,
+} from '../../lib/db/profiles';
+import {
+  ShieldIcon, CheckCircleIcon, MessageSquareIcon,
   HeartPulseIcon,
   AlertTriangleIcon,
   CheckIcon,
@@ -47,6 +54,62 @@ const COMMON_ALLERGIES = [
   { id: 'Shellfish', label: 'Shellfish / Iodine', tip: 'Noted for dietary & radiological contrast safety.' },
 ];
 
+export function validateHeightCmInput(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const num = Number(trimmed);
+  if (Number.isNaN(num)) {
+    return `Enter a valid number between ${MIN_HEIGHT_CM} and ${MAX_HEIGHT_CM} cm.`;
+  }
+  if (num < MIN_HEIGHT_CM || num > MAX_HEIGHT_CM) {
+    return `Height must be between ${MIN_HEIGHT_CM} cm and ${MAX_HEIGHT_CM} cm.`;
+  }
+  return null;
+}
+
+export function validateWeightKgInput(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const num = Number(trimmed);
+  if (Number.isNaN(num)) {
+    return `Enter a valid number between ${MIN_WEIGHT_KG} and ${MAX_WEIGHT_KG} kg.`;
+  }
+  if (num < MIN_WEIGHT_KG || num > MAX_WEIGHT_KG) {
+    return `Weight must be between ${MIN_WEIGHT_KG} kg and ${MAX_WEIGHT_KG} kg.`;
+  }
+  return null;
+}
+
+export function validateDateOfBirthInput(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const dob = new Date(trimmed);
+  if (Number.isNaN(dob.getTime())) {
+    return 'Enter a valid date of birth.';
+  }
+  const todayIso = new Date().toISOString().split('T')[0]!;
+  if (trimmed > todayIso) {
+    return 'Date of birth cannot be in the future.';
+  }
+  if (trimmed < '1900-01-01') {
+    return 'Date of birth must be in 1900 or later.';
+  }
+  return null;
+}
+
+export function validatePhoneInput(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!/^[+\d\s\-()]+$/.test(trimmed)) {
+    return 'Phone number contains invalid characters.';
+  }
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length < 7 || digits.length > 15) {
+    return 'Enter a valid phone number (7–15 digits).';
+  }
+  return null;
+}
+
 export function ShifaMedicalPassportModal({
   isOpen,
   onClose,
@@ -57,6 +120,10 @@ export function ShifaMedicalPassportModal({
 
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const initialHeight = sanitizeHeightCm(profile?.height_cm);
+  const initialWeight = sanitizeWeightKg(profile?.weight_kg);
 
   // Form State
   const [fullName, setFullName] = useState(profile?.full_name || user?.user_metadata?.full_name || '');
@@ -65,8 +132,8 @@ export function ShifaMedicalPassportModal({
   );
   const [dateOfBirth, setDateOfBirth] = useState(profile?.date_of_birth || user?.user_metadata?.date_of_birth || '');
   const [bloodGroup, setBloodGroup] = useState<string>(profile?.blood_group || 'unknown');
-  const [heightCm, setHeightCm] = useState<string>(profile?.height_cm ? String(profile.height_cm) : '');
-  const [weightKg, setWeightKg] = useState<string>(profile?.weight_kg ? String(profile.weight_kg) : '');
+  const [heightCm, setHeightCm] = useState<string>(initialHeight !== null ? String(initialHeight) : '');
+  const [weightKg, setWeightKg] = useState<string>(initialWeight !== null ? String(initialWeight) : '');
 
   // Conditions
   const [selectedConditions, setSelectedConditions] = useState<string[]>(() => {
@@ -101,8 +168,10 @@ export function ShifaMedicalPassportModal({
     setSex(profile.sex || (user?.user_metadata?.sex as 'male' | 'female' | 'other' | 'undisclosed') || 'undisclosed');
     setDateOfBirth(profile.date_of_birth || user?.user_metadata?.date_of_birth || '');
     setBloodGroup(profile.blood_group || 'unknown');
-    setHeightCm(profile.height_cm ? String(profile.height_cm) : '');
-    setWeightKg(profile.weight_kg ? String(profile.weight_kg) : '');
+    const safeH = sanitizeHeightCm(profile.height_cm);
+    const safeW = sanitizeWeightKg(profile.weight_kg);
+    setHeightCm(safeH !== null ? String(safeH) : '');
+    setWeightKg(safeW !== null ? String(safeW) : '');
 
     if (profile.chronic_conditions) {
       if (Array.isArray(profile.chronic_conditions)) {
@@ -122,18 +191,36 @@ export function ShifaMedicalPassportModal({
 
     if (profile.emergency_contact_name) setEmergencyName(profile.emergency_contact_name);
     if (profile.emergency_contact_phone) setEmergencyPhone(profile.emergency_contact_phone);
-  }, [profile, isOpen, user]);
+  }, [
+    profile,
+    isOpen,
+    user?.id,
+    user?.user_metadata?.full_name,
+    user?.user_metadata?.sex,
+    user?.user_metadata?.date_of_birth,
+  ]);
 
   // Interactive Live Shifa Bubble
   const [shifaSpeech, setShifaSpeech] = useState<string>(
-    "Salam & Welcome! I'm Shifa, your clinical co-pilot. Let's build your Medical Passport so I can keep you safe!"
+    "Salam & Welcome! I'm Shifa, your clinical co-pilot. Let's set up your Health Profile so I can keep you safe!"
   );
 
-  // Calculated BMI
+  const todayIso = useMemo(() => new Date().toISOString().split('T')[0]!, []);
+
+  // Validation errors
+  const heightError = useMemo(() => validateHeightCmInput(heightCm), [heightCm]);
+  const weightError = useMemo(() => validateWeightKgInput(weightKg), [weightKg]);
+  const dobError = useMemo(() => validateDateOfBirthInput(dateOfBirth), [dateOfBirth]);
+  const phoneError = useMemo(() => validatePhoneInput(emergencyPhone), [emergencyPhone]);
+
+  // Calculated BMI (only when both height and weight pass clinical validation)
   const bmiInfo = useMemo(() => {
+    if (heightError || weightError) return null;
     const h = parseFloat(heightCm);
     const w = parseFloat(weightKg);
-    if (!h || !w || h <= 0 || w <= 0) return null;
+    if (!h || !w || h < MIN_HEIGHT_CM || h > MAX_HEIGHT_CM || w < MIN_WEIGHT_KG || w > MAX_WEIGHT_KG) {
+      return null;
+    }
     const heightInMeters = h / 100;
     const bmi = +(w / (heightInMeters * heightInMeters)).toFixed(1);
     let category = 'Healthy Weight';
@@ -149,19 +236,29 @@ export function ShifaMedicalPassportModal({
       color = 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20';
     }
     return { bmi, category, color };
-  }, [heightCm, weightKg]);
+  }, [heightCm, weightKg, heightError, weightError]);
 
-  // Calculate Age
+  // Calculate Age (only when DOB is valid and not in the future)
   const calculatedAge = useMemo(() => {
-    if (!dateOfBirth) return null;
+    if (!dateOfBirth || dobError) return null;
     const dob = new Date(dateOfBirth);
     if (isNaN(dob.getTime())) return null;
-    const diff = Date.now() - dob.getTime();
-    const ageDate = new Date(diff);
-    return Math.abs(ageDate.getUTCFullYear() - 1970);
-  }, [dateOfBirth]);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    return age >= 0 ? age : null;
+  }, [dateOfBirth, dobError]);
 
   if (!isOpen) return null;
+
+  const blockInvalidNumberKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (['-', '+', 'e', 'E'].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
 
   const handleToggleCondition = (cond: string, tip?: string) => {
     setIsHealthyNoConditions(false);
@@ -192,7 +289,7 @@ export function ShifaMedicalPassportModal({
     if (!isHealthyNoConditions) {
       setIsHealthyNoConditions(true);
       setSelectedConditions([]);
-      setShifaSpeech('Wonderful! A clean medical slate. We will focus on preventive care and optimal wellness! 🌟');
+      setShifaSpeech('No chronic conditions specified. Baseline recorded. 🌟');
     } else {
       setIsHealthyNoConditions(false);
     }
@@ -227,14 +324,35 @@ export function ShifaMedicalPassportModal({
     if (!isNKDA) {
       setIsNKDA(true);
       setSelectedAllergies([]);
-      setShifaSpeech('Marked as No Known Drug Allergies (NKDA). Safety baseline established! 🛡️');
+      setShifaSpeech('Marked as No Known Drug Allergies (NKDA). Safety baseline established.');
     } else {
       setIsNKDA(false);
     }
   };
 
   const handleSaveProgress = async (completed: boolean) => {
-    if (!profile?.id) return;
+    const targetProfileId = profile?.id || user?.id;
+    const targetUserId = user?.id || profile?.user_id || targetProfileId;
+    if (!targetProfileId) return;
+
+    if (!completed) {
+      sessionStorage.setItem('curewell_onboarding_dismissed_' + targetProfileId, 'true');
+      localStorage.setItem('curewell_onboarding_completed_' + targetProfileId, 'dismissed');
+      onClose();
+      return;
+    }
+    if (dobError || heightError || weightError) {
+      setStep(1);
+      setShifaSpeech(dobError || heightError || weightError || 'Please check your biological measurements.');
+      return;
+    }
+    if (phoneError) {
+      setStep(4);
+      setShifaSpeech(phoneError);
+      return;
+    }
+
+    setSaveError(null);
     setIsSubmitting(true);
 
     try {
@@ -246,32 +364,35 @@ export function ShifaMedicalPassportModal({
         ? 'No Known Drug Allergies (NKDA)'
         : selectedAllergies.join(', ');
 
+      const parsedHeight = !heightError && heightCm.trim() ? sanitizeHeightCm(parseFloat(heightCm)) : null;
+      const parsedWeight = !weightError && weightKg.trim() ? sanitizeWeightKg(parseFloat(weightKg)) : null;
+      const validDob = !dobError && dateOfBirth ? dateOfBirth : null;
+      const validPhone = !phoneError && emergencyPhone.trim() ? emergencyPhone.trim() : null;
+
       const updates = {
-        full_name: fullName.trim() || profile.full_name || 'Patient',
+        user_id: targetUserId,
+        full_name: fullName.trim() || profile?.full_name || 'Patient',
         sex: sex,
-        date_of_birth: dateOfBirth || null,
+        date_of_birth: validDob,
         blood_group: (bloodGroup as 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'unknown') || 'unknown',
-        height_cm: heightCm ? parseFloat(heightCm) : null,
-        weight_kg: weightKg ? parseFloat(weightKg) : null,
+        height_cm: parsedHeight,
+        weight_kg: parsedWeight,
         chronic_conditions: conditionsString || null,
         allergies: allergiesString || null,
         emergency_contact_name: emergencyName.trim() || null,
-        emergency_contact_phone: emergencyPhone.trim() || null,
-        onboarding_completed: completed,
+        emergency_contact_phone: validPhone,
+        onboarding_completed: true,
       };
 
-      await profilesRepo.updateProfile(profile.id, updates);
-      localStorage.setItem(`curewell_onboarding_completed_${profile.id}`, completed ? 'true' : 'dismissed');
+      await profilesRepo.updateProfile(targetProfileId, updates);
+      localStorage.setItem(`curewell_onboarding_completed_${targetProfileId}`, 'true');
       await refreshProfile();
 
-      if (completed) {
-        setStep(5);
-        setShifaSpeech("Boom! Your Medical Passport is fully activated. Let's take good care of you!");
-      } else {
-        onClose();
-      }
+      setStep(5);
+      setShifaSpeech("Your Health Profile is saved and active! Let's take good care of you.");
     } catch (err) {
-      console.error('Failed to update medical passport:', err);
+      console.error('Failed to update health profile:', err);
+      setSaveError(err instanceof Error ? err.message : 'Failed to save health profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -279,6 +400,15 @@ export function ShifaMedicalPassportModal({
 
   const handleNextStep = () => {
     if (step === 1) {
+      if (dobError || heightError || weightError) {
+        setShifaSpeech(
+          dobError ||
+            heightError ||
+            weightError ||
+            'Please fix the highlighted biological baseline fields before continuing.'
+        );
+        return;
+      }
       setStep(2);
       setShifaSpeech("Great start! Now, are there any chronic health conditions we are managing together?");
     } else if (step === 2) {
@@ -288,6 +418,10 @@ export function ShifaMedicalPassportModal({
       setStep(4);
       setShifaSpeech("Almost there! In case of an emergency, who should first responders or your doctor call?");
     } else if (step === 4) {
+      if (phoneError) {
+        setShifaSpeech(phoneError);
+        return;
+      }
       handleSaveProgress(true);
     }
   };
@@ -308,7 +442,7 @@ export function ShifaMedicalPassportModal({
               <div className="relative shrink-0">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 via-teal-500 to-emerald-400 p-0.5 shadow-md flex items-center justify-center">
                   <div className="w-full h-full rounded-[14px] bg-surface flex items-center justify-center text-teal-600 dark:text-teal-400">
-                    <SparklesIcon size={24} className="animate-pulse" />
+                    <ShieldIcon size={24} />
                   </div>
                 </div>
                 {/* Active Presence Dot */}
@@ -319,10 +453,10 @@ export function ShifaMedicalPassportModal({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 id="shifa-onboarding-title" className="text-base sm:text-lg font-bold text-content tracking-tight">
-                    Shifa Wants to Know You
+                    Complete Your Health Profile
                   </h2>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
-                    <ShieldIcon size={10} /> Safety Passport
+                    <ShieldIcon size={10} /> Health Profile
                   </span>
                 </div>
                 <p className="text-xs text-content-muted">
@@ -374,6 +508,22 @@ export function ShifaMedicalPassportModal({
 
         {/* ── Scrollable Form Body ──────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+          {saveError && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center justify-between gap-2 shadow-xs">
+              <span className="flex items-center gap-2">
+                <AlertTriangleIcon size={14} className="shrink-0 text-rose-500" />
+                <span>{saveError}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSaveError(null)}
+                className="text-rose-700 dark:text-rose-300 hover:opacity-75 font-bold cursor-pointer"
+                aria-label="Dismiss error"
+              >
+                &times;
+              </button>
+            </div>
+          )}
           <AnimatePresence mode="wait">
             {/* ── STEP 1: Biological Baseline ───────────────────────── */}
             {step === 1 && (
@@ -449,10 +599,22 @@ export function ShifaMedicalPassportModal({
                     <input
                       id="shifa-dob"
                       type="date"
+                      min="1900-01-01"
+                      max={todayIso}
                       value={dateOfBirth}
+                      aria-invalid={Boolean(dobError)}
                       onChange={(e) => setDateOfBirth(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-line bg-surface-raised text-sm text-content focus:outline-2 focus:outline-teal-500 transition-all"
+                      className={`w-full px-3.5 py-2.5 rounded-xl border bg-surface-raised text-sm text-content focus:outline-2 transition-all ${
+                        dobError
+                          ? 'border-rose-500 focus:outline-rose-500'
+                          : 'border-line focus:outline-teal-500'
+                      }`}
                     />
+                    {dobError && (
+                      <p role="alert" className="mt-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                        {dobError}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -505,29 +667,59 @@ export function ShifaMedicalPassportModal({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="shifa-height" className="block text-[11px] font-semibold text-content-muted mb-1">
-                        Height (cm)
+                        Height (cm) <span className="font-normal text-content-subtle">({MIN_HEIGHT_CM}–{MAX_HEIGHT_CM})</span>
                       </label>
                       <input
                         id="shifa-height"
                         type="number"
+                        inputMode="decimal"
+                        min={MIN_HEIGHT_CM}
+                        max={MAX_HEIGHT_CM}
+                        step="0.1"
                         placeholder="e.g. 175"
                         value={heightCm}
+                        aria-invalid={Boolean(heightError)}
+                        onKeyDown={blockInvalidNumberKeys}
                         onChange={(e) => setHeightCm(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-line bg-surface text-sm text-content focus:outline-2 focus:outline-teal-500"
+                        className={`w-full px-3 py-2 rounded-xl border bg-surface text-sm text-content focus:outline-2 ${
+                          heightError
+                            ? 'border-rose-500 focus:outline-rose-500'
+                            : 'border-line focus:outline-teal-500'
+                        }`}
                       />
+                      {heightError && (
+                        <p role="alert" className="mt-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                          {heightError}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label htmlFor="shifa-weight" className="block text-[11px] font-semibold text-content-muted mb-1">
-                        Weight (kg)
+                        Weight (kg) <span className="font-normal text-content-subtle">({MIN_WEIGHT_KG}–{MAX_WEIGHT_KG})</span>
                       </label>
                       <input
                         id="shifa-weight"
                         type="number"
+                        inputMode="decimal"
+                        min={MIN_WEIGHT_KG}
+                        max={MAX_WEIGHT_KG}
+                        step="0.1"
                         placeholder="e.g. 70"
                         value={weightKg}
+                        aria-invalid={Boolean(weightError)}
+                        onKeyDown={blockInvalidNumberKeys}
                         onChange={(e) => setWeightKg(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-line bg-surface text-sm text-content focus:outline-2 focus:outline-teal-500"
+                        className={`w-full px-3 py-2 rounded-xl border bg-surface text-sm text-content focus:outline-2 ${
+                          weightError
+                            ? 'border-rose-500 focus:outline-rose-500'
+                            : 'border-line focus:outline-teal-500'
+                        }`}
                       />
+                      {weightError && (
+                        <p role="alert" className="mt-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                          {weightError}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -851,10 +1043,20 @@ export function ShifaMedicalPassportModal({
                         id="shifa-emergency-phone"
                         type="tel"
                         value={emergencyPhone}
+                        aria-invalid={Boolean(phoneError)}
                         onChange={(e) => setEmergencyPhone(e.target.value)}
                         placeholder="e.g. +92 300 1234567"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-line bg-surface-raised text-sm text-content focus:outline-2 focus:outline-teal-500"
+                        className={`w-full px-3.5 py-2.5 rounded-xl border bg-surface-raised text-sm text-content focus:outline-2 ${
+                          phoneError
+                            ? 'border-rose-500 focus:outline-rose-500'
+                            : 'border-line focus:outline-teal-500'
+                        }`}
                       />
+                      {phoneError && (
+                        <p role="alert" className="mt-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                          {phoneError}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -877,12 +1079,12 @@ export function ShifaMedicalPassportModal({
                 className="py-6 text-center space-y-5"
               >
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white shadow-xl shadow-teal-500/20">
-                  <SparklesIcon size={40} className="animate-bounce" />
+                  <CheckCircleIcon size={40} />
                 </div>
 
                 <div className="space-y-1.5">
                   <h3 className="text-xl font-extrabold text-content">
-                    Your Medical Safety Shield is Live!
+                    Your Health Profile is Complete!
                   </h3>
                   <p className="text-xs sm:text-sm text-content-muted max-w-md mx-auto">
                     Shifa now has the clinical intelligence needed to guard your prescriptions, analyze lab results, and assist your doctors.
@@ -929,7 +1131,7 @@ export function ShifaMedicalPassportModal({
                     }}
                     className="px-6 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-md shadow-teal-600/20 transition-all cursor-pointer"
                   >
-                    🚀 Launch My Protected Dashboard
+                    Go to Dashboard
                   </button>
 
                   <button
@@ -940,7 +1142,7 @@ export function ShifaMedicalPassportModal({
                     }}
                     className="px-6 py-3 rounded-2xl bg-surface-raised hover:bg-surface-sunken border border-line text-content font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <SparklesIcon size={16} className="text-teal-500" />
+                    <MessageSquareIcon size={16} className="text-teal-500" />
                     <span>Talk with Shifa</span>
                   </button>
                 </div>
@@ -978,7 +1180,7 @@ export function ShifaMedicalPassportModal({
               disabled={isSubmitting}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              <span>{step === 4 ? 'Save & Activate Passport ✨' : 'Continue'}</span>
+              <span>{step === 4 ? 'Save Health Profile' : 'Continue'}</span>
               <ChevronRightIcon size={14} />
             </button>
           </div>

@@ -1,0 +1,12 @@
+{
+  "name": "curewell-hyperframes-deck",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "present": "npx hyperframes present .",
+    "preview": "npx hyperframes preview .",
+    "check": "npx hyperframes check .",
+    "lint": "npx hyperframes lint .",
+    "render": "npx hyperframes render . -o curewell-presentation.mp4"
+  }
+}

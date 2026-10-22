@@ -231,6 +231,42 @@ export function ensureMobileRealtimeChannel(): RealtimeChannel {
   return channel;
 }
 
+export type CurewellSyncEventInput =
+  | {
+      type: 'DOSE_STATUS_CHANGED';
+      profileId?: string;
+      doseId: string;
+      medicineId?: string;
+      medicineName: string;
+      strength?: string;
+      scheduledDate: string;
+      scheduledMinutes: number;
+      status: 'taken' | 'skipped' | 'pending';
+      takenAt?: string | null;
+      skipReason?: string | null;
+    }
+  | {
+      type: 'MEDICINE_CREATED';
+      profileId?: string;
+      medicine: {
+        id: string;
+        medicine_name: string;
+        generic_name?: string | null;
+        strength?: string | null;
+        form?: string | null;
+        dose_amount?: string | null;
+        frequency_code?: string | null;
+        frequency_raw?: string | null;
+        with_food?: boolean | null;
+        start_date: string;
+        is_ongoing?: boolean | null;
+        duration_days?: number | null;
+        scheduledMinutes?: number;
+        scheduledTime?: string;
+        bucket?: string;
+      };
+    };
+
 /**
  * Pushes a mutation to the persistent AsyncStorage Outbox (`curewell_rn_outbox_v4`)
  * and immediately attempts to flush it over the Supabase WebSocket & REST API.
@@ -238,7 +274,7 @@ export function ensureMobileRealtimeChannel(): RealtimeChannel {
  * and automatically syncs to the Web App the moment connectivity returns.
  */
 export async function enqueueMobileSyncEvent(
-  payload: Omit<CurewellSyncEventPayload, 'eventId' | 'timestamp' | 'source'>
+  payload: CurewellSyncEventInput
 ): Promise<void> {
   const fullEvent = {
     ...payload,

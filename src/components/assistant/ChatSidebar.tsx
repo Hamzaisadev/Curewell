@@ -8,7 +8,7 @@ import {
   TrashIcon,
   CheckIcon,
   MessageSquareIcon,
-  SparklesIcon,
+  ShieldIcon,
 } from '../ui/icons';
 
 interface ChatSidebarProps {
@@ -247,7 +247,7 @@ export function ChatSidebar({
         {/* Footer info */}
         <div className="p-3 border-t border-line text-center">
           <span className="text-[11px] text-content-subtle font-medium flex items-center justify-center gap-1">
-            <SparklesIcon size={12} className="text-accent" />
+            <ShieldIcon size={12} className="text-accent" />
             <span>Secure Cloud Sync Active</span>
           </span>
         </div>

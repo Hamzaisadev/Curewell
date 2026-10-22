@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Field } from '../ui/Field';
 import { Badge } from '../ui/Badge';
-import { CheckIcon, AlertTriangleIcon, SparklesIcon } from '../ui/icons';
+import { CheckIcon, AlertTriangleIcon, MedicineIcon } from '../ui/icons';
 import { MessageCircle } from 'lucide-react';
 import { compareMedicines } from '../../lib/ai/client';
 import {
@@ -164,7 +164,7 @@ export function BrandMatcherModal({
         {!result && (
           <div className="space-y-1.5">
             <span className="text-2xs font-bold text-content-muted uppercase tracking-wider flex items-center gap-1">
-              <SparklesIcon size={12} className="text-accent" /> Popular Local Comparisons
+              <MedicineIcon size={12} className="text-accent" /> Popular Local Comparisons
             </span>
             <div className="flex flex-wrap gap-1.5">
               {COMMON_COMPARISON_PAIRS.map((pair, idx) => (

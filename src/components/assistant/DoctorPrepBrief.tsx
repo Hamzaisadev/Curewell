@@ -3,7 +3,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Toast } from '../ui/Toast';
-import { CopyIcon, PrinterIcon, DownloadIcon, SparklesIcon } from '../ui/icons';
+import { CopyIcon, PrinterIcon, DownloadIcon, FileTextIcon } from '../ui/icons';
 import { exportElementToPdf } from '../../lib/export/pdfExport';
 import type { MedicineRecord } from '../../domain/activeMedicines';
 import type { Tables } from '../../lib/supabase/types';
@@ -96,7 +96,7 @@ export function DoctorPrepBrief({
       <div className="p-5 rounded-2xl bg-surface-raised border border-line-strong shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="font-bold text-sm text-content flex items-center gap-1.5">
-            <SparklesIcon size={16} className="text-accent shrink-0" /> Pre-Consultation Clinical Brief
+            <FileTextIcon size={16} className="text-accent shrink-0" /> Pre-Consultation Clinical Brief
           </h3>
           <p className="text-xs text-content-muted mt-0.5">
             Auto-synthesized checklist of targeted questions, active medications, and symptoms for your doctor.

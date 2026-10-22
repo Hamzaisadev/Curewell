@@ -21,7 +21,7 @@ import {
   DownloadIcon,
   ShareIcon,
   CheckIcon,
-  SparklesIcon,
+  FileTextIcon,
   CopyIcon,
   ShieldIcon,
   PlusIcon,
@@ -195,7 +195,7 @@ export function DoctorVisitCompanionPage() {
 
   const handleCopyQuestions = async () => {
     const text = [
-      `🩺 Doctor Visit Consultation Checklist — ${displayName}`,
+      `Doctor Visit Consultation Checklist — ${displayName}`,
       `Date: ${new Date().toLocaleDateString()}`,
       '',
       ...questions.map((q, idx) => {
@@ -267,8 +267,8 @@ export function DoctorVisitCompanionPage() {
 
   const handleCopyWhatsAppBrief = async () => {
     const lines = [
-      `📋 *Curewell Health Brief* — ${displayName}`,
-      `📅 Date: ${new Date().toLocaleDateString()}`,
+      `*Curewell Health Brief* — ${displayName}`,
+      `Date: ${new Date().toLocaleDateString()}`,
       '',
       `*Allergies:* ${allergies.join(', ')}`,
       `*Chronic Conditions:* ${conditions.join(', ')}`,
@@ -371,7 +371,7 @@ export function DoctorVisitCompanionPage() {
                 : 'text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-ink-200'
             }`}
           >
-            <SparklesIcon size={14} />
+            <FileTextIcon size={14} />
             <span>Discussion Checklist</span>
             {questions.length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 text-[10px]">

@@ -24,10 +24,13 @@ create table if not exists public.profiles (
   emergency_contact_name  text,
   emergency_contact_phone text,
   is_default              boolean not null default false,
+  onboarding_completed    boolean not null default false,
   created_at              timestamptz not null default now(),
   updated_at              timestamptz not null default now()
 );
+alter table public.profiles add column if not exists onboarding_completed boolean not null default false;
 create index if not exists idx_profiles_user on public.profiles (user_id);
+create index if not exists idx_profiles_onboarding_completed on public.profiles (user_id, onboarding_completed);
 
 -- =============================================================================
 -- 2. CLINIC VISITS & PRESCRIPTIONS

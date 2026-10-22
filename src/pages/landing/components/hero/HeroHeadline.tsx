@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'motion/react';
-import { ArrowRightIcon, SparklesIcon, CheckCircleIcon, ActivityIcon, ShieldIcon } from '../../../../components/ui/icons';
+import { ArrowRightIcon, CheckCircleIcon, ActivityIcon, ShieldIcon } from '../../../../components/ui/icons';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -57,8 +57,8 @@ export function HeroHeadline() {
           </span>
           <span className="text-slate-300 text-xs">•</span>
           <span className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700">
-            <SparklesIcon className="w-3.5 h-3.5 text-teal-600 animate-pulse" />
-            <span>Shifa AI Co-Pilot</span>
+            <ShieldIcon className="w-3.5 h-3.5 text-teal-600" />
+            <span>Shifa Clinical Assistant</span>
           </span>
           <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-teal-100/70 text-teal-800 border border-teal-200/50">
             FHIR R4
@@ -129,7 +129,7 @@ export function HeroHeadline() {
           className="group w-full sm:w-auto px-7 py-3.5 text-sm sm:text-base font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-teal-300 rounded-xl shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 text-center flex items-center justify-center gap-2 cursor-pointer"
         >
           <ActivityIcon className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
-          <span>Explore Clinical Journey</span>
+          <span>View Live Walkthrough</span>
         </button>
       </motion.div>
 

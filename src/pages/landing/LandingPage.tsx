@@ -9,7 +9,6 @@ import { ComparisonMatrixSection } from './components/ComparisonMatrixSection';
 import { VitalsTrajectoryLab } from './components/VitalsTrajectoryLab';
 import { DoctorPerspectiveSection } from './components/DoctorPerspectiveSection';
 import { PrivacyVaultSection } from './components/PrivacyVaultSection';
-import { TestimonialsSection } from './components/TestimonialsSection';
 import { FaqSection } from './components/FaqSection';
 import { FinalCtaSection } from './components/FinalCtaSection';
 import { Footer } from './components/Footer';
@@ -51,17 +50,14 @@ export function LandingPage() {
         {/* 11. Act VI: Bank-Grade Sovereign Security & Zero-Knowledge Privacy Vault */}
         <PrivacyVaultSection />
 
-        {/* 12. Patient, Caregiver & Specialist Physician Clinical Testimonials */}
-        <TestimonialsSection />
-
-        {/* 13. Frequently Asked Questions Accordion with Category Filters */}
+        {/* 12. Frequently Asked Questions Accordion with Category Filters */}
         <FaqSection />
 
-        {/* 14. Final Conversion Call to Action (Pristine Light Theme) */}
+        {/* 13. Final Conversion Call to Action (Pristine Light Theme) */}
         <FinalCtaSection />
       </main>
 
-      {/* 15. Clinical Disclaimer, Sitemap & Network Telemetry */}
+      {/* 14. Clinical Disclaimer, Sitemap & Network Telemetry */}
       <Footer />
     </div>
   );

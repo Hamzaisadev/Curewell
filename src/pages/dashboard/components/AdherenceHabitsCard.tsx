@@ -167,7 +167,7 @@ export function AdherenceHabitsCard({ className = '', refreshKey = 0 }: Adherenc
           </div>
 
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-2xs font-bold border border-amber-300/40">
-            🔥 {streakDays > 0 ? `${streakDays}-Day Streak` : 'Routine Active'}
+            {streakDays > 0 ? `${streakDays}-Day Streak` : 'Routine Active'}
           </span>
         </div>
 
@@ -241,8 +241,7 @@ export function AdherenceHabitsCard({ className = '', refreshKey = 0 }: Adherenc
               <span
                 title={skipReasonText}
                 className="mt-1.5 text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded-full inline-block truncate max-w-full"
-              >
-                🛡️ {skipReasonText}
+              >{skipReasonText}
               </span>
             )}
           </div>

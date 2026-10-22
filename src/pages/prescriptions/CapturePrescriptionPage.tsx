@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Disclaimer } from '../../components/ui/Disclaimer';
 import { ErrorState } from '../../components/ui/ErrorState';
-import { SparklesIcon, XIcon, CameraIcon, FileTextIcon } from '../../components/ui/icons';
+import { EyeIcon, XIcon, CameraIcon, FileTextIcon } from '../../components/ui/icons';
 import { EXTRACTION_DISCLAIMER } from '../../lib/disclaimer';
 import { optimizeMedicalImage, ProcessedImage } from '../../lib/files/imagePipeline';
 import { extractPrescription } from '../../lib/ai/client';
@@ -219,7 +219,7 @@ export function CapturePrescriptionPage() {
                       : 'bg-surface-sunken border-line text-content-muted hover:bg-surface-hover'
                   }`}
                 >
-                  <SparklesIcon size={14} className={useEnhancedContrast ? 'text-accent' : 'text-content-subtle'} />
+                  <EyeIcon size={14} className={useEnhancedContrast ? 'text-accent' : 'text-content-subtle'} />
                   <span>{useEnhancedContrast ? 'Handwriting Contrast: Enhanced' : 'Handwriting Contrast: Original'}</span>
                 </button>
               </div>
@@ -257,7 +257,7 @@ export function CapturePrescriptionPage() {
                     </div>
                     {useEnhancedContrast && (
                       <div className="absolute bottom-2 left-2 bg-brand-800/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 z-10">
-                        <SparklesIcon size={10} /> Enhanced
+                        <EyeIcon size={10} /> Enhanced
                       </div>
                     )}
                     <button

@@ -83,3 +83,8 @@ CLOUDB.md
 PROMPT_MDS/
 prompt_mds/
 REBUILD/
+
+# Temporary scratch scripts & files
+*.py
+*slop*
+.claude/

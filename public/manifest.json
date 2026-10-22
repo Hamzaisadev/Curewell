@@ -1,5 +1,5 @@
 {
-  "name": "Curewell — Personal Health & Prescription Records",
+  "name": "Curewell: Personal Health & Prescription Records",
   "short_name": "Curewell",
   "description": "Personal medical records, prescription digitization, dose reminders, and lab report tracking.",
   "start_url": "/companion",
@@ -32,7 +32,7 @@
     {
       "name": "Record Vitals",
       "short_name": "Vitals",
-      "description": "10-second blood pressure and glucose logger",
+      "description": "Log a blood pressure or blood glucose reading",
       "url": "/companion",
       "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
     },

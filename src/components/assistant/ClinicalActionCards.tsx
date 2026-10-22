@@ -12,7 +12,7 @@ import {
   StethoscopeIcon,
   EmergencyAmbulanceIcon,
   HospitalIcon,
-  SparklesIcon,
+  ShareIcon, CheckCircleIcon,
   ClockIcon,
   ReceiptIcon,
 } from '../ui/icons';
@@ -244,7 +244,7 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-content font-bold text-xs flex items-center gap-1.5">
-              <SparklesIcon size={16} className="text-accent shrink-0" /> Family Caregiver Health Dispatch
+              <ShareIcon size={16} className="text-accent shrink-0" /> Family Caregiver Health Dispatch
             </span>
             <Badge tone="info" size="sm">WhatsApp</Badge>
           </div>
@@ -529,7 +529,7 @@ export function ClinicalActionCards({ action, profileId, userId, onExecuted }: C
 
         {action.data.safe_alternative && (
           <div className="p-2.5 rounded-xl bg-surface-raised border border-line text-[11px] flex items-center gap-2">
-            <SparklesIcon size={14} className="text-accent shrink-0" />
+            <CheckCircleIcon size={14} className="text-accent shrink-0" />
             <div>
               <span className="font-bold text-content">Recommended Safe Alternative: </span>
               <span className="text-accent font-semibold">{action.data.safe_alternative}</span>

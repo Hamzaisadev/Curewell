@@ -142,7 +142,7 @@ export function PrivacyVaultSection() {
               <p className="text-slate-700 font-sans leading-relaxed text-xs">
                 {offlineSimulated
                   ? 'Zero cellular bars detected. Your medications, allergy warnings, and doctor dossiers are served instantly from device encrypted storage with 0ms latency.'
-                  : 'Connected to secure endpoint. Encrypted delta changes are synced seamlessly with multi-device cryptographic signatures.'}
+                  : 'Connected to secure endpoint. Encrypted delta changes are synced directly with multi-device cryptographic signatures.'}
               </p>
             </div>
 

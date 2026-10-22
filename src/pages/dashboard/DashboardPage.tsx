@@ -34,8 +34,9 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!profile) return;
-    const isCompleted = profile.onboarding_completed;
-    const isDismissed = sessionStorage.getItem(`curewell_onboarding_dismissed_${profile.id}`);
+    const localStatus = localStorage.getItem(`curewell_onboarding_completed_${profile.id}`);
+    const isCompleted = Boolean(profile.onboarding_completed || localStatus === 'true');
+    const isDismissed = Boolean(sessionStorage.getItem(`curewell_onboarding_dismissed_${profile.id}`) || localStatus === 'dismissed');
 
     const hasAnyMedicalData = Boolean(
       profile.chronic_conditions ||

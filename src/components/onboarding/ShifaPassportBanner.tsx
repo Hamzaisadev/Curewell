@@ -1,5 +1,5 @@
 import { useAuth } from '../../lib/auth/AuthContext';
-import { SparklesIcon, ShieldIcon, ChevronRightIcon } from '../ui/icons';
+import {  ShieldIcon, ChevronRightIcon } from '../ui/icons';
 
 interface ShifaPassportBannerProps {
   onOpenPassport: () => void;
@@ -8,8 +8,10 @@ interface ShifaPassportBannerProps {
 export function ShifaPassportBanner({ onOpenPassport }: ShifaPassportBannerProps) {
   const { profile, user } = useAuth();
 
+  const localCompleted = profile?.id ? localStorage.getItem(`curewell_onboarding_completed_${profile.id}`) === 'true' : false;
+
   // If completed in profile or explicitly marked, hide the banner
-  if (profile?.onboarding_completed) {
+  if (profile?.onboarding_completed || localCompleted) {
     return null;
   }
 
@@ -35,7 +37,7 @@ export function ShifaPassportBanner({ onOpenPassport }: ShifaPassportBannerProps
           <div className="relative shrink-0">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 via-teal-500 to-emerald-400 p-0.5 shadow-sm flex items-center justify-center">
               <div className="w-full h-full rounded-[14px] bg-surface flex items-center justify-center text-teal-600 dark:text-teal-400">
-                <SparklesIcon size={20} className="animate-pulse" />
+                <ShieldIcon size={20} />
               </div>
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-surface" />
@@ -44,7 +46,7 @@ export function ShifaPassportBanner({ onOpenPassport }: ShifaPassportBannerProps
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 flex items-center gap-1">
-                <ShieldIcon size={12} /> Shifa Health Passport
+                <ShieldIcon size={12} /> Patient Health Profile
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-800 dark:text-teal-200">
                 {score}% Ready
@@ -62,7 +64,7 @@ export function ShifaPassportBanner({ onOpenPassport }: ShifaPassportBannerProps
           onClick={onOpenPassport}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
         >
-          <span>Complete with Shifa</span>
+          <span>Complete Health Profile</span>
           <ChevronRightIcon size={14} />
         </button>
       </div>

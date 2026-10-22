@@ -4,7 +4,7 @@ import {
   CapsuleIcon,
   ShieldIcon,
   CheckIcon,
-  SparklesIcon,
+  FileTextIcon,
   AlertTriangleIcon,
 } from '../../../../components/ui/icons';
 
@@ -95,7 +95,7 @@ export function HeroVisualStage({ springX, springY }: HeroVisualStageProps) {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <SparklesIcon className="w-3 h-3" />
+              <FileTextIcon className="w-3 h-3" />
               <span>Extracted Vault</span>
             </button>
           </div>
@@ -317,7 +317,7 @@ export function HeroVisualStage({ springX, springY }: HeroVisualStageProps) {
                 {/* Bottom Verification Note */}
                 <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
                   <span className="flex items-center gap-1 text-teal-700 font-semibold">
-                    <SparklesIcon size={12} className="text-teal-600" />
+                    <CheckIcon size={12} className="text-teal-600" />
                     <span>Zero Silent AI Commits: Awaiting 1-Click Patient Signoff</span>
                   </span>
                   <span>AES-256 ENCRYPTED</span>

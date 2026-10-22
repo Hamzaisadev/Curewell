@@ -37,11 +37,11 @@ import type { Tables } from '../../lib/supabase/types';
 
 type Dose = Tables<'doses'>;
 type Medicine = Tables<'medicines'>;
-type ActiveTab = 'doses' | 'vitals' | 'sos' | 'settings';
+type ActiveTab = 'doses' | 'vitals' | 'sos' | 'all_tools' | 'settings';
 
 export function MobileCompanionPage() {
   const navigate = useNavigate();
-  const { user, profile, profiles, activeProfile, switchProfile, signOut } = useAuth();
+  const { user, profile, profiles, activeProfile, switchProfile, signInWithSmartQr, signOut } = useAuth();
 
   const [isLocked, setIsLocked] = useState(() => isCompanionLocked());
   const [activeTab, setActiveTab] = useState<ActiveTab>('doses');
@@ -76,28 +76,34 @@ export function MobileCompanionPage() {
 
   const effectiveProfileId = activeProfile?.id || profile?.id || user?.id || '';
 
-  // 1. Process QR Pairing Token from URL if present
+  // 1. Process Smart QR Pairing Token from URL if present & Auto-Sign In
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const pairToken = params.get('pair');
 
     if (pairToken) {
-      verifyCompanionPairingToken(pairToken).then((res) => {
-        if (res.valid && res.payload) {
+      signInWithSmartQr(pairToken).then((res) => {
+        if (!res.error && res.payload) {
           if (res.payload.profileId) {
             switchProfile(res.payload.profileId).catch(console.warn);
           }
-          setToastMessage(`Device paired successfully for ${res.payload.profileName}!`);
+          setToastMessage(`Signed in automatically as ${res.payload.profileName}!`);
           if (!hasCompanionPin()) {
             setShowPinSetup(true);
           }
           window.history.replaceState({}, '', window.location.pathname);
         } else if (res.error) {
-          setToastMessage(res.error);
+          verifyCompanionPairingToken(pairToken).then((fallback) => {
+            if (fallback.valid && fallback.payload) {
+              setToastMessage(`Device paired for ${fallback.payload.profileName}!`);
+            } else {
+              setToastMessage(res.error);
+            }
+          });
         }
       });
     }
-  }, [switchProfile]);
+  }, [signInWithSmartQr, switchProfile]);
 
   // 2. Online / Offline listeners & auto-lock timeout
   useEffect(() => {
@@ -1010,11 +1016,109 @@ export function MobileCompanionPage() {
             {/* Desktop Portal Escape Hatch */}
             <div className="pt-2 text-center">
               <Link
-                to="/dashboard"
+                to="/"
                 className="text-xs text-teal-400 hover:text-teal-300 underline font-semibold transition-colors"
               >
-                Switch to Full Desktop EHR Portal &rarr;
+                Open Full Curewell Dashboard &amp; All Features &rarr;
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 5: FULL CUREWELL APP HUB (ALL FEATURES ON PHONE)              */}
+        {/* ================================================================= */}
+        {activeTab === 'all_tools' && (
+          <div className="space-y-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400">
+                Complete Clinical Health OS
+              </span>
+              <h2 className="text-lg font-bold text-white">
+                All Curewell Features on Your Phone
+              </h2>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Every single feature from the web application is available right here on your mobile app.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                {
+                  title: 'Full Dashboard',
+                  desc: 'Complete clinical overview & trends',
+                  to: '/',
+                  badge: 'Home',
+                },
+                {
+                  title: 'Scan Prescription',
+                  desc: 'Instant handwritten prescription capture',
+                  to: '/prescriptions/new',
+                  badge: 'Scan',
+                },
+                {
+                  title: 'Lab Reports Vault',
+                  desc: 'Biomarker history & PDF reports',
+                  to: '/reports',
+                  badge: 'Labs',
+                },
+                {
+                  title: 'Medicine Cabinet',
+                  desc: 'Active meds, refills & generics',
+                  to: '/medicines/cabinet',
+                  badge: 'Meds',
+                },
+                {
+                  title: 'Clinical Assistant',
+                  desc: 'Medication Q&A & interaction radar',
+                  to: '/assistant',
+                  badge: 'Ask',
+                },
+                {
+                  title: 'Vitals Analytics',
+                  desc: 'Full BP & Glucose trajectory charts',
+                  to: '/vitals',
+                  badge: 'Charts',
+                },
+                {
+                  title: 'Doctor Visit Prep',
+                  desc: 'Clinical brief & questions for doctor',
+                  to: '/doctor/visit-prep',
+                  badge: 'Brief',
+                },
+                {
+                  title: 'Medical Timeline',
+                  desc: 'Chronological visits & records',
+                  to: '/timeline',
+                  badge: 'History',
+                },
+                {
+                  title: 'Symptom Triage',
+                  desc: 'Guided clinical red-flag checker',
+                  to: '/symptoms',
+                  badge: 'Triage',
+                },
+                {
+                  title: 'Share with Doctor',
+                  desc: 'Secure QR & link for clinicians',
+                  to: '/share',
+                  badge: 'Share',
+                },
+              ].map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800/90 border border-slate-800 hover:border-teal-500/40 transition-all flex flex-col justify-between gap-2"
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-white">{item.title}</span>
+                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-teal-500/15 text-teal-400">
+                      {item.badge}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">{item.desc}</p>
+                </Link>
+              ))}
             </div>
           </div>
         )}
@@ -1120,8 +1224,23 @@ export function MobileCompanionPage() {
 
         <button
           type="button"
+          onClick={() => setActiveTab('all_tools')}
+          className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl transition-all ${
+            activeTab === 'all_tools'
+              ? 'text-teal-400 font-bold bg-teal-500/10'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="p-1 rounded-xl">
+            <AndroidIcon size={18} />
+          </span>
+          <span className="text-[10px]">All Features</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all ${
+          className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl transition-all ${
             activeTab === 'settings'
               ? 'text-teal-400 font-bold bg-teal-500/10'
               : 'text-slate-400 hover:text-slate-200'
@@ -1130,7 +1249,7 @@ export function MobileCompanionPage() {
           <span className="p-1 rounded-xl">
             <LockIcon size={18} />
           </span>
-          <span className="text-[10px]">App & PIN</span>
+          <span className="text-[10px]">App &amp; PIN</span>
         </button>
       </nav>
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion, type Variants } from 'motion/react';
-import { ShieldIcon, SparklesIcon, LockIcon } from '../../../../components/ui/icons';
+import { ShieldIcon, CheckCircleIcon, LockIcon } from '../../../../components/ui/icons';
 import { useInViewport } from './useInViewport';
 
 const stripVariants: Variants = {
@@ -128,7 +128,7 @@ export function HeroMetricsStrip() {
             0
           </span>
           <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 group-hover:rotate-12 transition-transform">
-            <SparklesIcon className="w-4 h-4 text-teal-600" />
+            <CheckCircleIcon className="w-4 h-4 text-teal-600" />
           </div>
         </div>
         <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-900 transition-colors relative z-10">

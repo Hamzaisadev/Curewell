@@ -17,7 +17,7 @@ const FAQS: FaqItem[] = [
   {
     category: 'accuracy',
     q: 'How accurately does Curewell decode messy handwritten doctor slips?',
-    a: 'Curewell utilizes a high-precision multimodal document engine specifically trained on complex clinical slips. Every extracted medication, dose, and frequency code (BD, TDS, HS, AC, PC) is scored for confidence. Crucially, Curewell enforces zero silent commits: you always review and verify the extracted text before anything is saved to your permanent vault.',
+    a: 'Curewell uses document vision extraction with clinical schema validation. Every extracted medication, dose, and frequency code (BD, TDS, HS, AC, PC) is scored for confidence. Crucially, Curewell enforces zero silent commits: you always review and verify the extracted text before anything is saved to your permanent vault.',
   },
   {
     category: 'offline',

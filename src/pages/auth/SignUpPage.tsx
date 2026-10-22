@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Field } from '../../components/ui/Field';
 import { Input } from '../../components/ui/Input';
 import { Logo } from '../../components/ui/Logo';
+import { GoogleIcon } from '../../components/ui/GoogleIcon';
 import { MedicalDatePicker } from '../../components/ui/MedicalDatePicker';
 import { BloodGroupPicker } from '../../components/ui/BloodGroupPicker';
 import {
@@ -21,7 +22,7 @@ import {
 export function SignUpPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signUpWithEmail, resendVerificationEmail } = useAuth();
+  const { signUpWithEmail, signInWithGoogle, resendVerificationEmail } = useAuth();
 
   const prefilledEmail = (location.state as { email?: string })?.email || '';
 
@@ -34,6 +35,7 @@ export function SignUpPage() {
   const [bloodGroup, setBloodGroup] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [showVerification, setShowVerification] = useState(false);
@@ -45,6 +47,16 @@ export function SignUpPage() {
   const hasNumber = /\d/.test(password);
   const hasSpecial = /[^A-Za-z0-9]/.test(password);
   const strengthScore = [hasLength, hasNumber, hasSpecial].filter(Boolean).length;
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    setErrorMessage(null);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setErrorMessage(error);
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,11 +271,44 @@ export function SignUpPage() {
               </p>
             </div>
 
-            <Card className="p-6 sm:p-8 shadow-sm glass-card border border-line rounded-2xl overflow-visible">
+            <Card className="p-6 sm:p-8 shadow-sm glass-card border border-line rounded-2xl overflow-visible space-y-4">
+              {/* Google OAuth One-Click Sign Up */}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleGoogleSignUp}
+                disabled={isLoading || isGoogleLoading}
+                loading={isGoogleLoading}
+                className="w-full h-11 text-xs font-bold border border-line bg-surface hover:bg-surface-raised flex items-center justify-center gap-2.5 transition-all shadow-2xs"
+              >
+                {!isGoogleLoading && <GoogleIcon className="w-4 h-4 shrink-0" />}
+                <span>{isGoogleLoading ? 'Connecting to Google...' : 'Sign up with Google'}</span>
+              </Button>
+
+              <div className="relative flex items-center justify-center py-0.5">
+                <div className="border-t border-line w-full" />
+                <span className="bg-surface px-3 text-[11px] font-semibold text-content-subtle uppercase tracking-wider shrink-0">
+                  or register with email
+                </span>
+                <div className="border-t border-line w-full" />
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 {errorMessage && (
-                  <div className="p-3.5 rounded-xl bg-risk-bg border border-risk-border text-xs text-risk-text font-medium">
-                    {errorMessage}
+                  <div className="p-3.5 rounded-xl bg-risk-bg border border-risk-border text-xs text-risk-text font-medium space-y-2">
+                    <p>{errorMessage}</p>
+                    {(errorMessage.toLowerCase().includes('already exists') ||
+                      errorMessage.toLowerCase().includes('already registered')) && (
+                      <div className="pt-1.5 border-t border-risk-border/50">
+                        <Link
+                          to="/login"
+                          state={{ email: email.trim() }}
+                          className="font-bold text-accent hover:underline inline-flex items-center gap-1"
+                        >
+                          Sign in to your existing account &rarr;
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -271,7 +316,10 @@ export function SignUpPage() {
                   <Input
                     type="text"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
                     placeholder="e.g. Ahmed Khan"
                     required
                     disabled={isLoading}
@@ -282,7 +330,10 @@ export function SignUpPage() {
                   <Input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
                     placeholder="name@example.com"
                     autoComplete="email"
                     required
@@ -296,7 +347,10 @@ export function SignUpPage() {
                       <Input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (errorMessage) setErrorMessage(null);
+                        }}
                         placeholder="At least 6 characters"
                         autoComplete="new-password"
                         required
@@ -399,7 +453,7 @@ export function SignUpPage() {
                 Already registered?{' '}
                 <Link
                   to="/login"
-                  state={{ email }}
+                  state={{ email: email.trim() }}
                   className="text-accent font-bold hover:underline"
                 >
                   Sign In

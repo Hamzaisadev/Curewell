@@ -18,7 +18,7 @@ import {
   UsersIcon,
   TrashIcon,
   CheckIcon,
-  SparklesIcon,
+  
   ShieldIcon,
   MessageSquareIcon,
   PhoneIcon,
@@ -583,7 +583,7 @@ export function SettingsPage() {
                 onClick={() => setIsFamilyPassOpen(true)}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs font-bold shadow-2xs hover:bg-emerald-500/25 transition-all cursor-pointer"
               >
-                <SparklesIcon size={14} className="text-amber-500" />
+                <ShieldIcon size={14} className="text-teal-600" />
                 <span>Curewell Family Pass</span>
                 <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full font-semibold">
                   Active
@@ -595,7 +595,7 @@ export function SettingsPage() {
                 onClick={() => setIsFamilyPassOpen(true)}
                 className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-sm active:scale-95 transition-all cursor-pointer"
               >
-                <SparklesIcon size={14} className="text-amber-300" />
+                <ShieldIcon size={14} className="text-teal-200" />
                 <span>Curewell Family Pass</span>
                 <span className="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-semibold">
                   ₨499/mo
@@ -678,15 +678,23 @@ export function SettingsPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${
-                            isActive
-                              ? 'bg-teal-600 text-white border-teal-700 shadow-xs'
-                              : 'bg-surface-hover text-content-muted border-line'
-                          }`}
-                        >
-                          {initials}
-                        </div>
+                        {p.avatar_url ? (
+                          <img
+                            src={p.avatar_url}
+                            alt={p.full_name}
+                            className="w-10 h-10 rounded-full object-cover border border-line shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${
+                              isActive
+                                ? 'bg-teal-600 text-white border-teal-700 shadow-xs'
+                                : 'bg-surface-hover text-content-muted border-line'
+                            }`}
+                          >
+                            {initials}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-sm text-ink-900 truncate">
@@ -766,7 +774,7 @@ export function SettingsPage() {
             <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-500/10 via-brand-500/5 to-emerald-500/10 border border-teal-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
-                  <SparklesIcon size={20} className="animate-pulse" />
+                  <FileTextIcon size={20} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -780,7 +788,7 @@ export function SettingsPage() {
                     )}
                   </div>
                   <p className="text-xs text-ink-600 dark:text-content-muted mt-0.5">
-                    Launch the guided, fun wizard to update blood group, chronic conditions, and emergency contacts.
+                    Update your blood group, chronic conditions, and emergency contacts.
                   </p>
                 </div>
               </div>
@@ -789,8 +797,8 @@ export function SettingsPage() {
                 onClick={() => setIsPassportModalOpen(true)}
                 className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
               >
-                <SparklesIcon size={14} />
-                <span>Open Shifa Wizard</span>
+                <FileTextIcon size={14} />
+                <span>Update Health Profile</span>
               </button>
             </div>
 
@@ -972,7 +980,7 @@ export function SettingsPage() {
                   onClick={() => setIsFamilyPassOpen(true)}
                   className="self-start sm:self-auto shrink-0 border-teal-500/30 text-teal-700 hover:bg-teal-50"
                 >
-                  <SparklesIcon size={14} className="mr-1.5 text-amber-500" />
+                  <ShieldIcon size={14} className="mr-1.5 text-teal-600" />
                   Upgrade to Family Pass
                 </Button>
               )}

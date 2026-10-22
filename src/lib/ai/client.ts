@@ -11,24 +11,12 @@ import type {
 import { supabase } from '../supabase/client';
 
 /**
- * Resolves the API endpoint URL for both web and native Android (Capacitor) environments.
- * When running inside the packaged Android APK (`https://localhost`), relative `/api/...`
- * requests are routed to the live Curewell backend.
+ * Resolves the API endpoint URL for web and standalone client environments.
  */
 export function resolveApiUrl(path: string): string {
   const configuredBase = import.meta.env.VITE_API_BASE_URL;
   if (configuredBase) {
     return `${configuredBase.replace(/\/$/, '')}${path}`;
-  }
-  if (typeof window !== 'undefined') {
-    const isCapacitorNative =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
-      window.location.origin === 'https://localhost' ||
-      window.location.protocol === 'capacitor:';
-    if (isCapacitorNative) {
-      return `https://curewell-gamma.vercel.app${path}`;
-    }
   }
   return path;
 }

@@ -1,6 +1,14 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../supabase/client';
 import { profilesRepo } from '../db';
+import { getLocalItems } from '../db/localStore';
+import {
+  verifyCompanionPairingToken,
+  savePairedMobileSession,
+  getPairedMobileSession,
+  clearPairedMobileSession,
+  type CompanionPairingPayload,
+} from '../security/companionPairing';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import type { Tables } from '../supabase/types';
 
@@ -60,6 +68,12 @@ interface AuthContextValue {
   /** Email that needs verification (for showing in the "check your inbox" UI). */
   pendingVerificationEmail: string | null;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** One-click sign-in or sign-up with Google OAuth */
+  signInWithGoogle: () => Promise<{ error: string | null }>;
+  /** Instant mobile sign-in using a Smart QR URL, deep link, token, or 6-digit code */
+  signInWithSmartQr: (
+    qrInputOrToken: string
+  ) => Promise<{ error: string | null; payload?: CompanionPairingPayload }>;
   signUpWithEmail: (
     email: string,
     password: string,
@@ -195,9 +209,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             is_default: true,
             sex: authUser.user_metadata?.sex || 'undisclosed',
             date_of_birth: authUser.user_metadata?.date_of_birth || null,
+            blood_group: authUser.user_metadata?.blood_group || 'unknown',
           });
         }
         list = [p];
+      }
+
+      // Check if local cache has medical fields missing on the remote profile
+      const localProfiles = getLocalItems<Tables<'profiles'>>('profiles');
+      if (localProfiles && localProfiles.length > 0 && list && list.length > 0) {
+        const remoteProfileIndex = list.findIndex(
+          (p) => p.user_id === authUser.id && (p.is_default || p.id === authUser.id)
+        );
+        const remoteIndex = remoteProfileIndex >= 0 ? remoteProfileIndex : 0;
+        const remoteProfile = list[remoteIndex];
+
+        if (remoteProfile) {
+          const localMatch = localProfiles.find(
+            (lp) => lp.id === remoteProfile.id || lp.user_id === authUser.id
+          );
+
+          if (localMatch) {
+            const mergedUpdates: Partial<Tables<'profiles'>> = {};
+
+            if (!remoteProfile.chronic_conditions && localMatch.chronic_conditions) {
+              mergedUpdates.chronic_conditions = localMatch.chronic_conditions;
+            }
+            if (!remoteProfile.allergies && localMatch.allergies) {
+              mergedUpdates.allergies = localMatch.allergies;
+            }
+            if (!remoteProfile.emergency_contact_name && localMatch.emergency_contact_name) {
+              mergedUpdates.emergency_contact_name = localMatch.emergency_contact_name;
+            }
+            if (!remoteProfile.emergency_contact_phone && localMatch.emergency_contact_phone) {
+              mergedUpdates.emergency_contact_phone = localMatch.emergency_contact_phone;
+            }
+            if (remoteProfile.height_cm == null && localMatch.height_cm != null) {
+              mergedUpdates.height_cm = localMatch.height_cm;
+            }
+            if (remoteProfile.weight_kg == null && localMatch.weight_kg != null) {
+              mergedUpdates.weight_kg = localMatch.weight_kg;
+            }
+            if (
+              (!remoteProfile.blood_group || remoteProfile.blood_group === 'unknown') &&
+              localMatch.blood_group &&
+              localMatch.blood_group !== 'unknown'
+            ) {
+              mergedUpdates.blood_group = localMatch.blood_group;
+            }
+            if (!remoteProfile.date_of_birth && localMatch.date_of_birth) {
+              mergedUpdates.date_of_birth = localMatch.date_of_birth;
+            }
+            if (
+              (!remoteProfile.sex || remoteProfile.sex === 'undisclosed') &&
+              localMatch.sex &&
+              localMatch.sex !== 'undisclosed'
+            ) {
+              mergedUpdates.sex = localMatch.sex;
+            }
+            if (!remoteProfile.onboarding_completed && localMatch.onboarding_completed) {
+              mergedUpdates.onboarding_completed = localMatch.onboarding_completed;
+            }
+
+            if (Object.keys(mergedUpdates).length > 0) {
+              const updated = await profilesRepo.updateProfile(remoteProfile.id, {
+                ...mergedUpdates,
+                user_id: remoteProfile.user_id || authUser.id,
+              });
+              list[remoteIndex] = updated;
+            }
+          }
+        }
       }
 
       setProfiles(list);
@@ -210,6 +292,96 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('Error loading user profiles:', err);
     }
   }, []);
+
+  // -----------------------------------------------------------------------
+  // Hydrate Paired Mobile Session Helper
+  // -----------------------------------------------------------------------
+
+  const applyPairedPayloadToState = useCallback(
+    async (payload: CompanionPairingPayload) => {
+      savePairedMobileSession(payload);
+      localStorage.setItem(`curewell_active_profile_id_${payload.userId}`, payload.profileId);
+
+      // 1. If a Supabase refresh token was embedded in the Smart QR, establish a full cloud session
+      if (payload.refreshToken && isSupabaseConfigured) {
+        try {
+          const { data, error } = await supabase.auth.refreshSession({
+            refresh_token: payload.refreshToken,
+          });
+          if (!error && data.user) {
+            setUser(data.user);
+            setSession(data.session);
+            await fetchProfile(data.user);
+            return;
+          }
+        } catch {
+          // Fall back to direct paired session below
+        }
+      }
+
+      // 2. Construct authenticated user & profile state directly from verified Smart QR payload
+      const pairedUser: User = {
+        id: payload.userId,
+        app_metadata: { provider: 'smart_qr' },
+        user_metadata: { full_name: payload.profileName },
+        aud: 'authenticated',
+        created_at: new Date(payload.issuedAt || Date.now()).toISOString(),
+        email: payload.userEmail || 'paired.mobile@curewell.app',
+        role: 'authenticated',
+        updated_at: new Date().toISOString(),
+      } as User;
+
+      setUser(pairedUser);
+
+      try {
+        let list = await profilesRepo.listProfiles(payload.userId);
+        if (!list || list.length === 0) {
+          const fallbackProfile = await profilesRepo.updateProfile(payload.profileId, {
+            id: payload.profileId,
+            user_id: payload.userId,
+            full_name: payload.profileName || 'Patient',
+            relationship: 'self',
+            is_default: true,
+            sex: 'undisclosed',
+            blood_group: 'unknown',
+            onboarding_completed: true,
+          });
+          list = [fallbackProfile];
+        }
+        setProfiles(list);
+        const target =
+          list.find((p) => p.id === payload.profileId) ||
+          list.find((p) => p.is_default) ||
+          list[0] ||
+          null;
+        setActiveProfile(target);
+      } catch {
+        const nowIso = new Date().toISOString();
+        const syntheticProfile: Tables<'profiles'> = {
+          id: payload.profileId,
+          user_id: payload.userId,
+          full_name: payload.profileName || 'Patient',
+          relationship: 'self',
+          sex: 'undisclosed',
+          date_of_birth: null,
+          blood_group: 'unknown',
+          height_cm: null,
+          weight_kg: null,
+          allergies: null,
+          chronic_conditions: null,
+          emergency_contact_name: null,
+          emergency_contact_phone: null,
+          is_default: true,
+          onboarding_completed: true,
+          created_at: nowIso,
+          updated_at: nowIso,
+        };
+        setProfiles([syntheticProfile]);
+        setActiveProfile(syntheticProfile);
+      }
+    },
+    [fetchProfile]
+  );
 
   // -----------------------------------------------------------------------
   // Session bootstrap + auth state listener
@@ -225,6 +397,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!isSupabaseConfigured) {
+      const savedPaired = getPairedMobileSession();
+      if (savedPaired) {
+        applyPairedPayloadToState(savedPaired).finally(() => setIsLoading(false));
+        return;
+      }
       // In deployments without Supabase env vars, unlock loading so landing page renders
       setIsLoading(false);
       return;
@@ -237,14 +414,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getSession()
       .then(({ data: { session: initialSession } }) => {
         if (!mounted) return;
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
         if (initialSession?.user) {
+          setSession(initialSession);
+          setUser(initialSession.user);
           fetchProfile(initialSession.user).finally(() => {
             if (mounted) setIsLoading(false);
           });
         } else {
-          setIsLoading(false);
+          // Check if this phone was signed in via Smart QR pairing
+          const savedPaired = getPairedMobileSession();
+          if (savedPaired) {
+            applyPairedPayloadToState(savedPaired).finally(() => {
+              if (mounted) setIsLoading(false);
+            });
+          } else {
+            setIsLoading(false);
+          }
         }
       })
       .catch((err) => {
@@ -257,6 +442,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
+
+      if (event === 'INITIAL_SESSION' && !newSession && getPairedMobileSession()) {
+        return;
+      }
 
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -272,6 +461,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           break;
 
         case 'SIGNED_OUT':
+          clearPairedMobileSession();
           setActiveProfile(null);
           setProfiles([]);
           setNeedsEmailVerification(false);
@@ -309,10 +499,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, applyPairedPayloadToState]);
 
   // -----------------------------------------------------------------------
-  // Sign in
+  // Sign in with Email & Password
   // -----------------------------------------------------------------------
 
   const signInWithEmail = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
@@ -346,6 +536,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: friendlyError(error) };
     }
   }, [fetchProfile]);
+
+  // -----------------------------------------------------------------------
+  // Sign in with Google (OAuth)
+  // -----------------------------------------------------------------------
+
+  const signInWithGoogle = useCallback(async (): Promise<{ error: string | null }> => {
+    if (DISABLE_AUTH) {
+      setUser(DEV_TEST_USER);
+      setProfiles([DEV_TEST_PROFILE, DEV_TEST_DEPENDENT_PROFILE]);
+      setActiveProfile(DEV_TEST_PROFILE);
+      return { error: null };
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        return { error: friendlyError(error) };
+      }
+
+      return { error: null };
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Google sign-in failed');
+      return { error: friendlyError(error) };
+    }
+  }, []);
+
+  // -----------------------------------------------------------------------
+  // Sign in with Smart QR Code (Instant Mobile Auto-Sign-In)
+  // -----------------------------------------------------------------------
+
+  const signInWithSmartQr = useCallback(
+    async (
+      qrInputOrToken: string
+    ): Promise<{ error: string | null; payload?: CompanionPairingPayload }> => {
+      const verification = await verifyCompanionPairingToken(qrInputOrToken);
+      if (!verification.valid || !verification.payload) {
+        return { error: verification.error || 'Invalid or expired Smart QR code.' };
+      }
+
+      await applyPairedPayloadToState(verification.payload);
+      setNeedsEmailVerification(false);
+      setPendingVerificationEmail(null);
+      return { error: null, payload: verification.payload };
+    },
+    [applyPairedPayloadToState]
+  );
 
   // -----------------------------------------------------------------------
   // Sign up
@@ -390,13 +636,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         return { error: friendlyError(error), needsVerification: false };
       }
-
-      // Supabase v2: when email confirmation is ENABLED, `data.session` is
-      // null and `data.user.identities` is an empty array for a brand-new
-      // user. When confirmation is DISABLED, a full session is returned.
-      //
-      // Edge case: if the email already exists, Supabase may return a fake
-      // user with no identities to avoid leaking whether the email is taken.
 
       const isConfirmationRequired = !data.session;
       const isFakeUser = data.user && data.user.identities && data.user.identities.length === 0;
@@ -530,6 +769,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // Always clear local state, even in DISABLE_AUTH mode — a sign-out button
       // that leaves you signed in is worse than no button.
+      clearPairedMobileSession();
       setUser(null);
       setSession(null);
       setProfiles([]);
@@ -596,6 +836,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         needsEmailVerification,
         pendingVerificationEmail,
         signInWithEmail,
+        signInWithGoogle,
+        signInWithSmartQr,
         signUpWithEmail,
         signOut,
         refreshProfile,

@@ -34,7 +34,7 @@ export function FinalCtaSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-600" />
               </span>
-              <span>Join Thousands of Chronic Care Patients</span>
+              <span>Personal Health Records Vault</span>
             </div>
 
             <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-[1.08]">

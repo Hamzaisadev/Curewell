@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './Button';
-import { TrophyIcon, MedalIcon, SparklesIcon, XIcon } from './icons';
+import { TrophyIcon, MedalIcon, TrendingUpIcon, XIcon } from './icons';
 import { modalScaleSpring, bouncySpring } from '../../lib/motion';
 
 export interface MilestoneCelebrationModalProps {
@@ -97,8 +97,8 @@ export function MilestoneCelebrationModal({
             >
               {streakCount && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-warn-bg text-warn-text border border-warn-border mb-2">
-                  <SparklesIcon size={14} />
-                  {streakCount} Day Streak Unlocked!
+                  <TrendingUpIcon size={14} />
+                  {streakCount}-Day Logging Streak Active
                 </span>
               )}
 

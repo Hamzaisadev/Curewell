@@ -3,7 +3,6 @@ import { Button } from '../ui/Button';
 import {
   XIcon,
   CheckIcon,
-  SparklesIcon,
   MessageSquareIcon,
   MicIcon,
   FileTextIcon,
@@ -130,7 +129,7 @@ export function FamilyPassModal({
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-white backdrop-blur-sm shrink-0 shadow-inner">
-                <SparklesIcon size={22} className="text-amber-300" />
+                <ShieldIcon size={22} className="text-teal-200" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -388,7 +387,7 @@ export function FamilyPassModal({
                       onClick={handleStartActivation}
                       className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
                     >
-                      <SparklesIcon size={16} />
+                      <CheckIcon size={16} />
                       <span>Upgrade for {currentPrice}</span>
                       <ArrowRightIcon size={15} />
                     </Button>

@@ -3,7 +3,7 @@ import {
   HomeIcon,
   MedicineIcon,
   StethoscopeIcon,
-  SparklesIcon,
+  MessageSquareIcon,
   DropletIcon,
   FileTextIcon,
   LabFlaskIcon,
@@ -39,7 +39,7 @@ export const PRIMARY_NAV: NavItem[] = [
     label: 'Shifa AI',
     path: '/assistant',
     description: 'Clinical health co-pilot and medication interactions',
-    icon: (s) => <SparklesIcon size={s} />,
+    icon: (s) => <MessageSquareIcon size={s} />,
     prominent: true,
   },
   {
@@ -98,7 +98,7 @@ export const BOTTOM_NAV_ITEMS: NavItem[] = [
   {
     label: 'Shifa AI',
     path: '/assistant',
-    icon: (s) => <SparklesIcon size={s} />,
+    icon: (s) => <MessageSquareIcon size={s} />,
     prominent: true,
   },
   { label: 'Timeline', path: '/timeline', icon: (s) => <StethoscopeIcon size={s} /> },

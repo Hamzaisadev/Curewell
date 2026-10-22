@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  SparklesIcon,
+  MessageSquareIcon,
   ShieldIcon,
   BarChartIcon,
   AlertTriangleIcon,
@@ -158,12 +158,12 @@ export function ShifaAiClinicalTerminal() {
             className="lg:col-span-5 space-y-5"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-950/80 border border-teal-500/40 text-teal-300 text-xs font-semibold">
-              <SparklesIcon size={14} className="text-teal-400 animate-pulse" />
+              <MessageSquareIcon size={14} className="text-teal-400" />
               <span>Grounded Clinical Intelligence</span>
             </div>
 
             <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.1]">
-              Meet Shifa AI.
+              Shifa Clinical Assistant.
               <br />
               <span className="bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
                 Zero Hallucinations.
@@ -292,7 +292,7 @@ export function ShifaAiClinicalTerminal() {
                     >
                       <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl rounded-bl-xs p-4 sm:p-5 max-w-[540px] space-y-3.5 shadow-xl">
                         <div className="flex items-center gap-2 text-teal-400 text-xs font-mono font-bold">
-                          <SparklesIcon size={14} className="text-teal-300" />
+                          <MessageSquareIcon size={14} className="text-teal-300" />
                           <span>SHIFA CLINICAL SYNTHESIS:</span>
                         </div>
 

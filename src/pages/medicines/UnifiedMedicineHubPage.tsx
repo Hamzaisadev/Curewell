@@ -1120,7 +1120,7 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
                   Medication Command Center
                 </h1>
                 <p className="text-xs text-content-muted font-medium hidden sm:block whitespace-nowrap">
-                  Bento Health OS · Regimen & Cabinet Inventory
+                  Daily Regimen & Cabinet Inventory
                 </p>
               </div>
             </div>
@@ -1469,7 +1469,7 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
                     ) : (
                       <div className="mt-6 py-4 space-y-1">
                         <h3 className="text-xl sm:text-2xl font-black text-emerald-100">
-                          All Caught Up For Today! 🎉
+                          All scheduled doses complete for today.
                         </h3>
                         <p className="text-xs text-emerald-200/80">
                           All scheduled medications for {displayDateLabel} have been completed.

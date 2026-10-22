@@ -117,8 +117,13 @@ export function PatientInfoCard() {
 
   // Clinical diagnosis & temporal freshness check
   const { diagnosisLabel, diagnosisTitle, diagnosisDate, isHistorical } = useMemo(() => {
-    const rawDiagnosis = latestVisit?.diagnosis || profile?.chronic_conditions || null;
-    const vDate = latestVisit?.visit_date;
+    const rawChronic =
+      profile?.chronic_conditions &&
+      String(profile.chronic_conditions).trim() !== 'None (Healthy)'
+        ? String(profile.chronic_conditions).trim()
+        : null;
+    const rawDiagnosis = rawChronic || latestVisit?.diagnosis || null;
+    const vDate = !rawChronic ? latestVisit?.visit_date : undefined;
 
     if (!rawDiagnosis) {
       return {
@@ -242,15 +247,26 @@ export function PatientInfoCard() {
               )}
 
               {/* Active Allergy / Adverse Reaction Alert Pill */}
-              {activeReactions.length > 0 && (
+              {(profile?.allergies &&
+                !String(profile.allergies).toLowerCase().includes('no known') &&
+                !String(profile.allergies).toLowerCase().includes('nkda') &&
+                String(profile.allergies).toLowerCase() !== 'none') ||
+              activeReactions.length > 0 ? (
                 <>
                   <span className="text-line-strong">|</span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 font-bold text-2xs">
                     <AlertTriangle size={11} className="text-rose-600" />
-                    <span>Allergy: {activeReactions[0]?.medicine_name || 'Paracetamol'}</span>
+                    <span>
+                      Allergy:{' '}
+                      {profile?.allergies &&
+                      !String(profile.allergies).toLowerCase().includes('no known') &&
+                      !String(profile.allergies).toLowerCase().includes('nkda')
+                        ? profile.allergies
+                        : activeReactions[0]?.medicine_name || 'Paracetamol'}
+                    </span>
                   </span>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

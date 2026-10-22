@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase/client';
 import { AppShell } from '../../components/layout/AppShell';
 import { Button } from '../../components/ui/Button';
@@ -9,7 +9,9 @@ import { Input } from '../../components/ui/Input';
 import { Logo } from '../../components/ui/Logo';
 
 export function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const initialEmail = (location.state as { email?: string })?.email || '';
+  const [email, setEmail] = useState(initialEmail);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -81,7 +83,11 @@ export function ForgotPasswordPage() {
                 <Input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errorMessage) setErrorMessage(null);
+                    if (successMessage) setSuccessMessage(null);
+                  }}
                   placeholder="name@example.com"
                   autoComplete="email"
                   required
@@ -96,7 +102,11 @@ export function ForgotPasswordPage() {
 
             <div className="mt-6 pt-6 border-t border-line text-center text-xs text-content-muted">
               Remember your password?{' '}
-              <Link to="/login" className="text-accent font-bold hover:underline">
+              <Link
+                to="/login"
+                state={{ email: email.trim() }}
+                className="text-accent font-bold hover:underline"
+              >
                 Back to Sign In
               </Link>
             </div>

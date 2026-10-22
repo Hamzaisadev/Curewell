@@ -15,7 +15,7 @@ import {
   CopyIcon,
   TrashIcon,
   MedicineIcon,
-  SparklesIcon,
+  ActivityIcon,
   FolderIcon,
   StethoscopeIcon,
   ChevronDownIcon,
@@ -449,7 +449,7 @@ export function SymptomTriagePage() {
               {/* 1-Tap Quick Common Symptoms */}
               <div className="space-y-2.5">
                 <span className="text-2xs font-bold text-content-muted uppercase tracking-wider flex items-center gap-1">
-                  <SparklesIcon size={13} className="text-accent" /> Popular Symptoms (1-Tap Check)
+                  <ActivityIcon size={13} className="text-accent" /> Common Symptoms
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {COMMON_SYMPTOM_CHIPS.map((chip, idx) => (

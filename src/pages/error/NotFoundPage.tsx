@@ -45,7 +45,7 @@ export function NotFoundPage() {
             Page Not Found
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-ink-600 leading-relaxed">
-            The page or record link you requested could not be found. Your active health records and medications remain secure.
+            The page or record link you requested could not be found. Check the address or go back to the dashboard.
           </p>
 
           {/* Action Buttons */}

@@ -15,7 +15,6 @@ import {
   MessageSquareIcon,
   XIcon,
   AlertTriangleIcon,
-  SparklesIcon,
   MicrophoneIcon,
   TrashIcon,
   SendIcon,
@@ -1365,7 +1364,7 @@ export function AssistantPage() {
                             <div className="flex items-center justify-between w-full px-1">
                               <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-xl bg-accent/10 border border-accent/25 flex items-center justify-center text-accent shadow-2xs">
-                                  <SparklesIcon size={14} />
+                                  <MessageSquareIcon size={14} />
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <span className="font-bold text-xs sm:text-sm text-content">Shifa</span>
@@ -1680,7 +1679,7 @@ export function AssistantPage() {
                                   onClick={() => handleSendMessage(patientPrompt)}
                                   className="px-3.5 py-1.5 rounded-xl bg-surface-raised border border-line-strong text-content font-medium hover:border-accent hover:text-accent hover:shadow-xs transition-all text-xs text-left flex items-center gap-1.5 shadow-2xs cursor-pointer"
                                 >
-                                  <SparklesIcon size={12} className="text-accent shrink-0" />
+                                  <MessageSquareIcon size={12} className="text-accent shrink-0" />
                                   <span>{patientPrompt}</span>
                                 </button>
                               );
@@ -1696,7 +1695,7 @@ export function AssistantPage() {
                     <div className="pt-3 max-w-4xl mx-auto w-full space-y-3 animate-in fade-in duration-200">
                       <div className="flex items-center justify-between px-1">
                         <span className="text-xs font-bold text-content-muted uppercase tracking-wider flex items-center gap-1.5">
-                          <SparklesIcon size={13} className="text-accent" />
+                          <MessageSquareIcon size={13} className="text-accent" />
                           Suggested Clinical Inquiries
                         </span>
                         <span className="text-[11px] text-content-subtle hidden sm:inline">

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "historyId": "5192f964-c350-4f3a-8bb6-0573b5bb618d",
+  "currentRevision": null,
+  "pendingChanges": false,
+  "files": {
+    "index.html": {
+      "hash": "91bac1c90e6fcac7d15f432a62956f4f7ad937e92866b953b374c46e06a90bc5",
+      "content": "C:\\Users\\HP\\.cache\\hyperframes\\history\\5192f964-c350-4f3a-8bb6-0573b5bb618d\\blobs\\91\\91bac1c90e6fcac7d15f432a62956f4f7ad937e92866b953b374c46e06a90bc5"
+    },
+    "meta.json": {
+      "hash": "2e8e20fca5dc780e453aea6576cc4a86d158db266787b5b498d77a5f528d8340",
+      "content": "C:\\Users\\HP\\.cache\\hyperframes\\history\\5192f964-c350-4f3a-8bb6-0573b5bb618d\\blobs\\2e\\2e8e20fca5dc780e453aea6576cc4a86d158db266787b5b498d77a5f528d8340"
+    },
+    "package.json": {
+      "hash": "83243c2d6f10e32403ed1b7dde9eed88f51f90804d9d975f5a40a19c78284b19",
+      "content": "C:\\Users\\HP\\.cache\\hyperframes\\history\\5192f964-c350-4f3a-8bb6-0573b5bb618d\\blobs\\83\\83243c2d6f10e32403ed1b7dde9eed88f51f90804d9d975f5a40a19c78284b19"
+    }
+  },
+  "revisions": {},
+  "checks": {
+    "latest": null,
+    "revisions": {},
+    "unversioned": []
+  },
+  "snapshots": {
+    "latest": null,
+    "revisions": {},
+    "unversioned": []
+  }
+}

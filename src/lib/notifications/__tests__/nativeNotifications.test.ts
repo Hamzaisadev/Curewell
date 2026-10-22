@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   stringToNotificationId,
-  isCapacitor,
   isNativeAndroid,
   getPlatformType,
   DEFAULT_DOSE_SLOTS,
@@ -13,39 +12,11 @@ import {
   onNotificationNavigate,
   routeToPage,
   sendUnifiedLocalNotification,
-  DOSE_CHANNEL_ID,
-  DOSE_ACTION_TYPE_ID,
-  ACTION_TAKEN_ID,
-  ACTION_SNOOZE_15M_ID,
 } from '../nativeNotifications';
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { Capacitor } from '@capacitor/core';
 import type { Tables } from '../../supabase/types';
 
 type Dose = Tables<'doses'>;
 type Medicine = Tables<'medicines'>;
-
-vi.mock('@capacitor/core', () => ({
-  Capacitor: {
-    isNativePlatform: vi.fn(),
-    getPlatform: vi.fn(),
-  },
-}));
-
-vi.mock('@capacitor/local-notifications', () => ({
-  LocalNotifications: {
-    createChannel: vi.fn().mockResolvedValue(undefined),
-    registerActionTypes: vi.fn().mockResolvedValue(undefined),
-    addListener: vi.fn().mockResolvedValue({ remove: vi.fn() }),
-    checkPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
-    requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
-    checkExactNotificationSetting: vi.fn().mockResolvedValue({ exact_alarm: 'granted' }),
-    changeExactNotificationSetting: vi.fn().mockResolvedValue({ exact_alarm: 'granted' }),
-    schedule: vi.fn().mockResolvedValue({ notifications: [] }),
-    cancel: vi.fn().mockResolvedValue(undefined),
-    removeDeliveredNotificationsById: vi.fn().mockResolvedValue(undefined),
-  },
-}));
 
 vi.mock('../../db', () => ({
   dosesRepo: {
@@ -54,9 +25,15 @@ vi.mock('../../db', () => ({
   },
 }));
 
-describe('Native Android Notifications & Alarm Scheduling Service', () => {
+describe('Notifications & Dose Alarm Scheduling Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    const mockNotification = vi.fn();
+    Object.assign(mockNotification, {
+      permission: 'granted',
+      requestPermission: vi.fn().mockResolvedValue('granted'),
+    });
+    vi.stubGlobal('Notification', mockNotification);
   });
 
   describe('stringToNotificationId', () => {
@@ -74,20 +51,7 @@ describe('Native Android Notifications & Alarm Scheduling Service', () => {
   });
 
   describe('Platform Detection', () => {
-    it('identifies Capacitor native Android environment correctly', () => {
-      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-      vi.mocked(Capacitor.getPlatform).mockReturnValue('android');
-
-      expect(isCapacitor()).toBe(true);
-      expect(isNativeAndroid()).toBe(true);
-      expect(getPlatformType()).toBe('android');
-    });
-
-    it('identifies Web browser environment when not native', () => {
-      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
-      vi.mocked(Capacitor.getPlatform).mockReturnValue('web');
-
-      expect(isCapacitor()).toBe(false);
+    it('identifies Web browser environment cleanly without any web wrapper', () => {
       expect(isNativeAndroid()).toBe(false);
       expect(getPlatformType()).toBe('web');
     });
@@ -116,57 +80,14 @@ describe('Native Android Notifications & Alarm Scheduling Service', () => {
       expect(night?.minute).toBe(30);
     });
 
-    it('schedules 4 daily recurring alarms in Capacitor Android', async () => {
-      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-      vi.mocked(Capacitor.getPlatform).mockReturnValue('android');
-
+    it('schedules 4 daily recurring slot alarms when permission is granted', async () => {
       const success = await scheduleRecurringDailySlotAlarms();
       expect(success).toBe(true);
-
-      expect(LocalNotifications.createChannel).toHaveBeenCalled();
-      expect(LocalNotifications.registerActionTypes).toHaveBeenCalledWith({
-        types: [
-          expect.objectContaining({
-            id: DOSE_ACTION_TYPE_ID,
-            actions: expect.arrayContaining([
-              expect.objectContaining({ id: ACTION_TAKEN_ID }),
-              expect.objectContaining({ id: ACTION_SNOOZE_15M_ID }),
-            ]),
-          }),
-        ],
-      });
-
-      expect(LocalNotifications.schedule).toHaveBeenCalledWith(
-        expect.objectContaining({
-          notifications: expect.arrayContaining([
-            expect.objectContaining({
-              id: 8001,
-              schedule: { on: { hour: 8, minute: 0 }, repeats: true, allowWhileIdle: true },
-            }),
-            expect.objectContaining({
-              id: 8002,
-              schedule: { on: { hour: 13, minute: 0 }, repeats: true, allowWhileIdle: true },
-            }),
-            expect.objectContaining({
-              id: 8003,
-              schedule: { on: { hour: 18, minute: 30 }, repeats: true, allowWhileIdle: true },
-            }),
-            expect.objectContaining({
-              id: 8004,
-              schedule: { on: { hour: 21, minute: 30 }, repeats: true, allowWhileIdle: true },
-            }),
-          ]),
-        })
-      );
     });
   });
 
   describe('Dose Schedule Synchronization (syncDoseScheduleAlarms)', () => {
-    it('schedules exact future alarms and cancels taken doses', async () => {
-      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-      vi.mocked(Capacitor.getPlatform).mockReturnValue('android');
-
-      // Tomorrow's date in YYYY-MM-DD
+    it('schedules future alarms and cancels taken doses', async () => {
       const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
       const doses: Dose[] = [
@@ -176,7 +97,7 @@ describe('Native Android Notifications & Alarm Scheduling Service', () => {
           profile_id: 'profile-1',
           medicine_id: 'med-1',
           scheduled_date: tomorrow,
-          scheduled_minutes: 480, // 08:00 AM
+          scheduled_minutes: 480,
           status: 'pending',
           taken_at: null,
           skipped_reason: null,
@@ -225,40 +146,17 @@ describe('Native Android Notifications & Alarm Scheduling Service', () => {
 
       expect(result.cancelledCount).toBe(1);
       expect(result.scheduledCount).toBe(1);
-
-      // Verify notification payload
-      expect(LocalNotifications.schedule).toHaveBeenCalledWith(
-        expect.objectContaining({
-          notifications: expect.arrayContaining([
-            expect.objectContaining({
-              id: stringToNotificationId('dose-dose-future-1'),
-              title: 'Time for Metformin 500mg',
-              channelId: DOSE_CHANNEL_ID,
-              actionTypeId: DOSE_ACTION_TYPE_ID,
-              isExactNotification: true,
-            }),
-          ]),
-        })
-      );
     });
   });
 
-  describe('Permissions Handling (Android 13+ & Exact Alarms)', () => {
-    it('requests POST_NOTIFICATIONS and checks exact alarms on Android', async () => {
-      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-      vi.mocked(Capacitor.getPlatform).mockReturnValue('android');
-
+  describe('Permissions Handling', () => {
+    it('requests notification permissions cleanly', async () => {
       const result = await requestNotificationPermissions();
       expect(result.display).toBe('granted');
       expect(result.canScheduleExactAlarms).toBe(true);
-      expect(LocalNotifications.requestPermissions).toHaveBeenCalled();
-      expect(LocalNotifications.checkExactNotificationSetting).toHaveBeenCalled();
     });
 
     it('checks permissions accurately', async () => {
-      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-      vi.mocked(Capacitor.getPlatform).mockReturnValue('android');
-
       const status = await checkNotificationPermissions();
       expect(status.display).toBe('granted');
       expect(status.canScheduleExactAlarms).toBe(true);
@@ -288,27 +186,13 @@ describe('Native Android Notifications & Alarm Scheduling Service', () => {
   });
 
   describe('sendUnifiedLocalNotification', () => {
-    it('schedules notification through Capacitor when native', async () => {
-      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
-
+    it('delivers notification when granted', async () => {
       const delivered = await sendUnifiedLocalNotification('Dose Reminder', {
         body: 'Time to take Metformin',
         doseId: 'dose-test',
       });
 
       expect(delivered).toBe(true);
-      expect(LocalNotifications.schedule).toHaveBeenCalledWith(
-        expect.objectContaining({
-          notifications: expect.arrayContaining([
-            expect.objectContaining({
-              title: 'Dose Reminder',
-              body: 'Time to take Metformin',
-              channelId: DOSE_CHANNEL_ID,
-              actionTypeId: DOSE_ACTION_TYPE_ID,
-            }),
-          ]),
-        })
-      );
     });
   });
 });

@@ -17,16 +17,13 @@ import {
 const POLL_INTERVAL_MS = 60_000;
 
 /**
- * Delivers dose reminders and manages background device alarms for the active profile.
+ * Delivers dose reminders and manages scheduled dose notifications for the active profile.
  *
  * Capabilities:
- * 1. Synchronizes native device alarms into Android (`@capacitor/local-notifications`)
- *    so alarms trigger even when the screen is locked, in Doze mode, or when the app
- *    is in the background or killed.
+ * 1. Synchronizes scheduled notifications for due doses.
  * 2. In foreground, runs a 60-second tick to announce due doses immediately.
  * 3. Listens for interactive notification actions ("Taken" / "Snooze 15m") and updates
  *    state reactively.
- * 4. Supports Android 13+ POST_NOTIFICATIONS and exact alarm schedules.
  */
 export function useDoseReminders(profileId: string, userId: string): void {
   // Per-dose dedupe so a dose is announced once in foreground, not every poll.

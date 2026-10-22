@@ -355,27 +355,102 @@ export function encodeQrMatrix(data: string): boolean[][] {
   return matrix.map((row) => row.map((cell) => cell === 1));
 }
 
-/** Renders `data` as an SVG string. */
-export function generateQrSvg(data: string, size = 180): string {
+export interface QrRenderOptions {
+  /** Renders the Curewell clinical shield & cross logo in the center of the QR code. */
+  withLogo?: boolean;
+  /** Primary module color (defaults to #000000, or #0f172a when withLogo is true). */
+  darkColor?: string;
+  /** Finder eye accent color when withLogo is enabled (defaults to #0d9488). */
+  accentColor?: string;
+}
+
+function isFinderModule(row: number, col: number, moduleCount: number): boolean {
+  const inTopLeft = row < 7 && col < 7;
+  const inTopRight = row < 7 && col >= moduleCount - 7;
+  const inBottomLeft = row >= moduleCount - 7 && col < 7;
+  return inTopLeft || inTopRight || inBottomLeft;
+}
+
+/** Renders `data` as an SVG string, optionally with a centered Curewell logo badge. */
+export function generateQrSvg(
+  data: string,
+  size = 180,
+  options?: QrRenderOptions
+): string {
   const matrix = encodeQrMatrix(data);
   const moduleCount = matrix.length;
   const quietZone = 4;
   const total = moduleCount + quietZone * 2;
+  const withLogo = Boolean(options?.withLogo);
+  const darkColor = options?.darkColor ?? (withLogo ? '#0f172a' : '#000000');
+  const accentColor = options?.accentColor ?? '#0d9488';
 
-  let path = '';
+  // Center logo cutout zone (~17% of matrix width = ~2.9% of total area,
+  // well within Level-M's 15% Reed-Solomon error-correction budget).
+  const center = moduleCount / 2;
+  const cutoutRadius = withLogo ? Math.max(2.2, moduleCount * 0.088) : 0;
+
+  let dataPath = '';
+  let finderPath = '';
+
   for (let row = 0; row < moduleCount; row++) {
     for (let col = 0; col < moduleCount; col++) {
-      if (matrix[row]![col]) {
-        path += `M${col + quietZone} ${row + quietZone}h1v1h-1z`;
+      if (!matrix[row]![col]) continue;
+
+      if (withLogo) {
+        const dr = Math.abs(row + 0.5 - center);
+        const dc = Math.abs(col + 0.5 - center);
+        if (dr <= cutoutRadius && dc <= cutoutRadius) {
+          continue;
+        }
+      }
+
+      const cmd = `M${col + quietZone} ${row + quietZone}h1v1h-1z`;
+      if (withLogo && isFinderModule(row, col, moduleCount)) {
+        finderPath += cmd;
+      } else {
+        dataPath += cmd;
       }
     }
   }
 
+  let logoMarkup = '';
+  if (withLogo) {
+    const cx = total / 2;
+    const cy = total / 2;
+    const badgeSize = Math.max(4.6, cutoutRadius * 2.1);
+    const halfBadge = badgeSize / 2;
+    const badgeRx = badgeSize * 0.24;
+    const innerPad = badgeSize * 0.09;
+    const innerSize = badgeSize - innerPad * 2;
+    const halfInner = innerSize / 2;
+    const innerRx = innerSize * 0.22;
+    const crossArm = innerSize * 0.52;
+    const crossThick = innerSize * 0.19;
+
+    logoMarkup = [
+      `<rect x="${(cx - halfBadge).toFixed(2)}" y="${(cy - halfBadge).toFixed(2)}"`,
+      ` width="${badgeSize.toFixed(2)}" height="${badgeSize.toFixed(2)}"`,
+      ` rx="${badgeRx.toFixed(2)}" fill="#ffffff"/>`,
+      `<rect x="${(cx - halfInner).toFixed(2)}" y="${(cy - halfInner).toFixed(2)}"`,
+      ` width="${innerSize.toFixed(2)}" height="${innerSize.toFixed(2)}"`,
+      ` rx="${innerRx.toFixed(2)}" fill="${accentColor}"/>`,
+      `<rect x="${(cx - crossThick / 2).toFixed(2)}" y="${(cy - crossArm / 2).toFixed(2)}"`,
+      ` width="${crossThick.toFixed(2)}" height="${crossArm.toFixed(2)}"`,
+      ` rx="${(crossThick * 0.25).toFixed(2)}" fill="#ffffff"/>`,
+      `<rect x="${(cx - crossArm / 2).toFixed(2)}" y="${(cy - crossThick / 2).toFixed(2)}"`,
+      ` width="${crossArm.toFixed(2)}" height="${crossThick.toFixed(2)}"`,
+      ` rx="${(crossThick * 0.25).toFixed(2)}" fill="#ffffff"/>`,
+    ].join('');
+  }
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"`,
-    ` viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges">`,
+    ` viewBox="0 0 ${total} ${total}" shape-rendering="${withLogo ? 'geometricPrecision' : 'crispEdges'}">`,
     `<rect width="${total}" height="${total}" fill="#ffffff"/>`,
-    `<path d="${path}" fill="#000000"/>`,
+    `<path d="${dataPath}" fill="${darkColor}" shape-rendering="crispEdges"/>`,
+    finderPath ? `<path d="${finderPath}" fill="${accentColor}" shape-rendering="crispEdges"/>` : '',
+    logoMarkup,
     `</svg>`,
   ].join('');
 }
@@ -386,7 +461,11 @@ export function generateQrSvg(data: string, size = 180): string {
  * Inline, not a remote URL: the encoded value is a bearer token for medical
  * records and must not be transmitted to an external QR service.
  */
-export function generateQrSvgUrl(data: string, size = 180): string {
-  const svg = generateQrSvg(data, size);
+export function generateQrSvgUrl(
+  data: string,
+  size = 180,
+  options?: QrRenderOptions
+): string {
+  const svg = generateQrSvg(data, size, options);
   return `data:image/svg+xml;base64,${btoa(svg)}`;
 }

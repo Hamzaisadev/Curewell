@@ -5,7 +5,7 @@ import {
   AlertTriangleIcon,
   CheckIcon,
   CapsuleIcon,
-  SparklesIcon,
+  
 } from '../../../components/ui/icons';
 
 interface AvailableDrug {
@@ -407,7 +407,7 @@ export function SentinelInteractiveRadar() {
             {/* Bottom Enclave Disclaimer */}
             <div className="pt-4 mt-6 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-500">
               <span className="flex items-center gap-1.5 text-slate-400">
-                <SparklesIcon size={12} className="text-teal-400" />
+                <ShieldIcon size={12} className="text-teal-400" />
                 <span>Deterministic Pharmacopeia Engine</span>
               </span>
               <span>100% Client-Side Evaluation</span>

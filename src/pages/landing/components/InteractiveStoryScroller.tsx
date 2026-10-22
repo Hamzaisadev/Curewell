@@ -6,7 +6,7 @@ import {
   AlertTriangleIcon,
   HeartPulseIcon,
   ArrowRightIcon,
-  SparklesIcon,
+  ActivityIcon,
 } from '../../../components/ui/icons';
 
 interface StoryChapter {
@@ -626,7 +626,7 @@ export function InteractiveStoryScroller() {
               {/* Bottom Interactive Notice */}
               <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400">
                 <span className="flex items-center gap-1.5 text-teal-700 font-medium">
-                  <SparklesIcon size={13} className="text-teal-600" />
+                  <ActivityIcon size={13} className="text-teal-600" />
                   <span>Interactive Live Sandbox</span>
                 </span>
                 <span>Deterministic Clinical Rules Engine</span>

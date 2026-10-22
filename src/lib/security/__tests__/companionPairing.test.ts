@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   createCompanionPairingToken,
+  createSmartQrPairingToken,
   verifyCompanionPairingToken,
   hasCompanionPin,
   setCompanionPin,
@@ -9,6 +10,7 @@ import {
   isCompanionLocked,
   recordCompanionActivity,
 } from '../companionPairing';
+import { generateQrSvgUrl } from '../../qr/qrGenerator';
 
 describe('companionPairing Security & PIN Engine', () => {
   beforeEach(() => {
@@ -33,6 +35,36 @@ describe('companionPairing Security & PIN Engine', () => {
       expect(verification.payload?.userId).toBe('user-123');
       expect(verification.payload?.profileId).toBe('profile-456');
       expect(verification.payload?.profileName).toBe('Father (Muhammad Ali)');
+    });
+
+    it('creates a compact Smart QR token that fits inside a logo QR code and verifies via URL or 6-digit code', async () => {
+      const { token, pairingCode } = await createSmartQrPairingToken({
+        userId: '00000000-0000-0000-0000-000000000001',
+        profileId: '00000000-0000-0000-0000-000000000002',
+        profileName: 'Muhammad Ali (Father)',
+        userEmail: 'test.patient@curewell.dev',
+      });
+
+      expect(token.startsWith('c1.')).toBe(true);
+      expect(pairingCode).toMatch(/^\d{6}$/);
+
+      // Must encode cleanly into a branded QR code with logo without overflowing Version 10
+      const fullUrl = `https://curewell.app/download/apk?pair=${encodeURIComponent(token)}`;
+      const qrDataUrl = generateQrSvgUrl(fullUrl, 220, { withLogo: true });
+      expect(qrDataUrl.startsWith('data:image/svg+xml;base64,')).toBe(true);
+
+      // Verify using full download URL
+      const urlVerification = await verifyCompanionPairingToken(fullUrl);
+      expect(urlVerification.valid).toBe(true);
+      expect(urlVerification.payload?.userId).toBe('00000000-0000-0000-0000-000000000001');
+      expect(urlVerification.payload?.profileId).toBe('00000000-0000-0000-0000-000000000002');
+
+      // Verify using 6-digit pairing code
+      const codeVerification = await verifyCompanionPairingToken(
+        `${pairingCode.slice(0, 3)}-${pairingCode.slice(3)}`
+      );
+      expect(codeVerification.valid).toBe(true);
+      expect(codeVerification.payload?.userId).toBe('00000000-0000-0000-0000-000000000001');
     });
 
     it('rejects an expired pairing token', async () => {

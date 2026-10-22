@@ -1,0 +1,74 @@
+# Supabase Project Configuration & CaAC (Configuration as Code)
+# Documentation: https://supabase.com/docs/guides/cli/config
+
+project_id = "curewell"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+# ---------------------------------------------------------------------------
+# Auth Core Configuration
+# ---------------------------------------------------------------------------
+[auth]
+enabled = true
+site_url = "https://curewell-ai.vercel.app"
+additional_redirect_urls = [
+  "https://curewell-ai.vercel.app/**",
+  "https://curewell-ai.vercel.app/auth/callback",
+  "http://localhost:5173/**",
+  "http://localhost:5173/auth/callback",
+  "http://127.0.0.1:5173/**",
+  "https://localhost:5173/**"
+]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+# ---------------------------------------------------------------------------
+# Custom Branded Email Templates
+# ---------------------------------------------------------------------------
+[auth.email.template.confirmation]
+subject = "Confirm your Curewell Account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Curewell Password"
+content_path = "./supabase/templates/recovery.html"
+
+# ---------------------------------------------------------------------------
+# External OAuth Providers — Google Authentication
+# ---------------------------------------------------------------------------
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = false
+
+# ---------------------------------------------------------------------------
+# Custom SMTP Provider (Deliverability via Resend / SendGrid / Postmark)
+# ---------------------------------------------------------------------------
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 587
+user = "resend"
+pass = "env(SUPABASE_AUTH_SMTP_PASS)"
+admin_email = "auth@curewell.app"
+sender_name = "Curewell Health"

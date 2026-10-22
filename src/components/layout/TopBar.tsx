@@ -53,7 +53,10 @@ export function TopBar() {
           </Link>
           <Link
             to={location.pathname === '/login' ? '/signup' : '/login'}
-            className="inline-flex items-center h-10 px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors"
+            className={clsx(
+              'items-center h-10 px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors',
+              location.pathname === '/login' ? 'hidden md:inline-flex' : 'inline-flex'
+            )}
           >
             {location.pathname === '/login' ? 'Create account' : 'Sign in'}
           </Link>
@@ -224,9 +227,17 @@ export function TopBar() {
                 )}
                 aria-label="Account menu"
               >
-                <span className="w-7 h-7 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-xs font-bold shrink-0">
-                  {userInitial}
-                </span>
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={displayName}
+                    className="w-7 h-7 rounded-full object-cover border border-line shrink-0"
+                  />
+                ) : (
+                  <span className="w-7 h-7 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-xs font-bold shrink-0">
+                    {userInitial}
+                  </span>
+                )}
                 <span className="text-xs font-semibold hidden lg:inline-block max-w-24 truncate text-content">
                   {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}
                 </span>
@@ -235,13 +246,26 @@ export function TopBar() {
 
               <DropdownMenu.Portal>
                 <DropdownMenu.Content align="end" sideOffset={8} className={menuPanel}>
-                  <div className="px-3 py-2.5 border-b border-line mb-1">
-                    <p className="text-sm font-bold text-content truncate">
-                      {profile?.full_name || 'Patient'}
-                    </p>
-                    {user?.email && (
-                      <p className="text-xs text-content-subtle truncate">{user.email}</p>
+                  <div className="px-3 py-2.5 border-b border-line mb-1 flex items-center gap-2.5">
+                    {profile?.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={displayName}
+                        className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
+                      />
+                    ) : (
+                      <span className="w-9 h-9 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-sm font-bold shrink-0">
+                        {userInitial}
+                      </span>
                     )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-content truncate">
+                        {profile?.full_name || 'Patient'}
+                      </p>
+                      {user?.email && (
+                        <p className="text-xs text-content-subtle truncate">{user.email}</p>
+                      )}
+                    </div>
                   </div>
 
                   <DropdownMenu.Item asChild>

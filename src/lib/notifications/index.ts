@@ -1,15 +1,9 @@
 /**
- * Local & Native notification delivery for Curewell / Medfolio.
- *
- * Provides a unified notification interface across Web (PWA / Service Worker)
- * and Native Android / Capacitor (LocalNotifications, Exact Alarms, Channels).
+ * Local & Service Worker notification delivery for Curewell / Medfolio.
  */
 
 import {
-  isCapacitor,
-  checkNotificationPermissions,
   requestNotificationPermissions,
-  sendUnifiedLocalNotification,
   scheduleRecurringDailySlotAlarms,
   initNativeNotifications,
 } from './nativeNotifications';
@@ -18,24 +12,7 @@ export * from './nativeNotifications';
 
 const SW_READY_TIMEOUT_MS = 3000;
 
-let cachedNativePermission: NotificationPermission | null = null;
-
-// Proactively update native permission cache on load if in Capacitor
-if (typeof window !== 'undefined' && isCapacitor()) {
-  checkNotificationPermissions().then((status) => {
-    cachedNativePermission =
-      status.display === 'granted'
-        ? 'granted'
-        : status.display === 'denied'
-        ? 'denied'
-        : 'default';
-  }).catch(() => {
-    // Ignore error
-  });
-}
-
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  // Also initialize native channels and action listeners
   initNativeNotifications().catch((err) => {
     console.warn('initNativeNotifications failed during SW registration:', err);
   });
@@ -51,8 +28,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 }
 
 /**
- * Requests notification permissions across both Native Android (Android 13+ POST_NOTIFICATIONS)
- * and Web browsers.
+ * Requests notification permissions on Web browsers.
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   const result = await requestNotificationPermissions();
@@ -63,9 +39,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
       ? 'denied'
       : 'default';
 
-  cachedNativePermission = perm;
-
-  // If granted, proactively ensure recurring daily dose slot alarms are active
   if (perm === 'granted') {
     scheduleRecurringDailySlotAlarms().catch((err) => {
       console.warn('scheduleRecurringDailySlotAlarms after permission grant failed:', err);
@@ -79,10 +52,6 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  * Synchronous permission check. Returns 'granted', 'denied', or 'default'.
  */
 export function notificationPermission(): NotificationPermission {
-  if (isCapacitor()) {
-    return cachedNativePermission ?? 'default';
-  }
-
   if (typeof window !== 'undefined' && 'Notification' in window) {
     return Notification.permission;
   }
@@ -105,25 +74,12 @@ async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
 }
 
 /**
- * Sends a local notification.
- * In Capacitor Android: routes to native NotificationManager with high-priority channel & actions.
- * In Web: routes to Service Worker showNotification with fallback to Notification constructor.
+ * Sends a local notification via Service Worker showNotification with fallback to Notification constructor.
  */
 export async function sendLocalNotification(
   title: string,
   options?: NotificationOptions & { doseId?: string; profileId?: string; routeUrl?: string }
 ): Promise<boolean> {
-  if (isCapacitor()) {
-    return sendUnifiedLocalNotification(title, {
-      body: options?.body,
-      tag: options?.tag,
-      doseId: options?.doseId,
-      profileId: options?.profileId,
-      routeUrl: options?.routeUrl || '/today',
-    });
-  }
-
-  // Web path
   if (typeof window === 'undefined' || !('Notification' in window) || Notification.permission !== 'granted') {
     return false;
   }
@@ -144,7 +100,6 @@ export async function sendLocalNotification(
     }
   }
 
-  // Fallback path
   try {
     new Notification(title, baseOptions);
     return true;

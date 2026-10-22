@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Curewell v4.0 — Presentation Deck (HyperFrames)</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #F8FAFC;
+        color: #0F172A;
+        font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #F8FAFC 0%, #F0FDFA 52%, #F8FAFC 100%);
+      }
+      .blueprint-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(to right, rgba(15, 118, 110, 0.06) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(15, 118, 110, 0.06) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+      }
+      .clip.slide-scene {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        padding: 68px 88px 96px 88px;
+        display: none;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      #slide-01 {
+        display: flex;
+      }
+      .slide-scene.dark-scene {
+        background: linear-gradient(135deg, #042F2E 0%, #0F172A 55%, #022C22 100%);
+        color: #F8FAFC;
+      }
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        padding-bottom: 18px;
+      }
+      .dark-scene .top-bar {
+        border-bottom-color: rgba(45, 212, 191, 0.22);
+      }
+      .act-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 18px;
+        border-radius: 999px;
+        background: #CCFBF1;
+        border: 1px solid #5EEAD4;
+        color: #0F766E;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .dark-scene .act-pill {
+        background: rgba(13, 148, 136, 0.24);
+        border-color: rgba(94, 234, 212, 0.45);
+        color: #5EEAD4;
+      }
+      .act-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #0D9488;
+      }
+      .dark-scene .act-dot { background: #2DD4BF; }
+      .slide-num {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 16px;
+        font-weight: 700;
+        color: #64748B;
+        letter-spacing: 0.1em;
+      }
+      .dark-scene .slide-num { color: #94A3B8; }
+      .hero-title {
+        font-size: 64px;
+        font-weight: 900;
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+        color: #0F172A;
+      }
+      .dark-scene .hero-title { color: #FFFFFF; }
+      .teal-grad {
+        background: linear-gradient(90deg, #0F766E 0%, #0D9488 50%, #059669 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .mint-grad {
+        background: linear-gradient(90deg, #5EEAD4 0%, #2DD4BF 50%, #34D399 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .ruby-grad {
+        background: linear-gradient(90deg, #E11D48 0%, #F43F5E 50%, #FB7185 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .lead-sub {
+        font-size: 23px;
+        line-height: 1.5;
+        color: #475569;
+        max-width: 1180px;
+        font-weight: 500;
+      }
+      .dark-scene .lead-sub { color: #CBD5E1; }
+      .grid-12 {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 28px;
+      }
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px;
+      }
+      .col-4 { grid-column: span 4; }
+      .col-5 { grid-column: span 5; }
+      .col-6 { grid-column: span 6; }
+      .col-7 { grid-column: span 7; }
+      .col-8 { grid-column: span 8; }
+      .card {
+        background: #FFFFFF;
+        border-radius: 28px;
+        border: 1px solid rgba(226, 232, 240, 0.85);
+        padding: 34px;
+        box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+        position: relative;
+        overflow: hidden;
+      }
+      .card-teal {
+        background: linear-gradient(180deg, #FFFFFF 0%, #F0FDFA 100%);
+        border: 2px solid #5EEAD4;
+        box-shadow: 0 24px 50px -12px rgba(13, 148, 136, 0.12);
+      }
+      .card-risk {
+        background: linear-gradient(180deg, #FFFFFF 0%, #FFF1F2 100%);
+        border: 2px solid #FECDD3;
+        box-shadow: 0 24px 50px -12px rgba(225, 29, 72, 0.1);
+      }
+      .card-dark {
+        background: rgba(15, 23, 42, 0.82);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(45, 212, 191, 0.32);
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4);
+        color: #F8FAFC;
+      }
+      .mono-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 8px;
+        background: #F1F5F9;
+        color: #475569;
+        border: 1px solid #CBD5E1;
+        letter-spacing: 0.04em;
+      }
+      .tag-ok { background: #DCFCE7; color: #15803D; border-color: #86EFAC; }
+      .tag-warn { background: #FEF3C7; color: #B45309; border-color: #FCD34D; }
+      .tag-risk { background: #FFE4E6; color: #BE123C; border-color: #FDA4AF; }
+      .kpi-val {
+        font-size: 56px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        color: #0F766E;
+        line-height: 1;
+      }
+      .kpi-label {
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #64748B;
+        letter-spacing: 0.08em;
+        margin-top: 8px;
+      }
+      .kpi-desc {
+        font-size: 16px;
+        color: #334155;
+        margin-top: 10px;
+        line-height: 1.45;
+      }
+      .footer-strip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 26px;
+        border-radius: 18px;
+        background: rgba(15, 118, 110, 0.08);
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        font-size: 16px;
+        font-weight: 600;
+        color: #0F766E;
+      }
+      .dark-scene .footer-strip {
+        background: rgba(13, 148, 136, 0.18);
+        border-color: rgba(45, 212, 191, 0.3);
+        color: #5EEAD4;
+      }
+      .card-h3 { font-size: 24px; font-weight: 800; color: #0F172A; margin: 12px 0 8px 0; letter-spacing: -0.02em; }
+      .dark-scene .card-h3 { color: #FFFFFF; }
+      .card-p { font-size: 16px; line-height: 1.5; color: #475569; }
+      .dark-scene .card-p { color: #CBD5E1; }
+      .row-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-radius: 14px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        margin-top: 10px;
+      }
+      .dark-scene .row-item {
+        background: rgba(30, 41, 59, 0.75);
+        border-color: rgba(148, 163, 184, 0.2);
+      }
+      /* Standalone Interactive Deck HUD */
+      #standalone-hud {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99999;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 22px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(45, 212, 191, 0.38);
+        color: #F8FAFC;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        font-family: "Inter", sans-serif;
+      }
+      #standalone-hud button {
+        background: rgba(255, 255, 255, 0.08);
+        color: #F8FAFC;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        padding: 8px 18px;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #standalone-hud button:hover {
+        background: rgba(255, 255, 255, 0.18);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      #standalone-hud button.primary {
+        background: #0D9488;
+        border-color: #2DD4BF;
+      }
+      #standalone-hud button.primary:hover {
+        background: #0F766E;
+      }
+      #standalone-notes {
+        position: fixed;
+        bottom: 82px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 920px;
+        max-width: 92vw;
+        padding: 18px 24px;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(45, 212, 191, 0.4);
+        color: #E2E8F0;
+        font-size: 15px;
+        line-height: 1.55;
+        z-index: 9998;
+        display: none;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="curewell-v4-deck" data-root="true" data-start="0" data-duration="96" data-width="1920" data-height="1080">
+      <div id="bg-grid" class="blueprint-grid"></div>
+
+      <!-- SLIDE 01: INTRODUCTION & WELCOME -->
+      <section id="slide-01" class="clip slide-scene" data-composition-id="slide-01" data-no-timeline data-start="0" data-duration="8" data-track-index="0">
+        <div class="top-bar s01-head">
+          <div class="act-pill"><span class="act-dot"></span><span>MEET CUREWELL · PERSONAL HEALTH VAULT</span></div>
+          <div class="slide-num">SLIDE 01 / 12 · 00:00</div>
+        </div>
+        <div class="grid-12" style="align-items: center;">
+          <div class="col-8 s01-hero">
+            <span class="mono-tag tag-ok">NO MORE MESSY FOLDERS</span>
+            <h1 class="hero-title" style="margin-top: 14px;">Your Health Story,<br/><span class="teal-grad">Finally in One Place.</span></h1>
+            <p class="lead-sub" style="margin-top: 16px;">Say goodbye to lost paper prescriptions, forgotten doctor instructions, and scattered WhatsApp PDFs. Curewell keeps your family's health simple, organized, and always in your pocket.</p>
+            <div style="display: flex; gap: 14px; margin-top: 24px;">
+              <span class="mono-tag" style="background:#E0F2FE; color:#0369A1; border-color:#BAE6FD; padding:8px 16px; font-size:14px;">100% Private &amp; Offline</span>
+              <span class="mono-tag" style="background:#DCFCE7; color:#15803D; border-color:#BBF7D0; padding:8px 16px; font-size:14px;">One-Handed Mobile Use</span>
+              <span class="mono-tag" style="background:#F3E8FF; color:#7E22CE; border-color:#E9D5FF; padding:8px 16px; font-size:14px;">Family Caregiver Ready</span>
+            </div>
+          </div>
+          <div class="col-4 s01-shield" style="display: flex; justify-content: center;">
+            <div class="card card-teal" style="width: 100%; text-align: center; padding: 40px 30px;">
+              <div style="font-size: 64px;">🩺</div>
+              <div class="card-h3" style="margin-top: 16px;">Sovereign Vault</div>
+              <p class="card-p">Runs on your phone. Works even in hospital basements with zero internet.</p>
+              <div class="mono-tag tag-ok" style="margin-top: 20px;">READY IN SECONDS</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-4 s01-kpis">
+          <div class="card"><div class="kpi-val">3-Sec</div><div class="kpi-label">Paper Slip Scan</div><div class="kpi-desc">Snap any handwritten prescription</div></div>
+          <div class="card"><div class="kpi-val">4 Buckets</div><div class="kpi-label">Meal-Timed Regimen</div><div class="kpi-desc">Breakfast, Lunch, Dinner &amp; Bedtime</div></div>
+          <div class="card"><div class="kpi-val">Shifa AI</div><div class="kpi-label">Your Private Co-Pilot</div><div class="kpi-desc">Answers questions from YOUR records</div></div>
+          <div class="card"><div class="kpi-val">10-Sec</div><div class="kpi-label">Paramedic Emergency QR</div><div class="kpi-desc">Lifesaving info right on lock screen</div></div>
+        </div>
+      </section>
+
+      <!-- SLIDE 02: THE REAL-WORLD PROBLEM -->
+      <section id="slide-02" class="clip slide-scene" data-composition-id="slide-02" data-no-timeline data-start="8" data-duration="8" data-track-index="0">
+        <div class="top-bar s02-head">
+          <div class="act-pill"><span class="act-dot" style="background:#E11D48;"></span><span>THE PROBLEM · PAPER CHAOS</span></div>
+          <div class="slide-num">SLIDE 02 / 12 · 00:08</div>
+        </div>
+        <div class="s02-title">
+          <h1 class="hero-title">Healthcare Paperwork is <span class="ruby-grad">Stressful &amp; Broken.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">Every time you, your parents, or your children visit a clinic, the same frustrating chaos repeats itself:</p>
+        </div>
+        <div class="grid-4 s02-cards">
+          <div class="card card-risk">
+            <div style="font-size: 38px;">📄</div>
+            <div class="card-h3">Faded Slips in Drawers</div>
+            <p class="card-p">Thermal prescription slips fade away or get crumpled in wallets. When specialist visits arrive, past history is gone.</p>
+          </div>
+          <div class="card card-risk">
+            <div style="font-size: 38px;">🧠</div>
+            <div class="card-h3">The 5-Minute Memory Blank</div>
+            <p class="card-p">Doctor asks: "What medicine was prescribed last month?" — and in a rushed consultation, you draw a complete blank.</p>
+          </div>
+          <div class="card card-risk">
+            <div style="font-size: 38px;">📱</div>
+            <div class="card-h3">WhatsApp PDF Black Hole</div>
+            <p class="card-p">Diagnostic reports buried across 15 family chat threads. Impossible to find when the doctor urgently needs it.</p>
+          </div>
+          <div class="card card-risk">
+            <div style="font-size: 38px;">💊</div>
+            <div class="card-h3">Duplicate Brand Confusion</div>
+            <p class="card-p">Taking "Panadol" from Clinic A and "Calpol" from Clinic B — without realizing both are the exact same drug.</p>
+          </div>
+        </div>
+        <div class="footer-strip s02-foot" style="background:#FFF1F2; border-color:#FECDD3; color:#BE123C;">
+          <span>THE OUTPATIENT REALITY: Managing family health shouldn't feel like searching through a dumpster of paper.</span>
+          <span class="mono-tag tag-risk">REAL PATIENT PAIN</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 03: HOW WE SOLVE IT -->
+      <section id="slide-03" class="clip slide-scene" data-composition-id="slide-03" data-no-timeline data-start="16" data-duration="8" data-track-index="0">
+        <div class="top-bar s03-head">
+          <div class="act-pill"><span class="act-dot"></span><span>THE SOLUTION · CALM CLARITY</span></div>
+          <div class="slide-num">SLIDE 03 / 12 · 00:16</div>
+        </div>
+        <div class="s03-title">
+          <h1 class="hero-title">Turn Paper Chaos into <span class="teal-grad">Total Daily Calm.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">We took the hardest parts of healthcare management and made them as clear and direct as snapping a photo.</p>
+        </div>
+        <div class="grid-3 s03-steps">
+          <div class="card card-teal">
+            <span class="mono-tag tag-ok">STEP 01</span>
+            <div style="font-size: 44px; margin-top: 14px;">📸</div>
+            <div class="card-h3">Snap It</div>
+            <p class="card-p">Just take a quick phone picture of any handwritten doctor's slip or upload a lab PDF. No manual typing required.</p>
+            <div class="row-item" style="background: #FFFFFF;"><span>OCR Vision Extraction</span><span class="mono-tag tag-ok">3 Seconds</span></div>
+          </div>
+          <div class="card card-teal">
+            <span class="mono-tag tag-ok">STEP 02</span>
+            <div style="font-size: 44px; margin-top: 14px;">🗂️</div>
+            <div class="card-h3">Organize It</div>
+            <p class="card-p">Curewell translates doctor shorthand into active medicines, checks for duplicate brand overdoses, and plots your vitals.</p>
+            <div class="row-item" style="background: #FFFFFF;"><span>Sentinel Safety Check</span><span class="mono-tag tag-ok">Automated</span></div>
+          </div>
+          <div class="card card-teal">
+            <span class="mono-tag tag-ok">STEP 03</span>
+            <div style="font-size: 44px; margin-top: 14px;">⏰</div>
+            <div class="card-h3">Relax</div>
+            <p class="card-p">Gentle meal-timed reminders ensure you take the right pill at Breakfast, Lunch, or Dinner. Instant 1-page brief for visits.</p>
+            <div class="row-item" style="background: #FFFFFF;"><span>Adherence &amp; Peace of Mind</span><span class="mono-tag tag-ok">Guaranteed</span></div>
+          </div>
+        </div>
+        <div class="footer-strip s03-foot">
+          <span>THE CUREWELL PROMISE: Zero complex forms. Designed for one-handed use by parents, grandparents, and caregivers.</span>
+          <span class="mono-tag tag-ok">SIMPLE &amp; POWERFUL</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 04: KEY FEATURES - MEDICATION SAFETY -->
+      <section id="slide-04" class="clip slide-scene" data-composition-id="slide-04" data-no-timeline data-start="24" data-duration="8" data-track-index="0">
+        <div class="top-bar s04-head">
+          <div class="act-pill"><span class="act-dot"></span><span>KEY FEATURES · MEDICATION MANAGEMENT</span></div>
+          <div class="slide-num">SLIDE 04 / 12 · 00:24</div>
+        </div>
+        <div class="s04-title">
+          <h1 class="hero-title">Your Daily Meds, <span class="teal-grad">Never Missed or Mixed Up.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">Three basic features that save families from everyday medication stress:</p>
+        </div>
+        <div class="grid-3 s04-cards">
+          <div class="card">
+            <div style="font-size: 42px;">📷</div>
+            <div class="card-h3">Instant Prescription Scanner</div>
+            <p class="card-p">Snap any handwritten paper slip. Curewell de-skews, transcribes doctor scribbles, and extracts exact dosage instructions.</p>
+            <div class="row-item"><span>Handwriting Recognition</span><span class="mono-tag tag-ok">Fast &amp; Accurate</span></div>
+          </div>
+          <div class="card">
+            <div style="font-size: 42px;">🥣</div>
+            <div class="card-h3">Meal-Timed Regimen Buckets</div>
+            <p class="card-p">Color-coded daily buckets: Morning Breakfast, Afternoon Lunch, Evening Dinner, Bedtime. No complicated alarm math.</p>
+            <div class="row-item"><span>Big Touch Targets</span><span class="mono-tag tag-ok">Taken with 1 Tap</span></div>
+          </div>
+          <div class="card">
+            <div style="font-size: 42px;">🔔</div>
+            <div class="card-h3">Proactive Refill Warnings</div>
+            <p class="card-p">Low-stock alerts warn you when you only have 4 pills left, so you never run out of critical heart or diabetes meds at midnight.</p>
+            <div class="row-item"><span>Cabinet Inventory</span><span class="mono-tag tag-ok">Auto-Counted</span></div>
+          </div>
+        </div>
+        <div class="footer-strip s04-foot">
+          <span>BONUS: Separate PRN (As-Needed) Cabinet for rescue inhalers and headache pills that you only take when symptoms strike.</span>
+          <span class="mono-tag">SMART CABINET</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 05: KEY FEATURES - LABS & EMERGENCY PASS -->
+      <section id="slide-05" class="clip slide-scene" data-composition-id="slide-05" data-no-timeline data-start="32" data-duration="8" data-track-index="0">
+        <div class="top-bar s05-head">
+          <div class="act-pill"><span class="act-dot"></span><span>KEY FEATURES · LABS &amp; EMERGENCY PASS</span></div>
+          <div class="slide-num">SLIDE 05 / 12 · 00:32</div>
+        </div>
+        <div class="s05-title">
+          <h1 class="hero-title">More Than Just Pills: <span class="teal-grad">Your Whole Health Picture.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">Everything your treating physician asks for, organized and ready at a single tap:</p>
+        </div>
+        <div class="grid-3 s05-cards">
+          <div class="card">
+            <div style="font-size: 42px;">📈</div>
+            <div class="card-h3">Longitudinal Lab Trends</div>
+            <p class="card-p">See if your Cholesterol, Blood Sugar (HbA1c), or Liver Enzymes are improving or worsening over 90 days. Not just static PDFs.</p>
+            <div class="row-item"><span>Cross-Lab Normalizer</span><span class="mono-tag tag-ok">Visual Curves</span></div>
+          </div>
+          <div class="card">
+            <div style="font-size: 42px;">💓</div>
+            <div class="card-h3">5-Second Vitals Logging</div>
+            <p class="card-p">Log daily Blood Pressure and Glucose in seconds. Friendly color stages (Normal, Elevated, Action Needed) explain what it means.</p>
+            <div class="row-item"><span>AHA / ADA Guidelines</span><span class="mono-tag tag-ok">Instant Stage</span></div>
+          </div>
+          <div class="card">
+            <div style="font-size: 42px;">🆘</div>
+            <div class="card-h3">Paramedic Emergency QR</div>
+            <p class="card-p">A lifesaving QR sticker on your lock screen. In an emergency, first responders scan it to see blood group, allergies, and emergency contacts.</p>
+            <div class="row-item"><span>Critical Lifeline</span><span class="mono-tag tag-ok">PIN-Protected</span></div>
+          </div>
+        </div>
+        <div class="footer-strip s05-foot">
+          <span>CLINICAL DOSSIER: 1-click PDF download generates an A4 consultation sheet that doctors can read in under 30 seconds.</span>
+          <span class="mono-tag tag-ok">DOCTOR FAVORITE</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 06: MEET SHIFA AI - CLINICAL CO-PILOT -->
+      <section id="slide-06" class="clip slide-scene dark-scene" data-composition-id="slide-06" data-no-timeline data-start="40" data-duration="8" data-track-index="0">
+        <div class="top-bar s06-head">
+          <div class="act-pill"><span class="act-dot"></span><span>MEET SHIFA AI · YOUR HEALTH COMPANION</span></div>
+          <div class="slide-num">SLIDE 06 / 12 · 00:40</div>
+        </div>
+        <div class="grid-12" style="align-items: center;">
+          <div class="col-7 s06-left">
+            <span class="mono-tag tag-ok">AI WITH REAL CONTEXT</span>
+            <h1 class="hero-title" style="margin-top: 14px;">Meet Shifa AI:<br/><span class="mint-grad">A Companion That Knows Your History.</span></h1>
+            <p class="lead-sub" style="margin-top: 16px;">Ever stared at a confusing lab test or handwritten doctor's note and wondered: <em>"What does this actually mean for my health?"</em></p>
+            <div class="row-item" style="margin-top: 20px;">
+              <div><strong style="color:#5EEAD4;">"Can I take my blood pressure pill with breakfast?"</strong><div style="font-size:14px; color:#94A3B8;">Answers in plain English or Urdu with gentle, practical instructions.</div></div>
+              <span class="mono-tag tag-ok">HELPFUL</span>
+            </div>
+            <div class="row-item" style="margin-top: 12px;">
+              <div><strong style="color:#5EEAD4;">"When was my last dose change for Metformin?"</strong><div style="font-size:14px; color:#94A3B8;">Instantly pinpoints the exact date and clinic visit from your records.</div></div>
+              <span class="mono-tag tag-ok">INSTANT</span>
+            </div>
+          </div>
+          <div class="col-5 s06-right">
+            <div class="card card-dark" style="padding: 36px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="mono-tag" style="background:rgba(20,184,166,0.2); color:#5EEAD4; border-color:#14B8A6;">SHIFA AI ENGINE</span>
+                <span class="mono-tag tag-ok">24/7 ASSISTANT</span>
+              </div>
+              <div style="font-size: 60px; margin-top: 18px;">🤖✨</div>
+              <div class="card-h3" style="color: #FFFFFF;">Empathetic &amp; Grounded</div>
+              <p class="card-p">Unlike generic search engines that scare you with worst-case diseases, Shifa speaks in calm, grounded, patient-first language.</p>
+              <div class="mono-tag tag-ok" style="margin-top: 18px;">PRIVATE CHAT</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-strip s06-foot">
+          <span>GROUNDED IN CARE: Designed to comfort and clarify, bridging the gap between clinical jargon and daily peace of mind.</span>
+          <span class="mono-tag">ALWAYS AVAILABLE</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 07: HOW SHIFA AI WORKS - RAG EXPLAINED -->
+      <section id="slide-07" class="clip slide-scene dark-scene" data-composition-id="slide-07" data-no-timeline data-start="48" data-duration="8" data-track-index="0">
+        <div class="top-bar s07-head">
+          <div class="act-pill"><span class="act-dot"></span><span>HOW SHIFA AI WORKS · RAG ARCHITECTURE</span></div>
+          <div class="slide-num">SLIDE 07 / 12 · 00:48</div>
+        </div>
+        <div class="s07-title">
+          <h1 class="hero-title">Shifa Doesn't Guess. <span class="mint-grad">It Checks YOUR Actual Files.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">We use RAG (Retrieval-Augmented Generation) — an architecture built strictly on truth and personal recall:</p>
+        </div>
+        <div class="grid-3 s07-steps">
+          <div class="card card-dark">
+            <span class="mono-tag tag-ok">STEP 01 · RETRIEVAL</span>
+            <div style="font-size: 42px; margin-top: 14px;">📂</div>
+            <div class="card-h3" style="color:#FFFFFF;">Your Private Vault</div>
+            <p class="card-p">When you ask a question, Shifa first scans <em>only</em> your uploaded prescriptions, verified meds, and real lab PDFs.</p>
+          </div>
+          <div class="card card-dark">
+            <span class="mono-tag tag-ok">STEP 02 · AUGMENTATION</span>
+            <div style="font-size: 42px; margin-top: 14px;">🎯</div>
+            <div class="card-h3" style="color:#FFFFFF;">Pinpoint Citations</div>
+            <p class="card-p">It extracts the exact sentence, doctor slip number, and lab date. It never relies on random internet forum gossip.</p>
+          </div>
+          <div class="card card-dark">
+            <span class="mono-tag tag-ok">STEP 03 · GENERATION</span>
+            <div style="font-size: 42px; margin-top: 14px;">🔒</div>
+            <div class="card-h3" style="color:#FFFFFF;">Zero Hallucinations</div>
+            <p class="card-p">If a detail isn't in your files, Shifa truthfully says <em>"I don't see this in your uploaded records"</em> instead of making things up.</p>
+          </div>
+        </div>
+        <div class="footer-strip s07-foot" style="background:rgba(20,184,166,0.15); border-color:#2DD4BF;">
+          <span style="font-weight:700; color:#5EEAD4;">THE RAG GUARANTEE: Zero guessing · Exact source citations · Your health records are never used to train public AI models.</span>
+          <span class="mono-tag tag-ok">100% PRIVATE</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 08: SAFETY CHECKPOINT & PLAYFUL SLANG -->
+      <section id="slide-08" class="clip slide-scene" data-composition-id="slide-08" data-no-timeline data-start="56" data-duration="8" data-track-index="0">
+        <div class="top-bar s08-head">
+          <div class="act-pill"><span class="act-dot" style="background:#E11D48;"></span><span>SAFETY FIRST · CLINICAL BOUNDARY</span></div>
+          <div class="slide-num">SLIDE 08 / 12 · 00:56</div>
+        </div>
+        <div class="grid-12" style="align-items: center;">
+          <div class="col-7 s08-left">
+            <span class="mono-tag tag-risk">IMPORTANT CLINICAL PLEDGE</span>
+            <h1 class="hero-title" style="margin-top: 12px; font-size: 58px;">Our Golden Rule:<br/><span class="ruby-grad">"We're Your Memory, Not Your MD!"</span></h1>
+            <p class="lead-sub" style="margin-top: 14px; font-size: 21px;">Think of Curewell as your ultra-reliable personal medical notebook. We make sure you never forget what your doctor said, but we <strong>never</strong> pretend to be your doctor.</p>
+            <div class="row-item" style="margin-top: 20px; background:#FFF1F2; border-color:#FECDD3;">
+              <span style="font-weight:700; color:#BE123C;">❌ We NEVER prescribe new medicines</span>
+              <span class="mono-tag tag-risk">STRICT BOUNDARY</span>
+            </div>
+            <div class="row-item" style="margin-top: 10px; background:#FFF1F2; border-color:#FECDD3;">
+              <span style="font-weight:700; color:#BE123C;">❌ We NEVER modify doctor dosages</span>
+              <span class="mono-tag tag-risk">STRICT BOUNDARY</span>
+            </div>
+          </div>
+          <div class="col-5 card card-teal s08-right" style="padding: 38px;">
+            <div style="font-size: 54px;">🛡️💊</div>
+            <div class="card-h3">What We DO Do: Sentinel Collision Radar</div>
+            <p class="card-p">We protect you from dangerous duplicate overdoses. If you take Panadol (500mg) and Calpol syrup together, we warn you before you exceed safe limits.</p>
+            <div class="mono-tag tag-ok" style="margin-top: 18px;">LIVER SAFETY GUARD</div>
+          </div>
+        </div>
+        <div class="footer-strip s08-foot" style="background:#FFF1F2; border-color:#FECDD3; color:#BE123C;">
+          <span>SAFETY CHECKPOINT: Technology that respects the sacred doctor-patient relationship, backed by clinical pharmacopeia rules.</span>
+          <span class="mono-tag tag-risk">MEMORY · NOT MD</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 09: TWO BIG REAL-WORLD FACTS -->
+      <section id="slide-09" class="clip slide-scene" data-composition-id="slide-09" data-no-timeline data-start="64" data-duration="8" data-track-index="0">
+        <div class="top-bar s09-head">
+          <div class="act-pill"><span class="act-dot"></span><span>THE EVIDENCE · WHY THIS MATTERS</span></div>
+          <div class="slide-num">SLIDE 09 / 12 · 01:04</div>
+        </div>
+        <div class="s09-title">
+          <h1 class="hero-title">Two Eye-Opening Numbers <span class="teal-grad">Every Patient Should Know.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">Why organizing prescriptions isn't just a convenience — it saves health and lives:</p>
+        </div>
+        <div class="grid-2 s09-facts" style="margin-top: 10px;">
+          <div class="card card-teal" style="padding: 44px;">
+            <div class="kpi-val" style="font-size: 78px; color: #E11D48;">50%</div>
+            <div class="card-h3" style="font-size: 28px; margin-top: 14px;">Medication Confusion Rate</div>
+            <p class="card-p" style="font-size: 18px; margin-top: 8px;">According to the World Health Organization (WHO), up to 50% of chronic disease patients take medications incorrectly simply due to confusing instructions, illegible handwriting, and missed doses.</p>
+            <div class="mono-tag tag-risk" style="margin-top: 18px;">PREVENTABLE HARM</div>
+          </div>
+          <div class="card card-teal" style="padding: 44px;">
+            <div class="kpi-val" style="font-size: 78px; color: #0D9488;">33%</div>
+            <div class="card-h3" style="font-size: 28px; margin-top: 14px;">Clinic Time Wasted on Records</div>
+            <p class="card-p" style="font-size: 18px; margin-top: 8px;">Studies show that one-third of a rushed 15-minute doctor consultation is squandered trying to piece together past paper slips and lab results. Curewell hands the doctor a 1-page summary in 10 seconds.</p>
+            <div class="mono-tag tag-ok" style="margin-top: 18px;">TIME RECOVERED</div>
+          </div>
+        </div>
+        <div class="footer-strip s09-foot">
+          <span>THE TAKEAWAY: Better organized records mean better doctor decisions, fewer drug collisions, and healthier families.</span>
+          <span class="mono-tag tag-ok">MEASURABLE IMPACT</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 10: WHO IT'S BUILT FOR -->
+      <section id="slide-10" class="clip slide-scene" data-composition-id="slide-10" data-no-timeline data-start="72" data-duration="8" data-track-index="0">
+        <div class="top-bar s10-head">
+          <div class="act-pill"><span class="act-dot"></span><span>WHO WE SERVE · REAL FAMILIES</span></div>
+          <div class="slide-num">SLIDE 10 / 12 · 01:12</div>
+        </div>
+        <div class="s10-title">
+          <h1 class="hero-title">Built for Real People, <span class="teal-grad">Not Tech Experts.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">Designed with giant touch targets, high contrast, and gentle language for the people who need it most:</p>
+        </div>
+        <div class="grid-3 s10-cohorts">
+          <div class="card">
+            <div style="font-size: 46px;">👴👵</div>
+            <div class="card-h3">Aging Parents</div>
+            <p class="card-p">Large, friendly meal-time cards. 1 tap to mark morning pills as taken. No confusing sub-menus or tech jargon to get lost in.</p>
+            <div class="row-item"><span>Ease of Use</span><span class="mono-tag tag-ok">Senior-Friendly</span></div>
+          </div>
+          <div class="card">
+            <div style="font-size: 46px;">👨‍👩‍👧‍👦</div>
+            <div class="card-h3">Family Caregivers</div>
+            <p class="card-p">Managing multiple prescriptions across kids and elderly parents? Switch between patient profiles in one second with zero mix-ups.</p>
+            <div class="row-item"><span>Multi-Profile</span><span class="mono-tag tag-ok">Whole Family</span></div>
+          </div>
+          <div class="card">
+            <div style="font-size: 46px;">🩺👨‍⚕️</div>
+            <div class="card-h3">Treating Doctors</div>
+            <p class="card-p">Physicians love seeing an organized patient. The 1-page clinical dossier lets them review 6 months of treatment in 30 seconds.</p>
+            <div class="row-item"><span>Consultation Quality</span><span class="mono-tag tag-ok">1-Page Dossier</span></div>
+          </div>
+        </div>
+        <div class="footer-strip s10-foot">
+          <span>ACCESSIBILITY FIRST: Clear typography, high contrast, and offline capability so it works everywhere you go.</span>
+          <span class="mono-tag tag-ok">UNIVERSAL DESIGN</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 11: BEFORE & AFTER COMPARISON -->
+      <section id="slide-011" class="clip slide-scene" data-composition-id="slide-11" data-no-timeline data-start="80" data-duration="8" data-track-index="0">
+        <div class="top-bar s11-head">
+          <div class="act-pill"><span class="act-dot"></span><span>THE TRANSFORMATION · BEFORE &amp; AFTER</span></div>
+          <div class="slide-num">SLIDE 11 / 12 · 01:20</div>
+        </div>
+        <div class="s11-title">
+          <h1 class="hero-title">The Clear Difference: <span class="teal-grad">Paper Folders vs Curewell.</span></h1>
+          <p class="lead-sub" style="margin-top: 10px;">What happens when you replace crumpled envelopes with a sovereign digital vault:</p>
+        </div>
+        <div class="grid-12 s11-compare" style="align-items: stretch; margin-top: 10px;">
+          <div class="col-6 card card-risk" style="padding: 34px;">
+            <span class="mono-tag tag-risk">THE OLD WAY (PAPER &amp; GUESSWORK)</span>
+            <div class="row-item" style="background:#FFFFFF; margin-top:18px;"><span>❌ Slips lost in drawers and faded thermal ink</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>❌ Wondering "did I take my morning pill or forget?"</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>❌ Staring at confusing lab numbers with anxiety</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>❌ Risk of taking duplicate drug brands across clinics</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>❌ Rushed 10-minute doctor visits spent remembering history</span></div>
+          </div>
+          <div class="col-6 card card-teal" style="padding: 34px;">
+            <span class="mono-tag tag-ok">THE CUREWELL WAY (CALM &amp; CONTROL)</span>
+            <div class="row-item" style="background:#FFFFFF; margin-top:18px;"><span>✓ 3-second instant photo scan with original proof</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>✓ Clear meal-timed buckets: Breakfast, Lunch &amp; Dinner</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>✓ Ask Shifa AI in plain English or Urdu anytime</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>✓ Sentinel radar warns before accidental overdoses</span></div>
+            <div class="row-item" style="background:#FFFFFF;"><span>✓ 1-page clean dossier ready for every doctor consultation</span></div>
+          </div>
+        </div>
+        <div class="footer-strip s11-foot">
+          <span>THE BOTTOM LINE: Total clarity for patients, total confidence for doctors, and zero anxiety for families.</span>
+          <span class="mono-tag tag-ok">TRANSFORMATIONAL</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 12: GRAND FINALE - LIVE DEMO TRANSITION -->
+      <section id="slide-012" class="clip slide-scene dark-scene" data-composition-id="slide-12" data-no-timeline data-start="88" data-duration="8" data-track-index="0">
+        <div class="top-bar s12-head">
+          <div class="act-pill"><span class="act-dot"></span><span>FINALE · LIVE DEMO TIME</span></div>
+          <div class="slide-num">SLIDE 12 / 12 · 01:28</div>
+        </div>
+        <div class="grid-12" style="align-items: center;">
+          <div class="col-7 s12-left">
+            <span class="mono-tag tag-ok">READY FOR ACTION</span>
+            <h1 class="hero-title" style="margin-top: 14px; font-size: 68px;">Enough Slides.<br/><span class="mint-grad">Let's See It Live!</span> 🚀</h1>
+            <p class="lead-sub" style="margin-top: 18px; font-size: 22px;">Talk is cheap. Let us show you how Curewell actually works in real time — from scanning a handwritten prescription to testing Shifa AI.</p>
+            <div style="margin-top: 28px; display: flex; gap: 16px;">
+              <div class="mono-tag" style="background:rgba(45,212,191,0.2); color:#5EEAD4; border-color:#2DD4BF; padding:12px 24px; font-size:16px;">
+                ▶ 1. Live Prescription OCR
+              </div>
+              <div class="mono-tag" style="background:rgba(45,212,191,0.2); color:#5EEAD4; border-color:#2DD4BF; padding:12px 24px; font-size:16px;">
+                ▶ 2. Meal-Time Logging
+              </div>
+              <div class="mono-tag" style="background:rgba(45,212,191,0.2); color:#5EEAD4; border-color:#2DD4BF; padding:12px 24px; font-size:16px;">
+                ▶ 3. Shifa AI Chat
+              </div>
+            </div>
+          </div>
+          <div class="col-5 s12-right">
+            <div class="card card-dark" style="text-align: center; padding: 46px 36px; border: 2px solid #2DD4BF;">
+              <div id="s12-rocket" style="font-size: 72px;">📱✨</div>
+              <div class="card-h3" style="color: #FFFFFF; font-size: 30px; margin-top: 14px;">Interactive App Demo</div>
+              <p class="card-p" style="margin-top: 8px;">Watch how raw paper slips turn into clean, lifesaving daily schedules.</p>
+              <div style="margin-top: 24px;">
+                <span class="mono-tag tag-ok" style="font-size: 16px; padding: 10px 22px; font-weight: 800;">STARTING APP DEMO NOW ➔</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-strip s12-foot">
+          <span>CUREWELL v4.0 · Sovereign Personal Health Vault · Thank you, let's jump right into the live app!</span>
+          <span class="mono-tag tag-ok">LET'S DIVE IN</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- HYPERFRAMES SLIDESHOW MANIFEST ISLAND (FOR `npx hyperframes present`) -->
+    <script type="application/hyperframes-slideshow+json">
+      {
+        "slides": [
+          { "sceneId": "slide-01", "fragments": [2.5, 5.2], "notes": "Slide 1 — Welcome: Introduce Curewell as a personal health vault designed for everyday families. It brings simplicity, privacy, and peace of mind by keeping all prescriptions and lab tests organized in your pocket." },
+          { "sceneId": "slide-02", "fragments": [10.5, 13.2], "notes": "Slide 2 — The Problem: Paint the relatable picture of paper chaos. Faded slips in drawers, memory blanks when doctors ask what you took last month, buried WhatsApp PDFs, and dangerous duplicate brand confusion." },
+          { "sceneId": "slide-03", "fragments": [18.5, 21.2], "notes": "Slide 3 — The Solution: The 3 easy steps. 1) Snap any slip with your phone camera, 2) Curewell automatically organizes meds and checks safety, 3) Relax with clear meal-timed dose reminders." },
+          { "sceneId": "slide-04", "fragments": [26.5, 29.2], "notes": "Slide 4 — Core Medication Features: Instant prescription scanner that decodes doctor handwriting in 3 seconds, meal-timed dose buckets (Breakfast, Lunch, Dinner, Bedtime), and proactive refill alerts." },
+          { "sceneId": "slide-05", "fragments": [34.5, 37.2], "notes": "Slide 5 — Labs & Emergency Safety: Longitudinal lab charts that show whether cholesterol or blood sugar is improving, 5-second daily vitals logging, and the lock-screen paramedic emergency QR pass." },
+          { "sceneId": "slide-06", "fragments": [42.5, 45.2], "notes": "Slide 6 — Meet Shifa AI: Introduce Shifa AI as a calm, empathetic clinical co-pilot. Patients can ask questions in plain English or Urdu and get clear explanations without medical jargon." },
+          { "sceneId": "slide-07", "fragments": [50.5, 53.2], "notes": "Slide 7 — RAG Architecture: Explain RAG simply. Shifa doesn't guess or search random internet blogs. It checks YOUR actual uploaded files first, cites the exact record, and refuses to hallucinate." },
+          { "sceneId": "slide-08", "fragments": [58.5, 61.2], "notes": "Slide 8 — Safety Boundary: State our golden rule loudly: 'We're your memory, not your MD!' We never prescribe drugs or alter dosages. We only protect you from accidental overdoses and memory lapses." },
+          { "sceneId": "slide-09", "fragments": [66.5, 69.2], "notes": "Slide 9 — Two Big Facts: 1) 50% of chronic patients take medication incorrectly due to confusing instructions, 2) 33% of rushed doctor visits are wasted trying to recall past records. Curewell fixes both." },
+          { "sceneId": "slide-10", "fragments": [74.5, 77.2], "notes": "Slide 10 — Who It's Built For: Aging parents with big one-tap buttons, busy family caregivers managing multiple family members, and treating physicians who get a clean 1-page health brief." },
+          { "sceneId": "slide-11", "fragments": [82.5, 85.2], "notes": "Slide 11 — Before & After: Contrast the old world of paper slips, missed doses, and anxiety against the Curewell world of instant scans, meal-time clarity, and peace of mind." },
+          { "sceneId": "slide-12", "fragments": [90.5, 93.2], "notes": "Slide 12 — Live Demo: Transition smoothly to the live product demo. 'Enough slides — let us show you some of these features live in action right now!'" }
+        ]
+      }
+    </script>
+
+    <!-- STANDALONE INTERACTIVE DECK HUD -->
+    <div id="standalone-hud" data-hyperframes-ignore>
+      <button id="hud-prev" type="button">◀ Prev</button>
+      <span id="hud-counter" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;min-width:110px;text-align:center;">Slide 01 / 12</span>
+      <button id="hud-next" type="button" class="primary">Next ▶</button>
+      <button id="hud-play" type="button">⏯ Auto-Play</button>
+      <button id="hud-notes-btn" type="button">📝 Notes</button>
+    </div>
+    <div id="standalone-notes" data-hyperframes-ignore></div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({
+        paused: true,
+        onUpdate: function () {
+          syncScenesAtTime(tl.time());
+        }
+      });
+
+      const slides = [
+        { s: 0, head: ".s01-head", main: ".s01-hero, .s01-shield", cards: "#slide-01 .s01-kpis .card" },
+        { s: 8, head: ".s02-head, .s02-title", main: "#slide-02 .s02-cards .card", cards: ".s02-foot" },
+        { s: 16, head: ".s03-head, .s03-title", main: "#slide-03 .s03-steps .card", cards: ".s03-foot" },
+        { s: 24, head: ".s04-head, .s04-title", main: "#slide-04 .s04-cards .card", cards: ".s04-foot" },
+        { s: 32, head: ".s05-head, .s05-title", main: "#slide-05 .s05-cards .card", cards: ".s05-foot" },
+        { s: 40, head: ".s06-head", main: ".s06-left, .s06-right", cards: ".s06-foot" },
+        { s: 48, head: ".s07-head, .s07-title", main: "#slide-07 .s07-steps .card", cards: ".s07-foot" },
+        { s: 56, head: ".s08-head", main: ".s08-left, .s08-right", cards: ".s08-foot" },
+        { s: 64, head: ".s09-head, .s09-title", main: "#slide-09 .s09-facts .card", cards: ".s09-foot" },
+        { s: 72, head: ".s10-head, .s10-title", main: "#slide-10 .s10-cohorts .card", cards: ".s10-foot" },
+        { s: 80, head: ".s11-head, .s11-title", main: "#slide-011 .s11-compare .card", cards: ".s11-foot" },
+        { s: 88, head: ".s12-head", main: ".s12-left, .s12-right", cards: ".s12-foot" }
+      ];
+
+      slides.forEach(function (cfg) {
+        // Phase 1: Header / Top pill softly drops in from y: -16
+        tl.fromTo(
+          cfg.head,
+          { opacity: 0, y: -16 },
+          { opacity: 1, y: 0, duration: 0.85, ease: "power3.out", stagger: 0.1 },
+          cfg.s + 0.1
+        );
+
+        // Phase 2: Hero title & subtitle glide up gently
+        tl.fromTo(
+          cfg.main,
+          { opacity: 0, y: 22 },
+          { opacity: 1, y: 0, duration: 1.15, ease: "power4.out", stagger: 0.15 },
+          cfg.s + 0.35
+        );
+
+        // Phase 3: Content cards emerge with subtle scale (0.985 -> 1.0) and silky stagger
+        tl.fromTo(
+          cfg.cards,
+          { opacity: 0, y: 26, scale: 0.985 },
+          { opacity: 1, y: 0, scale: 1, duration: 1.1, ease: "power3.out", stagger: 0.16 },
+          cfg.s + 0.75
+        );
+      });
+
+      // Special subtle visual flourish for finale
+      tl.fromTo("#s12-rocket", { y: 12, scale: 0.95 }, { y: -10, scale: 1.08, duration: 2.2, ease: "sine.inOut", repeat: 3, yoyo: true }, 88.6);
+
+      // Register root timeline matching data-composition-id="curewell-v4-deck"
+      window.__timelines["curewell-v4-deck"] = tl;
+
+      // Universal Scene Switcher & Viewport Scaling
+      var sceneEls = Array.prototype.slice.call(document.querySelectorAll(".slide-scene"));
+      var notesBox = document.getElementById("standalone-notes");
+      var counterEl = document.getElementById("hud-counter");
+      var manifestEl = document.querySelector('script[type="application/hyperframes-slideshow+json"]');
+      var manifest = manifestEl ? JSON.parse(manifestEl.textContent || "{}") : { slides: [] };
+      var curSlide = 0;
+      var autoTween = null;
+      var isAutoPlaying = false;
+
+      function syncScenesAtTime(t) {
+        var activeIdx = Math.min(11, Math.max(0, Math.floor(t / 8)));
+        sceneEls.forEach(function (el, idx) {
+          el.style.display = idx === activeIdx ? "flex" : "none";
+        });
+        if (counterEl) {
+          counterEl.textContent = "Slide " + String(activeIdx + 1).padStart(2, "0") + " / 12";
+        }
+        if (notesBox && manifest.slides && manifest.slides[activeIdx]) {
+          notesBox.textContent = manifest.slides[activeIdx].notes || "";
+        }
+      }
+
+      function syncViewportScale() {
+        var scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        var root = document.getElementById("root");
+        if (root) {
+          root.style.transformOrigin = "top left";
+          root.style.transform = "scale(" + scale + ")";
+        }
+      }
+      window.addEventListener("resize", syncViewportScale);
+      syncViewportScale();
+
+      function goToSlide(idx) {
+        if (autoTween) { autoTween.kill(); autoTween = null; }
+        if (isAutoPlaying) {
+          isAutoPlaying = false;
+          var pBtn = document.getElementById("hud-play");
+          if (pBtn) pBtn.textContent = "⏯ Auto-Play";
+        }
+        curSlide = Math.max(0, Math.min(11, idx));
+        var st = curSlide * 8;
+        syncScenesAtTime(st + 0.05);
+        tl.seek(st);
+        var proxy = { t: st };
+        // Play the slide's calm choreography at true 1:1 speed over 2.6s
+        autoTween = gsap.to(proxy, {
+          t: st + 2.6,
+          duration: 2.6,
+          ease: "none",
+          onUpdate: function () {
+            tl.seek(proxy.t);
+            syncScenesAtTime(proxy.t);
+          }
+        });
+      }
+
+      var prevBtn = document.getElementById("hud-prev");
+      var nextBtn = document.getElementById("hud-next");
+      var playBtn = document.getElementById("hud-play");
+      var notesBtn = document.getElementById("hud-notes-btn");
+
+      if (prevBtn) prevBtn.addEventListener("click", function () { goToSlide(curSlide - 1); });
+      if (nextBtn) nextBtn.addEventListener("click", function () { goToSlide(curSlide + 1); });
+      if (notesBtn) notesBtn.addEventListener("click", function () {
+        if (notesBox) notesBox.style.display = notesBox.style.display === "block" ? "none" : "block";
+      });
+      if (playBtn) playBtn.addEventListener("click", function () {
+        if (isAutoPlaying) {
+          if (autoTween) { autoTween.kill(); autoTween = null; }
+          isAutoPlaying = false;
+          playBtn.textContent = "⏯ Auto-Play";
+          return;
+        }
+        isAutoPlaying = true;
+        playBtn.textContent = "⏸ Pause";
+        var startT = curSlide * 8;
+        var remainingT = 96 - startT;
+        var proxy = { t: startT };
+        autoTween = gsap.to(proxy, {
+          t: 95.99,
+          duration: remainingT, // Real-time 1:1 speed: 8 seconds per slide for a calm, premium watch
+          ease: "none",
+          onUpdate: function () {
+            curSlide = Math.min(11, Math.floor(proxy.t / 8));
+            tl.seek(proxy.t);
+            syncScenesAtTime(proxy.t);
+          },
+          onComplete: function () {
+            isAutoPlaying = false;
+            playBtn.textContent = "⏯ Auto-Play";
+          }
+        });
+      });
+
+      window.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); goToSlide(curSlide + 1); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); goToSlide(curSlide - 1); }
+      });
+
+      // Initialize on Slide 1 (gracefully reveal Slide 1)
+      tl.seek(0);
+      syncScenesAtTime(0);
+      goToSlide(0);
+    </script>
+  </body>
+</html>

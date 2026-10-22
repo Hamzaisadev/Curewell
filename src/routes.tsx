@@ -73,6 +73,9 @@ const ForgotPasswordPage = lazy(() =>
 const AuthCallbackPage = lazy(() =>
   import('./pages/auth/AuthCallbackPage').then((m) => ({ default: m.AuthCallbackPage }))
 );
+const ResetPasswordPage = lazy(() =>
+  import('./pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage }))
+);
 const AssistantPage = lazy(() =>
   import('./pages/assistant/AssistantPage').then((m) => ({ default: m.AssistantPage }))
 );
@@ -192,6 +195,7 @@ export function AppRoutes() {
           }
         />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Public doctor share link. `/share/verify` is declared first so it is
             not captured by `:token`. */}

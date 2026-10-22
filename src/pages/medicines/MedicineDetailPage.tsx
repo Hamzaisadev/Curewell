@@ -15,7 +15,7 @@ import { Toast } from '../../components/ui/Toast';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { Disclaimer } from '../../components/ui/Disclaimer';
-import { MedicineIcon, SparklesIcon } from '../../components/ui/icons';
+import { MedicineIcon } from '../../components/ui/icons';
 import { MedicineOrderModal } from '../../components/medicines/MedicineOrderModal';
 import { BrandMatcherModal } from '../../components/medicines/BrandMatcherModal';
 import { useAuth } from '../../lib/auth/AuthContext';
@@ -417,7 +417,7 @@ export function MedicineDetailPage() {
                   fullWidth
                   size="sm"
                   onClick={() => setIsBrandMatcherOpen(true)}
-                  leftIcon={<SparklesIcon size={14} className="text-accent" />}
+                  leftIcon={<MedicineIcon size={14} className="text-accent" />}
                   className="text-xs text-accent hover:text-accent-hover font-semibold"
                 >
                   Compare Brands & Generics
