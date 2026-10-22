@@ -8,15 +8,16 @@ interface NavAnchor {
   href: string;
   label: string;
   badge?: string;
+  hideOnLg?: boolean;
 }
 
 const NAV_ANCHORS: NavAnchor[] = [
   { href: '#story-scroller', label: 'Clinical Journey' },
   { href: '#collision-radar', label: 'Collision Radar', badge: 'Safety' },
   { href: '#vitals-lab', label: 'Vitals Lab' },
-  { href: '#doctor-perspective', label: 'Doctor Dossier' },
+  { href: '#doctor-perspective', label: 'Doctor Dossier', hideOnLg: true },
   { href: '#security', label: 'Privacy Enclave' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '#faq', label: 'FAQ', hideOnLg: true },
 ];
 
 export function Navbar() {
@@ -56,27 +57,27 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="fixed top-0 sm:top-3 inset-x-0 z-50 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pointer-events-none transition-all duration-300">
+    <header className="fixed top-0 sm:top-3 inset-x-0 z-50 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pointer-events-none transition-all duration-300 w-full">
       <nav
         aria-label="Primary Navigation"
-        className={`pointer-events-auto transition-all duration-300 relative rounded-2xl sm:rounded-2xl ${
+        className={`pointer-events-auto transition-all duration-300 relative rounded-2xl w-full max-w-full overflow-hidden ${
           scrolled
-            ? 'bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.08)] px-4 sm:px-6'
-            : 'bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-[0_2px_12px_rgba(15,23,42,0.03)] px-4 sm:px-6'
+            ? 'bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.08)]'
+            : 'bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-[0_2px_12px_rgba(15,23,42,0.03)]'
         }`}
       >
-        <div className="flex items-center justify-between h-16 sm:h-18 gap-3 sm:gap-6">
+        <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4 lg:gap-3 xl:gap-6 px-4 sm:px-6">
           {/* Brand Logo & Clinical Badge */}
           <Link
             to="/"
-            className="flex items-center gap-2.5 sm:gap-3 group shrink-0 select-none mr-1 lg:mr-3"
+            className="flex items-center gap-2 sm:gap-2.5 xl:gap-3 group shrink-0 select-none mr-1 xl:mr-3"
             aria-label="Curewell Clinical Health OS"
           >
             <Logo variant="mark" size="md" className="group-hover:scale-105 transition-transform duration-200 shrink-0" />
             <div className="flex flex-col">
-              <span className="text-base sm:text-xl font-black tracking-tight text-slate-900 leading-tight flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-base sm:text-lg xl:text-xl font-black tracking-tight text-slate-900 leading-tight flex items-center gap-1.5 whitespace-nowrap">
                 <span>Curewell</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 font-bold border border-teal-200/60 hidden sm:inline-block">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 font-bold border border-teal-200/60 hidden xl:inline-block">
                   OS 4.0
                 </span>
               </span>
@@ -87,14 +88,16 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center gap-1 xl:gap-2 text-xs xl:text-sm font-semibold text-slate-600 shrink-0">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 text-xs xl:text-sm font-semibold text-slate-600 shrink-0">
             {NAV_ANCHORS.map((anchor) => {
               const isActive = activeAnchor === anchor.href;
               return (
                 <a
                   key={anchor.href}
                   href={anchor.href}
-                  className={`relative px-3 py-1.5 rounded-xl transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+                  className={`relative px-2 xl:px-3 py-1 xl:py-1.5 rounded-lg xl:rounded-xl transition-all duration-200 whitespace-nowrap items-center gap-1 xl:gap-1.5 ${
+                    anchor.hideOnLg ? 'hidden xl:flex' : 'flex'
+                  } ${
                     isActive
                       ? 'text-teal-900 font-bold bg-teal-50/80 border border-teal-200/60 shadow-2xs'
                       : 'hover:text-slate-900 hover:bg-slate-100/60'
@@ -102,7 +105,7 @@ export function Navbar() {
                 >
                   <span>{anchor.label}</span>
                   {anchor.badge && (
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                    <span className="hidden xl:inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
                       {anchor.badge}
                     </span>
                   )}
@@ -112,7 +115,7 @@ export function Navbar() {
           </div>
 
           {/* Enclave Telemetry & Action CTAs */}
-          <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto">
+          <div className="hidden md:flex items-center gap-1.5 xl:gap-3 shrink-0 ml-auto">
             {/* Live Micro-Telemetry Pill */}
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-[10px] font-mono text-slate-600">
               <span className="relative flex h-1.5 w-1.5">
@@ -124,14 +127,14 @@ export function Navbar() {
 
             <Link
               to="/login"
-              className="text-xs sm:text-sm font-bold text-slate-700 hover:text-teal-900 px-3 py-2 transition-colors rounded-xl hover:bg-slate-100/60 whitespace-nowrap"
+              className="text-xs xl:text-sm font-bold text-slate-700 hover:text-teal-900 px-2.5 xl:px-3 py-1.5 xl:py-2 transition-colors rounded-lg xl:rounded-xl hover:bg-slate-100/60 whitespace-nowrap"
             >
               Sign In
             </Link>
 
             <Link
               to="/signup"
-              className="group relative px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-teal-700 hover:bg-teal-800 rounded-xl shadow-[0_4px_16px_rgba(15,118,110,0.25)] hover:shadow-[0_6px_20px_rgba(15,118,110,0.35)] transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-[0.98] overflow-hidden whitespace-nowrap shrink-0"
+              className="group relative px-3.5 xl:px-5 py-2 xl:py-2.5 text-xs xl:text-sm font-bold text-white bg-teal-700 hover:bg-teal-800 rounded-xl shadow-[0_4px_16px_rgba(15,118,110,0.25)] hover:shadow-[0_6px_20px_rgba(15,118,110,0.35)] transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-[0.98] overflow-hidden whitespace-nowrap shrink-0"
             >
               <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
               <span className="relative z-10">Get Started Free</span>
@@ -157,7 +160,7 @@ export function Navbar() {
         </div>
 
         {/* Dynamic Continuous Scroll Progress Indicator Bar */}
-        <div className="h-[2px] w-full bg-slate-100/60 rounded-b-xl overflow-hidden relative">
+        <div className="absolute bottom-0 inset-x-0 h-[2.5px] bg-slate-100/60 rounded-b-2xl overflow-hidden pointer-events-none">
           <motion.div
             style={{ scaleX, transformOrigin: '0%' }}
             className="h-full bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500"
@@ -166,7 +169,7 @@ export function Navbar() {
 
         {/* Mobile Drawer Menu */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-slate-200/80 py-4 px-2 space-y-2 bg-white/95 backdrop-blur-xl rounded-b-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="lg:hidden border-t border-slate-200/80 py-4 px-4 space-y-2 bg-white/95 backdrop-blur-xl rounded-b-2xl animate-in fade-in slide-in-from-top-2 duration-200">
             {NAV_ANCHORS.map((anchor) => (
               <a
                 key={anchor.href}

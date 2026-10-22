@@ -46,6 +46,7 @@ export function DateStrip({
   const today = todayInAppTz(now);
   const selectedRef = useRef<HTMLButtonElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -93,6 +94,20 @@ export function DateStrip({
     const half = Math.floor(windowDays / 2);
     return Array.from({ length: windowDays }, (_, i) => addDaysAppTz(value, i - half));
   }, [value, windowDays]);
+
+
+  // Close calendar popover on Escape key and restore focus to trigger button
+  useEffect(() => {
+    if (!isCalendarOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsCalendarOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isCalendarOpen]);
 
   // Keep the selection in view when it moves via the arrows or a jump to today.
   useEffect(() => {
@@ -172,6 +187,7 @@ export function DateStrip({
       <div className="flex items-center justify-between gap-1.5">
         <div className="relative shrink-0" ref={calendarRef}>
           <button
+            ref={triggerRef}
             type="button"
             onClick={() => setIsCalendarOpen((prev) => !prev)}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-surface-sunken hover:bg-surface-hover border border-line transition-all text-content font-bold text-xs shadow-2xs tap-spring whitespace-nowrap"
@@ -199,6 +215,7 @@ export function DateStrip({
                   aria-label="Previous month"
                   onClick={handlePrevMonth}
                   size="sm"
+                  className="min-w-[44px] min-h-[44px]"
                 >
                   <ChevronLeftIcon size={15} />
                 </IconButton>
@@ -211,6 +228,7 @@ export function DateStrip({
                   aria-label="Next month"
                   onClick={handleNextMonth}
                   size="sm"
+                  className="min-w-[44px] min-h-[44px]"
                 >
                   <ChevronRightIcon size={15} />
                 </IconButton>
@@ -219,7 +237,7 @@ export function DateStrip({
               {/* Weekday Labels */}
               <div className="grid grid-cols-7 gap-1 text-center mb-1">
                 {WEEKDAYS.map((wd) => (
-                  <span key={wd} className="text-[10px] font-bold text-content-subtle uppercase">
+                  <span key={wd} className="text-2xs font-bold text-content-subtle uppercase">
                     {wd}
                   </span>
                 ))}
@@ -238,9 +256,10 @@ export function DateStrip({
                       onClick={() => {
                         onChange(cell.dateStr);
                         setIsCalendarOpen(false);
+                        triggerRef.current?.focus();
                       }}
                       className={clsx(
-                        'h-8 w-8 text-xs font-semibold rounded-lg flex items-center justify-center transition-all relative',
+                        'min-w-[36px] min-h-[44px] h-10 w-full text-xs font-semibold rounded-lg flex items-center justify-center transition-all relative',
                         isSelected
                           ? 'bg-accent text-content-onaccent font-bold shadow-xs'
                           : cell.isCurrentMonth
@@ -265,6 +284,7 @@ export function DateStrip({
                   onClick={() => {
                     onChange(addDaysAppTz(value, -7));
                     setIsCalendarOpen(false);
+                    triggerRef.current?.focus();
                   }}
                   className="px-2 py-1 rounded-md text-content-muted hover:bg-surface-hover hover:text-content font-medium transition-colors"
                 >
@@ -275,6 +295,7 @@ export function DateStrip({
                   onClick={() => {
                     onChange(today);
                     setIsCalendarOpen(false);
+                    triggerRef.current?.focus();
                   }}
                   className="px-2 py-1 rounded-md bg-accent-subtle text-accent font-bold hover:bg-accent hover:text-content-onaccent transition-colors"
                 >
@@ -301,21 +322,21 @@ export function DateStrip({
             aria-label="Previous day"
             onClick={() => onChange(addDaysAppTz(value, -1))}
             size="sm"
-            className="h-6.5 w-6.5 rounded-lg border border-line bg-surface-sunken hover:bg-surface-hover text-content-muted"
+            className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg border border-line bg-surface-sunken hover:bg-surface-hover text-content-muted"
           >
-            <ChevronLeftIcon size={12} />
+            <ChevronLeftIcon size={14} />
           </IconButton>
 
           {value !== today ? (
             <button
               type="button"
               onClick={() => onChange(today)}
-              className="px-2 py-0.5 text-[10px] font-semibold text-content-muted hover:text-content hover:bg-surface-hover rounded-lg border border-line transition-all tap-spring"
+              className="min-h-[44px] px-2.5 text-2xs font-semibold text-content-muted hover:text-content hover:bg-surface-hover rounded-lg border border-line transition-all tap-spring flex items-center justify-center"
             >
               Today
             </button>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-sunken border border-line text-content-muted text-[10px] font-semibold">
+            <span className="min-h-[44px] inline-flex items-center gap-1 px-2.5 rounded-lg bg-surface-sunken border border-line text-content-muted text-2xs font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
               Today
             </span>
@@ -325,9 +346,9 @@ export function DateStrip({
             aria-label="Next day"
             onClick={() => onChange(addDaysAppTz(value, 1))}
             size="sm"
-            className="h-6.5 w-6.5 rounded-lg border border-line bg-surface-sunken hover:bg-surface-hover text-content-muted"
+            className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg border border-line bg-surface-sunken hover:bg-surface-hover text-content-muted"
           >
-            <ChevronRightIcon size={12} />
+            <ChevronRightIcon size={14} />
           </IconButton>
         </div>
       </div>
@@ -348,7 +369,7 @@ export function DateStrip({
               aria-current={isSelected ? 'date' : undefined}
               aria-label={formatDayHeading(day, now)}
               className={clsx(
-                'flex flex-col items-center justify-center h-10 sm:h-11 rounded-xl transition-all duration-150',
+                'flex flex-col items-center justify-center min-h-[44px] h-11 rounded-xl transition-all duration-150',
                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent tap-spring',
                 isSelected
                   ? 'bg-accent text-content-onaccent font-bold shadow-xs'
@@ -358,7 +379,7 @@ export function DateStrip({
                     ]
               )}
             >
-              <span className="text-[9px] uppercase font-semibold tracking-wider leading-none">
+              <span className="text-2xs uppercase font-semibold tracking-wider leading-none">
                 {formatDayNameShort(day)}
               </span>
               <span className="text-xs sm:text-sm font-bold leading-tight mt-0.5" data-numeric>

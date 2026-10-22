@@ -9,7 +9,7 @@ export interface SectionHeaderProps {
   icon?: React.ReactNode;
   action?: React.ReactNode;
   /** Tints the icon and rule — used to carry time-of-day meaning. */
-  tone?: 'default' | 'morning' | 'afternoon' | 'evening' | 'night';
+  tone?: 'default' | 'morning' | 'afternoon' | 'evening' | 'night' | 'bedtime';
   className?: string;
 }
 
@@ -21,7 +21,7 @@ const toneStyles = {
   },
   evening: { icon: 'text-slot-evening-text bg-slot-evening-bg border border-slot-evening-border' },
   night: { icon: 'text-slot-night-text bg-slot-night-bg border border-slot-night-border' },
-  bedtime: { icon: 'text-slot-night-text bg-slot-night-bg border border-slot-night-border' },
+  bedtime: { icon: 'text-slot-bedtime-text bg-slot-bedtime-bg border border-slot-bedtime-border' },
 };
 
 /**

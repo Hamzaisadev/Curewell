@@ -29,7 +29,15 @@ export function RollingNumber({
     const startValue = prevValueRef.current;
     const diff = value - startValue;
 
-    if (diff === 0) return;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+    if (diff === 0 || prefersReducedMotion) {
+      setDisplayValue(value);
+      prevValueRef.current = value;
+      return;
+    }
 
     let animationFrameId: number;
 

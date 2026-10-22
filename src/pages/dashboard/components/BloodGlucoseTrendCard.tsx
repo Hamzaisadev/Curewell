@@ -258,7 +258,7 @@ export function BloodGlucoseTrendCard({ onOpenLog }: BloodGlucoseTrendCardProps)
                   {isFasting ? 'Fasting Target' : 'Post-Meal Target'}
                 </span>
                 <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                  {isFasting ? '70–99 mg/dL' : '< 140 mg/dL'}
+                  {isFasting ? '70–100 mg/dL' : '< 140 mg/dL'}
                 </span>
               </div>
             </div>
@@ -273,7 +273,7 @@ export function BloodGlucoseTrendCard({ onOpenLog }: BloodGlucoseTrendCardProps)
                   </span>
                   <span className="flex items-center gap-1 text-emerald-600/80 dark:text-emerald-400/80">
                     <span className="w-2 h-2 rounded-xs bg-emerald-500/20 border border-emerald-500/40" />
-                    Target ({isFasting ? '70–99' : '70–130'})
+                    Target ({isFasting ? '70–100' : '70–140'})
                   </span>
                 </div>
                 <span className="text-2xs font-mono text-content-subtle">
@@ -283,10 +283,10 @@ export function BloodGlucoseTrendCard({ onOpenLog }: BloodGlucoseTrendCardProps)
                 </span>
               </div>
 
-              <div className="relative cursor-crosshair">
+              <div className="relative cursor-crosshair touch-none">
                 <svg
                   ref={svgRef}
-                  className="w-full h-28 overflow-visible select-none"
+                  className="w-full h-28 overflow-visible select-none touch-none"
                   viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                   preserveAspectRatio="none"
                   onPointerMove={handlePointerMove}
@@ -300,12 +300,12 @@ export function BloodGlucoseTrendCard({ onOpenLog }: BloodGlucoseTrendCardProps)
                     </linearGradient>
                   </defs>
 
-                  {/* Shaded Target Ribbon (70 to 100 mg/dL for fasting, 70-130 for post-meal) */}
+                  {/* Shaded Target Ribbon (70 to 100 mg/dL for fasting, 70 to 140 for post-meal) */}
                   <rect
                     x={paddingX}
-                    y={getY(isFasting ? 100 : 130)}
+                    y={getY(isFasting ? 100 : 140)}
                     width={svgWidth - 2 * paddingX}
-                    height={Math.max(2, getY(70) - getY(isFasting ? 100 : 130))}
+                    height={Math.max(2, getY(70) - getY(isFasting ? 100 : 140))}
                     fill="#10b981"
                     fillOpacity="0.08"
                     rx="4"
@@ -314,9 +314,9 @@ export function BloodGlucoseTrendCard({ onOpenLog }: BloodGlucoseTrendCardProps)
                   {/* Ceiling Line */}
                   <line
                     x1={paddingX}
-                    y1={getY(isFasting ? 100 : 130)}
+                    y1={getY(isFasting ? 100 : 140)}
                     x2={svgWidth - paddingX}
-                    y2={getY(isFasting ? 100 : 130)}
+                    y2={getY(isFasting ? 100 : 140)}
                     stroke="currentColor"
                     strokeDasharray="4 4"
                     className="text-emerald-500/40"
@@ -324,11 +324,11 @@ export function BloodGlucoseTrendCard({ onOpenLog }: BloodGlucoseTrendCardProps)
                   />
                   <text
                     x={paddingX + 2}
-                    y={getY(isFasting ? 100 : 130) - 3}
+                    y={getY(isFasting ? 100 : 140) - 3}
                     fill="currentColor"
                     className="text-[8px] font-mono fill-emerald-600/70 dark:fill-emerald-400/70"
                   >
-                    {isFasting ? '100 mg/dL Fasting Ceiling' : '130 mg/dL Target Ceiling'}
+                    {isFasting ? '100 mg/dL Fasting Ceiling' : '140 mg/dL Post-Meal Ceiling'}
                   </text>
 
                   {/* Floor Line */}

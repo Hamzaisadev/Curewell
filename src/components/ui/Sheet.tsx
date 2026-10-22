@@ -69,7 +69,7 @@ export function Sheet({
               <button
                 type="button"
                 aria-label="Close"
-                className="-mr-2 shrink-0 rounded-[var(--radius-sm)] p-2 text-content-subtle hover:text-content hover:bg-surface-hover transition-colors focus-visible:outline-2 focus-visible:outline-accent"
+                className="-mr-2 -mt-1 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-[var(--radius-sm)] text-content-subtle hover:text-content hover:bg-surface-hover transition-colors focus-visible:outline-2 focus-visible:outline-accent cursor-pointer"
               >
                 <XIcon size={18} />
               </button>

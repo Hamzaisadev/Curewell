@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './Button';
 import { TrophyIcon, MedalIcon, TrendingUpIcon, XIcon } from './icons';
@@ -21,13 +21,59 @@ export function MilestoneCelebrationModal({
   tier = 'gold',
   streakCount,
 }: MilestoneCelebrationModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!isOpen) return;
+    const prevActive = document.activeElement as HTMLElement | null;
+
+    const timer = setTimeout(() => {
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const firstEl = focusable?.[0];
+      if (firstEl) {
+        firstEl.focus();
+      }
+    }, 50);
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusables = Array.from(
+          dialogRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+
+        if (first && last) {
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      }
     };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+      prevActive?.focus();
+    };
   }, [isOpen, onClose]);
 
   const tierColors = {
@@ -52,8 +98,10 @@ export function MilestoneCelebrationModal({
 
           {/* Celebration Card */}
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            aria-labelledby="milestone-title"
             className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-line-strong bg-surface-raised p-6 text-center shadow-over z-10"
             initial={{ opacity: 0, scale: 0.85, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -64,7 +112,7 @@ export function MilestoneCelebrationModal({
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 rounded-full p-1.5 text-content-muted hover:bg-surface-hover hover:text-content transition-colors cursor-pointer"
+              className="absolute right-4 top-4 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-content-muted hover:bg-surface-hover hover:text-content transition-colors cursor-pointer"
               aria-label="Close celebration"
             >
               <XIcon size={18} />
@@ -102,7 +150,7 @@ export function MilestoneCelebrationModal({
                 </span>
               )}
 
-              <h2 className="text-xl font-extrabold text-content tracking-tight">{title}</h2>
+              <h2 id="milestone-title" className="text-xl font-extrabold text-content tracking-tight">{title}</h2>
               <p className="mt-2 text-sm text-content-muted leading-relaxed">{description}</p>
             </motion.div>
 

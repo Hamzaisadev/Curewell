@@ -13,6 +13,8 @@ export function ResetPasswordPage() {
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hasValidSession, setHasValidSession] = useState(false);
@@ -155,33 +157,53 @@ export function ResetPasswordPage() {
                 </div>
 
                 <Field id="new-password" label="New Password" required hint="Must be at least 6 characters">
-                  <Input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value);
-                      if (errorMessage) setErrorMessage(null);
-                    }}
-                    placeholder="Enter new password"
-                    autoComplete="new-password"
-                    required
-                    disabled={isLoading || Boolean(successMessage)}
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
+                      placeholder="Enter new password"
+                      autoComplete="new-password"
+                      required
+                      disabled={isLoading || Boolean(successMessage)}
+                    />
+                    <button
+                      type="button"
+                      aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-content-subtle hover:text-content text-xs font-semibold select-none focus-visible:outline-2 focus-visible:outline-accent rounded-md"
+                    >
+                      {showNewPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
                 </Field>
 
                 <Field id="confirm-password" label="Confirm New Password" required>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      if (errorMessage) setErrorMessage(null);
-                    }}
-                    placeholder="Re-enter new password"
-                    autoComplete="new-password"
-                    required
-                    disabled={isLoading || Boolean(successMessage)}
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
+                      placeholder="Re-enter new password"
+                      autoComplete="new-password"
+                      required
+                      disabled={isLoading || Boolean(successMessage)}
+                    />
+                    <button
+                      type="button"
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-content-subtle hover:text-content text-xs font-semibold select-none focus-visible:outline-2 focus-visible:outline-accent rounded-md"
+                    >
+                      {showConfirmPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
                 </Field>
 
                 <Button

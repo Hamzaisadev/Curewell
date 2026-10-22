@@ -358,9 +358,9 @@ export function SignUpPage() {
                       />
                       <button
                         type="button"
-                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-content-subtle hover:text-content text-xs font-semibold select-none"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-content-subtle hover:text-content text-xs font-semibold select-none focus-visible:outline-2 focus-visible:outline-accent rounded-md"
                       >
                         {showPassword ? 'Hide' : 'Show'}
                       </button>

@@ -25,6 +25,7 @@ import {
   formatDoseTime,
 } from '../../../lib/time';
 import { CapsuleIcon } from '../../../components/ui/icons';
+import { Toast } from '../../../components/ui/Toast';
 
 interface DaypartBucket {
   id: 'morning' | 'afternoon' | 'evening' | 'night';
@@ -50,6 +51,7 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [takingDoseId, setTakingDoseId] = useState<string | null>(null);
+  const [doseError, setDoseError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!effectiveProfileId) return;
@@ -92,6 +94,7 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
     if (!targetDose) return;
 
     setTakingDoseId(doseId);
+    setDoseError(null);
     try {
       const { updatedDose } = await recordDoseAction({
         dose: targetDose,
@@ -102,6 +105,7 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
       onDoseRecorded?.();
     } catch (err) {
       console.error('Failed to mark dose as taken:', err);
+      setDoseError('Failed to record dose. Please check your connection and try again.');
     } finally {
       setTakingDoseId(null);
     }
@@ -252,17 +256,17 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
 
         <div className="flex items-center gap-2">
           {overdueCount > 0 ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 text-2xs font-bold tracking-tight animate-pulse">
+            <span role="status" aria-live="polite" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 text-2xs font-bold tracking-tight animate-pulse">
               <AlertCircle size={12} />
               <span>{overdueCount} Overdue</span>
             </span>
           ) : pendingCount > 0 ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-500/15 text-brand-700 dark:text-brand-300 text-2xs font-bold tracking-tight">
+            <span role="status" aria-live="polite" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-500/15 text-brand-700 dark:text-brand-300 text-2xs font-bold tracking-tight">
               <Clock size={12} />
               <span>{pendingCount} Remaining</span>
             </span>
           ) : totalTodayCount > 0 ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-2xs font-bold tracking-tight">
+            <span role="status" aria-live="polite" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-2xs font-bold tracking-tight">
               <Check size={12} className="stroke-[3]" />
               <span>Completed Today</span>
             </span>
@@ -277,6 +281,22 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
           </Link>
         </div>
       </div>
+
+      {doseError && (
+        <div role="alert" className="mb-4 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={15} className="shrink-0 text-rose-600" />
+            <span>{doseError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDoseError(null)}
+            className="text-2xs font-bold underline cursor-pointer hover:opacity-80"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ── Circadian Routine Rail (rendered when medications exist) ── */}
       {doses.length > 0 && (
@@ -370,6 +390,8 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
+                      role="status"
+                      aria-live="polite"
                       className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                         isSpotlightOverdue
                           ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
@@ -454,7 +476,7 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
                     </div>
 
                     {dose.status === 'taken' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-2xs font-bold">
+                      <span role="status" aria-live="polite" className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-2xs font-bold">
                         <Check size={12} className="stroke-[3]" />
                         <span>Taken</span>
                       </span>
@@ -523,6 +545,13 @@ export function MedicationScheduleCard({ onDoseRecorded }: MedicationScheduleCar
           </div>
         </div>
       )}
+
+      <Toast
+        open={Boolean(doseError)}
+        onClose={() => setDoseError(null)}
+        message={doseError || ''}
+        tone="risk"
+      />
     </div>
   );
 }

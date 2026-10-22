@@ -39,6 +39,20 @@ export function TopBar() {
   const [menuKey, setMenuKey] = useState(0);
   useEffect(() => setMenuKey((k) => k + 1), [location.pathname]);
 
+  // Track xl viewport (>= 1280px) to show/hide overflow nav items responsively
+  const [isXl, setIsXl] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1280 : true
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(min-width: 1280px)');
+    const handler = (e: MediaQueryListEvent) => setIsXl(e.matches);
+    setIsXl(mq.matches);
+    mq.addEventListener?.('change', handler);
+    return () => mq.removeEventListener?.('change', handler);
+  }, []);
+
   const isAuthPage =
     location.pathname === '/login' ||
     location.pathname === '/signup' ||
@@ -53,10 +67,7 @@ export function TopBar() {
           </Link>
           <Link
             to={location.pathname === '/login' ? '/signup' : '/login'}
-            className={clsx(
-              'items-center h-10 px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors',
-              location.pathname === '/login' ? 'hidden md:inline-flex' : 'inline-flex'
-            )}
+            className="inline-flex items-center h-10 px-3 sm:px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors"
           >
             {location.pathname === '/login' ? 'Create account' : 'Sign in'}
           </Link>
@@ -65,15 +76,19 @@ export function TopBar() {
     );
   }
 
-  const isMoreActive = SECONDARY_NAV.some(
-    (item) => item.path !== '/settings' && isNavItemActive(item.path, location.pathname)
-  );
+  const isMoreActive =
+    SECONDARY_NAV.some(
+      (item) => item.path !== '/settings' && isNavItemActive(item.path, location.pathname)
+    ) ||
+    (!isXl &&
+      (isNavItemActive('/reports', location.pathname) ||
+        isNavItemActive('/symptoms', location.pathname)));
   const displayName = profile?.full_name || user?.email || 'Patient';
   const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/90 backdrop-blur-md print:hidden">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-2 px-4 sm:px-6 md:px-8">
+    <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/90 backdrop-blur-md print:hidden overflow-x-clip">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6 md:px-8 min-w-0">
         <Link
           to="/"
           className="flex items-center shrink-0 rounded-[var(--radius-sm)]"
@@ -82,7 +97,7 @@ export function TopBar() {
           <Logo size="md" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-0.5 lg:gap-1" aria-label="Main">
+        <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 shrink-0" aria-label="Main">
           {PRIMARY_NAV.map((link) => {
             const active = isNavItemActive(link.path, location.pathname);
 
@@ -93,7 +108,7 @@ export function TopBar() {
                   to={link.path}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'group relative inline-flex items-center gap-1.5 px-3 py-1.5 mx-0.5 lg:mx-1 text-xs font-bold rounded-full transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs',
+                    'group relative inline-flex items-center gap-1.5 px-3 py-1.5 mx-0.5 lg:mx-1 text-xs font-bold rounded-full transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs shrink-0',
                     active
                       ? 'bg-accent text-content-onaccent shadow-sm border border-accent ring-2 ring-accent/25'
                       : 'bg-accent-subtle/70 text-accent-onsubtle border border-accent/30 hover:border-accent hover:bg-accent-subtle hover:shadow-xs'
@@ -112,13 +127,17 @@ export function TopBar() {
               );
             }
 
+            // On md and lg screens (1024-1279px), move Lab reports and Symptom check to More dropdown
+            const isSecondaryOnMdLg = link.path === '/reports' || link.path === '/symptoms';
+
             return (
               <Link
                 key={link.path}
                 to={link.path}
                 aria-current={active ? 'page' : undefined}
                 className={clsx(
-                  'px-2.5 lg:px-3 py-2 text-xs font-semibold rounded-[var(--radius-md)] transition-colors whitespace-nowrap',
+                  isSecondaryOnMdLg ? 'hidden xl:inline-flex' : 'inline-flex',
+                  'px-2.5 lg:px-3 py-2 text-xs font-semibold rounded-[var(--radius-md)] transition-colors whitespace-nowrap shrink-0',
                   active
                     ? 'bg-accent-subtle text-accent-onsubtle'
                     : 'text-content-muted hover:text-content hover:bg-surface-hover'
@@ -134,7 +153,7 @@ export function TopBar() {
           <DropdownMenu.Root key={`more-${menuKey}`}>
             <DropdownMenu.Trigger
               className={clsx(
-                'inline-flex items-center gap-1 px-2.5 lg:px-3 py-2 text-xs font-semibold rounded-[var(--radius-md)] transition-colors whitespace-nowrap',
+                'inline-flex items-center gap-1 px-2.5 lg:px-3 py-2 text-xs font-semibold rounded-[var(--radius-md)] transition-colors whitespace-nowrap shrink-0',
                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
                 isMoreActive
                   ? 'bg-accent-subtle text-accent-onsubtle'
@@ -154,6 +173,30 @@ export function TopBar() {
                 <DropdownMenu.Label className="px-3 py-2 text-2xs font-bold uppercase tracking-wide text-content-subtle">
                   Health tools
                 </DropdownMenu.Label>
+
+                {/* Show Lab reports and Symptom check inside More when below xl screen width */}
+                {PRIMARY_NAV.filter((item) => item.path === '/reports' || item.path === '/symptoms').map((item) => {
+                  const active = isNavItemActive(item.path, location.pathname);
+                  return (
+                    <DropdownMenu.Item key={item.path} asChild>
+                      <Link
+                        to={item.path}
+                        className={clsx(menuItem, 'xl:hidden', active && 'bg-accent-subtle text-accent-onsubtle')}
+                      >
+                        <span className="shrink-0 text-content-subtle">{item.icon(17)}</span>
+                        <span className="flex flex-col min-w-0">
+                          <span className="font-semibold truncate">{item.label}</span>
+                          {item.description && (
+                            <span className="text-2xs text-content-subtle truncate">
+                              {item.description}
+                            </span>
+                          )}
+                        </span>
+                      </Link>
+                    </DropdownMenu.Item>
+                  );
+                })}
+
                 {SECONDARY_NAV.filter((item) => item.path !== '/settings').map((item) => {
                   const active = isNavItemActive(item.path, location.pathname);
                   return (
@@ -180,12 +223,12 @@ export function TopBar() {
           </DropdownMenu.Root>
         </nav>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 min-w-0">
           <Link
             to="/search"
             aria-label="Search records"
             className={clsx(
-              'inline-flex items-center justify-center w-11 h-11 rounded-[var(--radius-md)] transition-colors',
+              'inline-flex items-center justify-center w-10 h-10 rounded-[var(--radius-md)] transition-colors shrink-0',
               location.pathname === '/search'
                 ? 'bg-surface-hover text-content'
                 : 'text-content-muted hover:bg-surface-hover hover:text-content'
@@ -197,7 +240,7 @@ export function TopBar() {
           {isGuest ? (
             <Link
               to="/login"
-              className="inline-flex items-center h-10 px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors"
+              className="inline-flex items-center h-10 px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors shrink-0"
             >
               Sign in
             </Link>
@@ -205,22 +248,23 @@ export function TopBar() {
             <>
               <ProfileSwitcher />
 
-              {/* Mobile Companion & APK Button */}
+              {/* Mobile Companion & APK Button - compact label on md/lg to prevent header overflow */}
               <button
                 type="button"
                 onClick={() => setIsCompanionModalOpen(true)}
                 title="Get Curewell Phone App & Android APK"
                 aria-label="Curewell Mobile App & Android APK"
-                className="inline-flex items-center gap-1.5 h-10 px-2.5 rounded-[var(--radius-md)] text-xs font-semibold text-content-muted hover:text-content hover:bg-surface-hover border border-line/60 transition-colors"
+                className="hidden md:inline-flex items-center gap-1.5 h-10 px-2 lg:px-2.5 rounded-[var(--radius-md)] text-xs font-semibold text-content-muted hover:text-content hover:bg-surface-hover border border-line/60 transition-colors shrink-0"
               >
-                <AndroidIcon size={16} className="text-teal-600 dark:text-teal-400" />
-                <span className="hidden sm:inline">Phone App / APK</span>
+                <AndroidIcon size={16} className="text-teal-600 dark:text-teal-400 shrink-0" />
+                <span className="hidden xl:inline">Phone App / APK</span>
+                <span className="hidden md:inline xl:hidden">APK</span>
               </button>
 
               <DropdownMenu.Root key={`user-${menuKey}`}>
               <DropdownMenu.Trigger
                 className={clsx(
-                  'inline-flex items-center gap-1.5 h-11 px-2 rounded-[var(--radius-md)] transition-colors',
+                  'inline-flex items-center gap-1.5 h-10 px-1.5 sm:px-2 rounded-[var(--radius-md)] transition-colors shrink-0',
                   'text-content-muted hover:bg-surface-hover',
                   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
                   'data-[state=open]:bg-surface-hover'
@@ -238,7 +282,7 @@ export function TopBar() {
                     {userInitial}
                   </span>
                 )}
-                <span className="text-xs font-semibold hidden lg:inline-block max-w-24 truncate text-content">
+                <span className="text-xs font-semibold hidden xl:inline-block max-w-24 truncate text-content">
                   {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}
                 </span>
                 <ChevronDownIcon size={13} className="text-content-subtle" />
@@ -312,11 +356,11 @@ export function TopBar() {
 
           <Link
             to="/prescriptions/new"
-            className="inline-flex items-center gap-1.5 h-10 sm:h-11 px-3 sm:px-4 text-xs font-bold rounded-[var(--radius-md)] bg-accent text-content-onaccent hover:bg-accent-hover active:bg-accent-active transition-colors shadow-card shrink-0 ml-1"
+            className="inline-flex items-center gap-1.5 h-10 px-3 sm:px-3.5 text-xs font-bold rounded-[var(--radius-md)] bg-accent text-content-onaccent hover:bg-accent-hover active:bg-accent-active transition-colors shadow-card shrink-0 ml-0.5"
           >
             <PlusIcon size={16} />
-            <span className="hidden sm:inline">Scan record</span>
-            <span className="sm:hidden">Scan</span>
+            <span className="hidden xl:inline">Scan record</span>
+            <span className="xl:hidden hidden sm:inline">Scan</span>
           </Link>
         </div>
       </div>

@@ -39,21 +39,6 @@ export function DownloadApkPage() {
     }
   }, [signInWithSmartQr]);
 
-  // 2. Automatically trigger APK download on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const link = document.createElement('a');
-      link.href = '/downloads/Curewell.apk';
-      link.download = 'Curewell.apk';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setDownloadStarted(true);
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   const handleTestNotification = async () => {
     const permission = await requestNotificationPermission();
     if (permission === 'granted') {
@@ -127,15 +112,16 @@ export function DownloadApkPage() {
         {/* Download Action Box */}
         <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-xs text-teal-400 font-medium">
-            <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+            <span className={`w-2 h-2 rounded-full bg-teal-400 ${downloadStarted ? '' : 'animate-pulse'}`} />
             <span>
-              {downloadStarted ? 'Download started.' : 'Starting download...'}
+              {downloadStarted ? 'Download started. Check your notifications or downloads folder.' : 'Ready to download package.'}
             </span>
           </div>
 
           <a
             href="/downloads/Curewell.apk"
             download="Curewell.apk"
+            onClick={() => setDownloadStarted(true)}
             className="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold shadow-lg shadow-teal-600/30 transition-all active:scale-[0.98]"
           >
             <DownloadIcon size={18} />
@@ -143,7 +129,7 @@ export function DownloadApkPage() {
           </a>
 
           <p className="text-2xs text-slate-400">
-            Tap button above if your browser did not start the download automatically.
+            Tap the button above to begin downloading the Android package directly to your device.
           </p>
         </div>
 

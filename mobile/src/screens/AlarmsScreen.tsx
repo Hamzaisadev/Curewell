@@ -151,7 +151,7 @@ export const AlarmsScreen: React.FC<AlarmsScreenProps> = ({
           </View>
           <View style={styles.rowBetween}>
             <Text style={screenStyles.syncDetailLabel}>Local Storage Cache:</Text>
-            <Text style={screenStyles.syncDetailValue}>Encrypted AsyncStorage</Text>
+            <Text style={screenStyles.syncDetailValue}>Device Local Storage Cache (AsyncStorage)</Text>
           </View>
         </View>
 

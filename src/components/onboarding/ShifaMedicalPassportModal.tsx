@@ -189,7 +189,15 @@ export function ShifaMedicalPassportModal({
       }
     }
 
-    if (profile.emergency_contact_name) setEmergencyName(profile.emergency_contact_name);
+    if (profile.emergency_contact_name) {
+      const match = profile.emergency_contact_name.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match && match[1] && match[2]) {
+        setEmergencyName(match[1].trim());
+        setEmergencyRelationship(match[2].trim());
+      } else {
+        setEmergencyName(profile.emergency_contact_name);
+      }
+    }
     if (profile.emergency_contact_phone) setEmergencyPhone(profile.emergency_contact_phone);
   }, [
     profile,
@@ -369,6 +377,13 @@ export function ShifaMedicalPassportModal({
       const validDob = !dobError && dateOfBirth ? dateOfBirth : null;
       const validPhone = !phoneError && emergencyPhone.trim() ? emergencyPhone.trim() : null;
 
+      const trimmedContactName = emergencyName.trim();
+      const formattedEmergencyName = trimmedContactName
+        ? emergencyRelationship && emergencyRelationship !== 'Other' && !trimmedContactName.includes('(')
+          ? `${trimmedContactName} (${emergencyRelationship})`
+          : trimmedContactName
+        : null;
+
       const updates = {
         user_id: targetUserId,
         full_name: fullName.trim() || profile?.full_name || 'Patient',
@@ -379,7 +394,7 @@ export function ShifaMedicalPassportModal({
         weight_kg: parsedWeight,
         chronic_conditions: conditionsString || null,
         allergies: allergiesString || null,
-        emergency_contact_name: emergencyName.trim() || null,
+        emergency_contact_name: formattedEmergencyName,
         emergency_contact_phone: validPhone,
         onboarding_completed: true,
       };

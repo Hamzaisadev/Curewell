@@ -54,3 +54,44 @@ export async function scheduleNativeOfflineAlarm(
     return false;
   }
 }
+
+export async function cancelNativeOfflineAlarm(alarmId: number): Promise<boolean> {
+  if (Platform.OS !== 'android' || !CurewellNative?.cancelOfflineAlarm) return false;
+  try {
+    await CurewellNative.cancelOfflineAlarm(alarmId);
+    return true;
+  } catch (err) {
+    console.warn('Cancel native alarm warning:', err);
+    return false;
+  }
+}
+
+export async function canScheduleExactAlarms(): Promise<boolean> {
+  if (Platform.OS !== 'android' || !CurewellNative?.canScheduleExactAlarms) return true;
+  try {
+    return await CurewellNative.canScheduleExactAlarms();
+  } catch (err) {
+    console.warn('canScheduleExactAlarms warning:', err);
+    return false;
+  }
+}
+
+export async function getNativeActionTakenDoses(): Promise<string[]> {
+  if (Platform.OS !== 'android' || !CurewellNative?.getNativeActionTakenDoses) return [];
+  try {
+    const result = await CurewellNative.getNativeActionTakenDoses();
+    return Array.isArray(result) ? result : [];
+  } catch (err) {
+    console.warn('getNativeActionTakenDoses warning:', err);
+    return [];
+  }
+}
+
+export async function clearNativeActionTakenDoses(): Promise<void> {
+  if (Platform.OS !== 'android' || !CurewellNative?.clearNativeActionTakenDoses) return;
+  try {
+    await CurewellNative.clearNativeActionTakenDoses();
+  } catch (err) {
+    console.warn('clearNativeActionTakenDoses warning:', err);
+  }
+}

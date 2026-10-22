@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   CameraIcon,
@@ -7,6 +7,11 @@ import {
   HeartPulseIcon,
   ArrowRightIcon,
   ActivityIcon,
+  TrendingDownIcon,
+  FileTextIcon,
+  QrCodeIcon,
+  DownloadIcon,
+  ShieldCheckIcon,
 } from '../../../components/ui/icons';
 
 interface StoryChapter {
@@ -76,14 +81,102 @@ const CHAPTERS: StoryChapter[] = [
   },
 ];
 
+type BiomarkerKey = 'alt' | 'hba1c' | 'creatinine';
+
 export function InteractiveStoryScroller() {
   const [activeStage, setActiveStage] = useState<number>(0);
 
   // Micro-interaction states for each stage
   const [ocrTab, setOcrTab] = useState<'raw' | 'boxes' | 'structured'>('structured');
   const [hasCollision, setHasCollision] = useState<boolean>(true);
-  const [biomarkerMode, setBiomarkerMode] = useState<'alt' | 'hba1c'>('alt');
+  const [biomarkerMode, setBiomarkerMode] = useState<BiomarkerKey>('alt');
+  const [timeHorizon, setTimeHorizon] = useState<'12m' | '90d'>('12m');
   const [dossierMode, setDossierMode] = useState<'brief' | 'emergency-qr'>('brief');
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  // Refs for scroll-spy observation
+  const chapterRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const isManualScrollingRef = useRef<boolean>(false);
+  const manualScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Synchronize activeStage with scroll position using IntersectionObserver + focal check
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isManualScrollingRef.current) return;
+
+        // Filter currently intersecting chapters
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length === 0) return;
+
+        // Choose the chapter closest to the focal line (~38% of viewport height)
+        const targetY = window.innerHeight * 0.38;
+        let bestIndex = -1;
+        let smallestDistance = Infinity;
+
+        visible.forEach((entry) => {
+          const rect = entry.target.getBoundingClientRect();
+          const midY = rect.top + rect.height * 0.5;
+          const dist = Math.abs(midY - targetY);
+          if (dist < smallestDistance) {
+            smallestDistance = dist;
+            const idx = entry.target.getAttribute('data-chapter-index');
+            if (idx !== null) {
+              bestIndex = parseInt(idx, 10);
+            }
+          }
+        });
+
+        if (bestIndex >= 0 && bestIndex !== activeStage) {
+          setActiveStage(bestIndex);
+        }
+      },
+      {
+        rootMargin: '-12% 0px -28% 0px',
+        threshold: [0.15, 0.4, 0.7],
+      }
+    );
+
+    chapterRefs.current.forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      observer.disconnect();
+      if (manualScrollTimerRef.current) {
+        clearTimeout(manualScrollTimerRef.current);
+      }
+    };
+  }, [activeStage]);
+
+  // Stage selection with optional smooth scroll
+  const handleSelectStage = (index: number, shouldScroll = false) => {
+    setActiveStage(index);
+
+    if (shouldScroll && chapterRefs.current[index]) {
+      isManualScrollingRef.current = true;
+      chapterRefs.current[index]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+
+      if (manualScrollTimerRef.current) {
+        clearTimeout(manualScrollTimerRef.current);
+      }
+      manualScrollTimerRef.current = setTimeout(() => {
+        isManualScrollingRef.current = false;
+      }, 750);
+    }
+  };
+
+  const handleExportBrief = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+    }, 1200);
+  };
 
   const currentChapter = CHAPTERS[activeStage]!;
 
@@ -106,7 +199,7 @@ export function InteractiveStoryScroller() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
-        <div className="max-w-3xl mb-14 sm:mb-20">
+        <div className="max-w-3xl mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold mb-3.5 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
             <span className="font-mono uppercase tracking-wider text-[11px]">The Clinical Storyboard</span>
@@ -119,78 +212,105 @@ export function InteractiveStoryScroller() {
             </span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
-            Follow the journey from chaotic paper slips to an infallible, patient-governed clinical vault. Click each chapter below to experience the working engine prototypes in real time.
+            Follow the journey from chaotic paper slips to an infallible, patient-governed clinical vault. Scroll down or click each act to explore working engine simulations in real time.
           </p>
         </div>
 
-        {/* 2-Column Split: Left = Narrative Chapter Selector, Right = Working Interactive Prototype */}
+        {/* 2-Column Split: Left = Narrative Chapter Track (Scrollable), Right = Sticky Working Interactive Prototype */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          
+
           {/* ─────────────────────────────────────────────────────────────
-              LEFT COLUMN: 4 Story Chapters
+              LEFT COLUMN: 4 Story Chapters with Scroll Observation
              ───────────────────────────────────────────────────────────── */}
-          <div className="lg:col-span-5 space-y-4">
+          <div className="lg:col-span-5 space-y-6 sm:space-y-8">
             {CHAPTERS.map((chapter, index) => {
               const isActive = activeStage === index;
               return (
-                <button
+                <div
                   key={chapter.id}
-                  onClick={() => setActiveStage(index)}
-                  className={`w-full text-left p-5 sm:p-6 rounded-2xl sm:rounded-3xl border transition-all duration-300 relative overflow-hidden cursor-pointer ${
-                    isActive
-                      ? 'bg-white border-teal-500 shadow-[0_12px_32px_rgba(15,118,110,0.12)] ring-1 ring-teal-500/30'
-                      : 'bg-white/70 hover:bg-white border-slate-200/80 hover:border-slate-300 shadow-2xs'
-                  }`}
+                  data-chapter-index={index}
+                  ref={(el) => {
+                    chapterRefs.current[index] = el;
+                  }}
+                  className="transition-all duration-300"
                 >
-                  {/* Left Active Accent Bar */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeChapterBar"
-                      className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-teal-600 to-emerald-600"
-                    />
-                  )}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSelectStage(index, true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectStage(index, true);
+                      }
+                    }}
+                    className={`w-full text-left p-6 sm:p-7 rounded-2xl sm:rounded-3xl border transition-all duration-300 relative overflow-hidden cursor-pointer select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ${
+                      isActive
+                        ? 'bg-white border-teal-500 shadow-[0_16px_36px_rgba(15,118,110,0.12)] ring-1 ring-teal-500/30'
+                        : 'bg-white/80 hover:bg-white border-slate-200/90 hover:border-slate-300 shadow-2xs hover:shadow-xs'
+                    }`}
+                  >
+                    {/* Left Active Accent Bar */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeChapterBar"
+                        className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-teal-600 to-emerald-600"
+                      />
+                    )}
 
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded ${
-                        isActive
-                          ? 'bg-teal-100 text-teal-800'
-                          : 'bg-slate-100 text-slate-600'
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-md transition-colors ${
+                            isActive
+                              ? 'bg-teal-700 text-white shadow-2xs'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {chapter.act}
+                        </span>
+                        <span className="text-[11px] font-mono text-slate-400">
+                          Episode 0{index + 2}
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">
+                        {chapter.metric}
+                      </span>
+                    </div>
+
+                    <h3
+                      className={`text-xl sm:text-2xl font-bold tracking-tight mb-1 transition-colors ${
+                        isActive ? 'text-slate-900' : 'text-slate-700'
                       }`}
                     >
-                      {chapter.act}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-teal-700">
-                      {chapter.metric}
-                    </span>
+                      {chapter.title}
+                    </h3>
+
+                    <p className="text-xs font-semibold text-teal-700 mb-3 font-mono">
+                      {chapter.subtitle}
+                    </p>
+
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                      {isActive ? chapter.solution : chapter.problem}
+                    </p>
+
+                    {/* Expanded Clinical Proof Details */}
+                    {isActive && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ duration: 0.3 }}
+                        className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-teal-900 font-semibold"
+                      >
+                        <span className="italic pr-2">"{chapter.quote}"</span>
+                        <span className="inline-flex items-center gap-1 text-teal-700 font-mono shrink-0">
+                          <span>Live in Sandbox</span>
+                          <ArrowRightIcon className="w-3.5 h-3.5" />
+                        </span>
+                      </motion.div>
+                    )}
                   </div>
-
-                  <h3 className={`text-lg sm:text-xl font-bold tracking-tight mb-1 ${
-                    isActive ? 'text-slate-900' : 'text-slate-700'
-                  }`}>
-                    {chapter.title}
-                  </h3>
-
-                  <p className="text-xs font-medium text-teal-700 mb-2 font-mono">
-                    {chapter.subtitle}
-                  </p>
-
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                    {isActive ? chapter.solution : chapter.problem}
-                  </p>
-
-                  {isActive && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ duration: 0.3 }}
-                      className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-teal-800 font-semibold"
-                    >
-                      <span className="italic">"{chapter.quote}"</span>
-                      <ArrowRightIcon className="w-3.5 h-3.5 text-teal-600 shrink-0 ml-2" />
-                    </motion.div>
-                  )}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -198,19 +318,36 @@ export function InteractiveStoryScroller() {
           {/* ─────────────────────────────────────────────────────────────
               RIGHT COLUMN: Sticky Working Interactive Prototype
              ───────────────────────────────────────────────────────────── */}
-          <div className="lg:col-span-7 sticky top-24">
+          <div className="lg:col-span-7 sticky top-28 self-start">
             <div className="rounded-3xl bg-white border border-slate-200/90 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.12)] p-6 sm:p-8 overflow-hidden relative">
               {/* Top Specular Sheen */}
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-teal-400 to-transparent" />
 
-              {/* Working Prototype Stage Header */}
-              <div className="flex flex-wrap items-center justify-between pb-4 border-b border-slate-100 mb-6 gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-mono font-bold text-slate-700 uppercase">
-                    Interactive Engine Stage: {currentChapter.act}
-                  </span>
+              {/* Working Prototype Stage Header with Direct Act Navigation */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 mb-6 gap-3">
+                {/* Act Jump Stepper Tabs */}
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200 overflow-x-auto scrollbar-none">
+                  {CHAPTERS.map((ch, idx) => {
+                    const isTabActive = activeStage === idx;
+                    return (
+                      <button
+                        key={ch.id}
+                        type="button"
+                        onClick={() => handleSelectStage(idx, true)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap ${
+                          isTabActive
+                            ? 'bg-teal-700 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                        }`}
+                        aria-label={`Jump to ${ch.act}: ${ch.title}`}
+                      >
+                        {ch.act}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {/* Right Telemetry Badge */}
                 <div className="flex items-center gap-2 text-xs font-mono">
                   <span className="text-teal-700 font-bold">{currentChapter.metric}</span>
                   <span className="text-slate-400">• {currentChapter.metricLabel}</span>
@@ -219,41 +356,44 @@ export function InteractiveStoryScroller() {
 
               {/* Dynamic Prototype Canvas */}
               <AnimatePresence mode="wait">
-                
+
                 {/* ─────────────────────────────────────────────────────────
-                    STAGE 1: Optical Intake & Chemical Deconstruction
+                    STAGE 1 (ACT II): Optical Intake & Chemical Deconstruction
                    ───────────────────────────────────────────────────────── */}
                 {activeStage === 0 && (
                   <motion.div
                     key="stage-optical"
-                    initial={{ opacity: 0, y: 14 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -14 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-4"
                   >
                     {/* Mode Tabs */}
                     <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-mono font-bold">
                       <button
+                        type="button"
                         onClick={() => setOcrTab('raw')}
                         className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                          ocrTab === 'raw' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                          ocrTab === 'raw' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                         }`}
                       >
                         1. Raw Photo Capture
                       </button>
                       <button
+                        type="button"
                         onClick={() => setOcrTab('boxes')}
                         className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                          ocrTab === 'boxes' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                          ocrTab === 'boxes' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                         }`}
                       >
                         2. OCR Bounding Boxes
                       </button>
                       <button
+                        type="button"
                         onClick={() => setOcrTab('structured')}
                         className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                          ocrTab === 'structured' ? 'bg-teal-700 text-white shadow-2xs' : 'text-slate-500'
+                          ocrTab === 'structured' ? 'bg-teal-700 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                         }`}
                       >
                         3. Structured FHIR Card
@@ -350,15 +490,15 @@ export function InteractiveStoryScroller() {
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
-                    STAGE 2: Sentinel Collision Radar
+                    STAGE 2 (ACT III): Sentinel Collision Radar
                    ───────────────────────────────────────────────────────── */}
                 {activeStage === 1 && (
                   <motion.div
                     key="stage-sentinel"
-                    initial={{ opacity: 0, y: 14 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -14 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-4"
                   >
                     <div className="flex items-center justify-between">
@@ -366,10 +506,11 @@ export function InteractiveStoryScroller() {
                         Interactive Collision Simulator
                       </span>
                       <button
+                        type="button"
                         onClick={() => setHasCollision(!hasCollision)}
                         className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-100 hover:bg-rose-200 text-rose-800 transition-colors cursor-pointer"
                       >
-                        {hasCollision ? 'Simulating Collision (Active)' : 'Clear State (Test Mode)'}
+                        {hasCollision ? 'Simulating Collision (Active)' : 'Clear State (Test Safe)'}
                       </button>
                     </div>
 
@@ -377,7 +518,7 @@ export function InteractiveStoryScroller() {
                       <div className="space-y-2">
                         <div className="p-3 rounded-xl bg-white border border-rose-200 text-xs flex justify-between items-center shadow-2xs">
                           <div>
-                            <span className="font-bold text-slate-900">Dr. A: Panadol Extra 500mg</span>
+                            <span className="font-bold text-slate-900">Clinic A: Panadol Extra 500mg</span>
                             <p className="text-[10px] text-slate-500 font-mono">2 tablets TID = 3,000 mg Paracetamol</p>
                           </div>
                           <span className="text-rose-700 font-mono font-bold">Paracetamol</span>
@@ -386,7 +527,7 @@ export function InteractiveStoryScroller() {
                         {hasCollision && (
                           <div className="p-3 rounded-xl bg-white border border-rose-200 text-xs flex justify-between items-center shadow-2xs">
                             <div>
-                              <span className="font-bold text-slate-900">Dr. B: Calpol 250mg Suspension</span>
+                              <span className="font-bold text-slate-900">Clinic B: Calpol 250mg Suspension</span>
                               <p className="text-[10px] text-slate-500 font-mono">500 mg Paracetamol per dose</p>
                             </div>
                             <span className="text-rose-700 font-mono font-bold">Paracetamol</span>
@@ -425,7 +566,7 @@ export function InteractiveStoryScroller() {
                           <div className="flex items-start gap-2">
                             <AlertTriangleIcon size={16} className="text-rose-600 shrink-0 mt-0.5" />
                             <span>
-                              <strong>Hepatic Overdose Alert:</strong> Both prescriptions use distinct commercial trade names but share the identical active chemical Paracetamol. Approaching liver toxicity threshold.
+                              <strong>Hepatic Overdose Alert:</strong> Distinct commercial trade names share the identical active chemical Paracetamol. Approaching liver toxicity threshold.
                             </span>
                           </div>
                         ) : (
@@ -442,179 +583,341 @@ export function InteractiveStoryScroller() {
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
-                    STAGE 3: Biomarker Velocity
+                    STAGE 3 (ACT IV): Biomarker Velocity vs Static PDFs
                    ───────────────────────────────────────────────────────── */}
                 {activeStage === 2 && (
                   <motion.div
                     key="stage-velocity"
-                    initial={{ opacity: 0, y: 14 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -14 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-4"
                   >
-                    <div className="flex items-center justify-between">
+                    {/* Biomarker Switcher */}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200">
                         <button
+                          type="button"
                           onClick={() => setBiomarkerMode('alt')}
-                          className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
                             biomarkerMode === 'alt'
                               ? 'bg-white text-emerald-800 shadow-2xs'
-                              : 'text-slate-500'
+                              : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
                           ALT Liver Enzyme
                         </button>
                         <button
+                          type="button"
                           onClick={() => setBiomarkerMode('hba1c')}
-                          className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
                             biomarkerMode === 'hba1c'
                               ? 'bg-white text-teal-800 shadow-2xs'
-                              : 'text-slate-500'
+                              : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
                           HbA1c Glycemic
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setBiomarkerMode('creatinine')}
+                          className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                            biomarkerMode === 'creatinine'
+                              ? 'bg-white text-sky-800 shadow-2xs'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Creatinine Renal
+                        </button>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-xs font-bold">
-                        {biomarkerMode === 'alt' ? 'Velocity: -46.1%' : 'Velocity: -0.9% HbA1c'}
-                      </span>
+
+                      {/* Time Horizon Filter */}
+                      <div className="flex gap-1 text-[11px] font-mono">
+                        <button
+                          type="button"
+                          onClick={() => setTimeHorizon('12m')}
+                          className={`px-2 py-0.5 rounded transition-colors ${
+                            timeHorizon === '12m' ? 'bg-teal-100 text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-700'
+                          }`}
+                        >
+                          12M Trend
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTimeHorizon('90d')}
+                          className={`px-2 py-0.5 rounded transition-colors ${
+                            timeHorizon === '90d' ? 'bg-teal-100 text-teal-800 font-bold' : 'text-slate-400 hover:text-slate-700'
+                          }`}
+                        >
+                          90D Delta
+                        </button>
+                      </div>
                     </div>
 
+                    {/* Biomarker Canvas */}
                     <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                       <div className="flex items-baseline justify-between">
                         <div>
-                          <span className="text-3xl font-black text-slate-900 font-mono">
-                            {biomarkerMode === 'alt' ? '42' : '6.1'}
-                          </span>
-                          <span className="text-xs text-slate-500 font-mono ml-1">
-                            {biomarkerMode === 'alt' ? 'U/L (Normal)' : '% (ADA Target)'}
-                          </span>
-                          <p className="text-xs text-emerald-700 font-semibold mt-0.5">
-                            {biomarkerMode === 'alt'
-                              ? 'Optimal corridor (7–56 U/L) • 90-day downward trajectory'
-                              : 'Controlled Glycemic Target (< 7.0%)'}
+                          <div className="flex items-center gap-2">
+                            <span className="text-3xl font-black text-slate-900 font-mono">
+                              {biomarkerMode === 'alt' ? '42' : biomarkerMode === 'hba1c' ? '6.1' : '0.9'}
+                            </span>
+                            <span className="text-xs text-slate-500 font-mono">
+                              {biomarkerMode === 'alt'
+                                ? 'U/L (Normal 7–56)'
+                                : biomarkerMode === 'hba1c'
+                                ? '% (ADA Target <7.0%)'
+                                : 'mg/dL (Normal 0.7–1.2)'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
+                            <TrendingDownIcon size={14} className="text-emerald-600" />
+                            <span>
+                              {biomarkerMode === 'alt'
+                                ? 'Velocity: -46.1% normalization over 9 months'
+                                : biomarkerMode === 'hba1c'
+                                ? 'Velocity: -0.9% glycemic drop (stable controlled corridor)'
+                                : 'Velocity: Optimal filtration rate sustained'}
+                            </span>
                           </p>
                         </div>
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-xs font-bold shrink-0">
+                          {biomarkerMode === 'alt' ? '-46.1%' : biomarkerMode === 'hba1c' ? '-0.9%' : '0.9 mg/dL'}
+                        </span>
                       </div>
 
-                      {/* Animated SVG Trend Curve */}
+                      {/* Dynamic SVG Trend Curve */}
                       <div className="pt-2">
-                        <svg className="w-full h-24" viewBox="0 0 300 90" fill="none">
+                        <svg className="w-full h-28" viewBox="0 0 320 100" fill="none">
                           <defs>
                             <linearGradient id="area-fill-trajectory" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                              <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                              <stop offset="0%" stopColor="#0d9488" stopOpacity="0.25" />
+                              <stop offset="100%" stopColor="#0d9488" stopOpacity="0.0" />
                             </linearGradient>
                           </defs>
 
                           {/* Reference Corridor Band */}
-                          <rect x="0" y="45" width="300" height="40" fill="#ecfdf5" opacity="0.7" />
-                          <line x1="0" y1="45" x2="300" y2="45" stroke="#a7f3d0" strokeDasharray="3 3" strokeWidth="1" />
+                          <rect x="0" y="50" width="320" height="40" fill="#f0fdf4" opacity="0.8" />
+                          <line x1="0" y1="50" x2="320" y2="50" stroke="#86efac" strokeDasharray="3 3" strokeWidth="1" />
+                          <text x="6" y="62" fill="#15803d" fontSize="9" fontFamily="monospace">Optimal Clinical Corridor</text>
 
-                          {/* Area under curve */}
-                          <path
-                            d="M 15 20 C 80 22, 150 55, 220 65 C 260 70, 285 75, 290 76 L 290 90 L 15 90 Z"
-                            fill="url(#area-fill-trajectory)"
-                          />
-                          {/* Trajectory Stroke */}
-                          <path
-                            d="M 15 20 C 80 22, 150 55, 220 65 C 260 70, 285 75, 290 76"
-                            stroke="#059669"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                          />
-                          <circle cx="15" cy="20" r="4.5" fill="#ef4444" stroke="#ffffff" strokeWidth="2" />
-                          <circle cx="220" cy="65" r="4" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
-                          <circle cx="290" cy="76" r="5" fill="#059669" stroke="#ffffff" strokeWidth="2" />
+                          {biomarkerMode === 'alt' && (
+                            <>
+                              <path
+                                d="M 20 22 C 80 25, 140 60, 220 72 C 270 78, 300 80, 305 82 L 305 98 L 20 98 Z"
+                                fill="url(#area-fill-trajectory)"
+                              />
+                              <path
+                                d="M 20 22 C 80 25, 140 60, 220 72 C 270 78, 300 80, 305 82"
+                                stroke="#0f766e"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                              />
+                              <circle cx="20" cy="22" r="5" fill="#ef4444" stroke="#ffffff" strokeWidth="2" />
+                              <circle cx="220" cy="72" r="4.5" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
+                              <circle cx="305" cy="82" r="5" fill="#059669" stroke="#ffffff" strokeWidth="2" />
+                            </>
+                          )}
+
+                          {biomarkerMode === 'hba1c' && (
+                            <>
+                              <path
+                                d="M 20 28 C 90 32, 170 58, 240 70 C 280 76, 300 78, 305 80 L 305 98 L 20 98 Z"
+                                fill="url(#area-fill-trajectory)"
+                              />
+                              <path
+                                d="M 20 28 C 90 32, 170 58, 240 70 C 280 76, 300 78, 305 80"
+                                stroke="#0d9488"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                              />
+                              <circle cx="20" cy="28" r="5" fill="#f97316" stroke="#ffffff" strokeWidth="2" />
+                              <circle cx="240" cy="70" r="4.5" fill="#14b8a6" stroke="#ffffff" strokeWidth="2" />
+                              <circle cx="305" cy="80" r="5" fill="#059669" stroke="#ffffff" strokeWidth="2" />
+                            </>
+                          )}
+
+                          {biomarkerMode === 'creatinine' && (
+                            <>
+                              <path
+                                d="M 20 40 C 90 42, 160 55, 230 68 C 270 72, 295 73, 305 74 L 305 98 L 20 98 Z"
+                                fill="url(#area-fill-trajectory)"
+                              />
+                              <path
+                                d="M 20 40 C 90 42, 160 55, 230 68 C 270 72, 295 73, 305 74"
+                                stroke="#0284c7"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                              />
+                              <circle cx="20" cy="40" r="5" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
+                              <circle cx="230" cy="68" r="4.5" fill="#0369a1" stroke="#ffffff" strokeWidth="2" />
+                              <circle cx="305" cy="74" r="5" fill="#059669" stroke="#ffffff" strokeWidth="2" />
+                            </>
+                          )}
                         </svg>
 
-                        <div className="flex justify-between text-[11px] text-slate-400 font-mono mt-1">
-                          <span>12 Months Ago (Elevated 78 U/L)</span>
-                          <span className="text-emerald-700 font-semibold">Today (Normalized 42 U/L)</span>
+                        <div className="flex justify-between text-[11px] text-slate-500 font-mono mt-2 pt-2 border-t border-slate-200/80">
+                          <span>
+                            {biomarkerMode === 'alt'
+                              ? '12 Mo Ago (Elevated 78 U/L)'
+                              : biomarkerMode === 'hba1c'
+                              ? '12 Mo Ago (8.4% Uncontrolled)'
+                              : '12 Mo Ago (1.4 mg/dL)'}
+                          </span>
+                          <span className="text-teal-800 font-bold">
+                            {biomarkerMode === 'alt'
+                              ? 'Today: 42 U/L (Normalized)'
+                              : biomarkerMode === 'hba1c'
+                              ? 'Today: 6.1% (In Target)'
+                              : 'Today: 0.9 mg/dL (Clear)'}
+                          </span>
                         </div>
+                      </div>
+
+                      {/* Clinical Grounding Note */}
+                      <div className="p-3 rounded-xl bg-teal-50/70 border border-teal-200/80 text-xs text-teal-900 leading-relaxed font-sans">
+                        <strong>Deterministic Normalization:</strong> Raw lab reports from different diagnostic chains with disparate reference units are converted into longitudinal velocity curves.
                       </div>
                     </div>
                   </motion.div>
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
-                    STAGE 4: Clinical Handshake & Emergency QR
+                    STAGE 4 (ACT V): Clinical Handshake & Emergency QR
                    ───────────────────────────────────────────────────────── */}
                 {activeStage === 3 && (
                   <motion.div
                     key="stage-handshake"
-                    initial={{ opacity: 0, y: 14 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -14 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.25 }}
                     className="space-y-4"
                   >
+                    {/* Dossier Mode Switcher */}
                     <div className="flex items-center justify-between">
                       <div className="flex gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200">
                         <button
+                          type="button"
                           onClick={() => setDossierMode('brief')}
-                          className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                             dossierMode === 'brief'
                               ? 'bg-white text-teal-800 shadow-2xs'
-                              : 'text-slate-500'
+                              : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
-                          1-Page Consultation Brief
+                          <FileTextIcon size={14} className="text-teal-600" />
+                          <span>1-Page Consultation Dossier</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => setDossierMode('emergency-qr')}
-                          className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                             dossierMode === 'emergency-qr'
                               ? 'bg-white text-rose-800 shadow-2xs'
-                              : 'text-slate-500'
+                              : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
-                          Emergency Paramedic QR
+                          <QrCodeIcon size={14} className="text-rose-600" />
+                          <span>Emergency Lockscreen QR</span>
                         </button>
                       </div>
-                      <span className="text-xs font-mono text-teal-700 font-bold">
+                      <span className="text-xs font-mono text-teal-700 font-bold hidden sm:inline">
                         {dossierMode === 'brief' ? 'PDF READY' : 'LOCKSCREEN SAFE'}
                       </span>
                     </div>
 
-                    <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
                       {dossierMode === 'brief' ? (
-                        <div className="space-y-2.5">
+                        <div className="space-y-3">
+                          {/* Brief Header */}
                           <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                            <span className="text-xs font-bold text-slate-900">Dr. Tariq Mansoor • OPD Brief</span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200 font-bold">
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">Dr. Tariq Mansoor • Clinical OPD Brief</p>
+                              <p className="text-[10px] text-slate-500 font-mono">Patient: Tariq • ID: CW-4092-PK • 30-Sec Intake Dossier</p>
+                            </div>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200 font-bold shrink-0">
                               PRINTABLE A4
                             </span>
                           </div>
-                          <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
-                            <p className="font-bold text-teal-800 font-mono uppercase text-[10px]">Top Review Question:</p>
-                            <p className="text-slate-800">
-                              "Liver enzyme ALT normalized to 42 U/L. Should Metformin 500mg remain BD or taper?"
+
+                          {/* Prioritized Review Questions */}
+                          <div className="p-3 rounded-xl bg-white border border-teal-200 shadow-2xs space-y-1 text-xs">
+                            <p className="font-bold text-teal-800 font-mono uppercase text-[10px] flex items-center gap-1">
+                              <ShieldCheckIcon size={12} className="text-teal-600" />
+                              <span>Prioritized Clinician Query:</span>
+                            </p>
+                            <p className="text-slate-800 font-medium">
+                              "Liver enzyme ALT normalized from 78 to 42 U/L over 9 months. Should Metformin 500mg remain twice daily or taper to QD?"
                             </p>
                           </div>
-                          <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
-                            <p className="font-bold text-teal-800 font-mono uppercase text-[10px]">30-Day Vitals Baseline:</p>
-                            <p className="text-slate-800">
-                              Avg Blood Pressure 120/78 mmHg • Fasting Glucose 96 mg/dL • 0 Hypoglycemic episodes
-                            </p>
+
+                          {/* 30-Day Vitals Strip */}
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="p-2 rounded-xl bg-white border border-slate-200">
+                              <span className="text-[10px] text-slate-400 font-mono block">Avg Blood Pressure</span>
+                              <strong className="text-xs font-mono font-bold text-slate-900">120/78 mmHg</strong>
+                            </div>
+                            <div className="p-2 rounded-xl bg-white border border-slate-200">
+                              <span className="text-[10px] text-slate-400 font-mono block">Fasting Glucose</span>
+                              <strong className="text-xs font-mono font-bold text-emerald-700">96 mg/dL</strong>
+                            </div>
+                            <div className="p-2 rounded-xl bg-white border border-slate-200">
+                              <span className="text-[10px] text-slate-400 font-mono block">Adherence Rate</span>
+                              <strong className="text-xs font-mono font-bold text-teal-700">98.4% Streak</strong>
+                            </div>
                           </div>
+
+                          {/* Export Button */}
+                          <button
+                            type="button"
+                            onClick={handleExportBrief}
+                            disabled={isExporting}
+                            className="w-full py-2.5 px-4 rounded-xl bg-teal-700 hover:bg-teal-800 active:bg-teal-900 text-white text-xs font-bold font-mono flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                          >
+                            <DownloadIcon size={14} />
+                            <span>{isExporting ? 'Generating Standardized PDF...' : 'Download 1-Page Clinical Brief'}</span>
+                          </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-4 py-2">
-                          <div className="w-20 h-20 rounded-2xl bg-teal-950 text-white flex flex-col items-center justify-center font-mono text-[10px] font-bold shadow-md shrink-0">
-                            <HeartPulseIcon size={20} className="text-rose-400 mb-1 animate-pulse" />
-                            <span>QR PASS</span>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">Paramedic Emergency QR Badge</p>
+                              <p className="text-[10px] text-slate-500 font-mono">Offline cryptographic token • Lock-screen accessible</p>
+                            </div>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 font-bold shrink-0">
+                              FIRST-RESPONDER READY
+                            </span>
                           </div>
-                          <div className="space-y-1 text-xs">
-                            <p className="font-bold text-slate-900">Blood Group: <strong className="text-teal-800">B+ (Rh Positive)</strong></p>
-                            <p className="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 inline-block">
-                              Severe Anaphylaxis: Penicillin
-                            </p>
-                            <p className="text-[11px] text-slate-500 font-mono">
-                              First responders scan from lock screen in 10 seconds without passcode.
-                            </p>
+
+                          <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl bg-white border border-rose-200 shadow-2xs">
+                            <div className="w-24 h-24 rounded-2xl bg-slate-950 text-white flex flex-col items-center justify-center font-mono text-[10px] font-bold shadow-md shrink-0 border-2 border-rose-500">
+                              <HeartPulseIcon size={24} className="text-rose-400 mb-1 animate-pulse" />
+                              <span className="tracking-wider">SCAN PASS</span>
+                              <span className="text-[9px] text-teal-300">NO PIN NEEDED</span>
+                            </div>
+
+                            <div className="space-y-1.5 text-xs w-full">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-900">
+                                  Blood Group: <strong className="text-teal-800 font-mono">B+ (Rh Positive)</strong>
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-400">Verified Donor</span>
+                              </div>
+                              <div className="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200 text-xs">
+                                CRITICAL: Severe Anaphylaxis to Penicillin
+                              </div>
+                              <p className="text-[11px] text-slate-500 font-mono">
+                                In Case of Emergency (ICE): Dr. Tariq (0300-8451290) • Next of Kin: Aisha
+                              </p>
+                            </div>
                           </div>
+
+                          <p className="text-[11px] text-slate-500 font-mono text-center">
+                            First responders scan from mobile lock screen in under 10 seconds without passcode access.
+                          </p>
                         </div>
                       )}
                     </div>

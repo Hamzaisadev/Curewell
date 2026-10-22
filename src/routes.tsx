@@ -97,6 +97,9 @@ const MobileCompanionPage = lazy(() =>
 const DownloadApkPage = lazy(() =>
   import('./pages/download/DownloadApkPage').then((m) => ({ default: m.DownloadApkPage }))
 );
+const HackathonPresentationPage = lazy(() =>
+  import('./pages/presentation/HackathonPresentationPage').then((m) => ({ default: m.HackathonPresentationPage }))
+);
 
 /**
  * The component catalogue is a development aid. It is lazy-loaded like every other
@@ -132,8 +135,9 @@ function RouteLoadingFallback() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
   if (isLoading) return <RouteLoadingFallback />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   return <>{children}</>;
 }
 
@@ -397,6 +401,12 @@ export function AppRoutes() {
         <Route path="/mobile" element={<Navigate to="/companion" replace />} />
         <Route path="/download" element={<DownloadApkPage />} />
         <Route path="/download/apk" element={<DownloadApkPage />} />
+
+        {/* Hackathon Pitch Deck & Interactive Presentation */}
+        <Route path="/presentation/hackathon" element={<HackathonPresentationPage />} />
+        <Route path="/curewell/presentation/hackathon" element={<HackathonPresentationPage />} />
+        <Route path="/presentation" element={<HackathonPresentationPage />} />
+        <Route path="/hackathon" element={<HackathonPresentationPage />} />
 
         {/* Redirects for retired tools and aliases so no links 404 */}
         <Route path="/chat" element={<Navigate to="/assistant" replace />} />

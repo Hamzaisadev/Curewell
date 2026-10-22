@@ -72,13 +72,14 @@ export function FaqSection() {
         </motion.div>
 
         {/* Category Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-10" role="tablist" aria-label="FAQ Categories">
           {(['all', 'safety', 'accuracy', 'offline', 'privacy'] as const).map((filter) => (
             <button
               key={filter}
+              type="button"
               onClick={() => {
                 setActiveFilter(filter);
-                setOpenIndex(0);
+                setOpenIndex(null);
               }}
               className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all cursor-pointer ${
                 activeFilter === filter
@@ -101,6 +102,10 @@ export function FaqSection() {
                 className="rounded-2xl bg-white border border-slate-200/90 overflow-hidden shadow-xs hover:border-teal-300 transition-all duration-200"
               >
                 <button
+                  type="button"
+                  id={`faq-trigger-${idx}`}
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-panel-${idx}`}
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
                   className="w-full text-left p-6 flex items-center justify-between gap-4 font-bold text-slate-900 text-base sm:text-lg transition-colors hover:text-teal-900 cursor-pointer"
                 >
@@ -113,6 +118,9 @@ export function FaqSection() {
                 <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div
+                      id={`faq-panel-${idx}`}
+                      role="region"
+                      aria-labelledby={`faq-trigger-${idx}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}

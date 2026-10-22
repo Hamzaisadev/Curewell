@@ -28,7 +28,7 @@ const accentRail: Record<CardAccent, string> = {
   afternoon: 'before:bg-slot-afternoon-border',
   evening: 'before:bg-slot-evening-border',
   night: 'before:bg-slot-night-border',
-  bedtime: 'before:bg-slot-night-border',
+  bedtime: 'before:bg-slot-bedtime-border',
 };
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(

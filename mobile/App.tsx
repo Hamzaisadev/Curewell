@@ -7,6 +7,13 @@ import {
   Linking,
   Text,
   TouchableOpacity,
+  Platform,
+  PermissionsAndroid,
+  BackHandler,
+  AppState,
+  AppStateStatus,
+  ActivityIndicator,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +27,8 @@ import {
   syncAndroidHomeWidget,
   triggerNativeDoseNotification,
   scheduleNativeOfflineAlarm,
+  getNativeActionTakenDoses,
+  clearNativeActionTakenDoses,
 } from './src/native/CurewellNativeBridge';
 
 import {
@@ -84,6 +93,9 @@ export default function App() {
   // Toast banner notice
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
 
+  // Storage initialization state (PIN flash guard)
+  const [isStorageLoaded, setIsStorageLoaded] = useState<boolean>(false);
+
   // PIN Lock screen state
   const [savedPin, setSavedPin] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState<boolean>(false);
@@ -100,6 +112,31 @@ export default function App() {
       setBannerNotice((curr) => (curr === msg ? null : curr));
     }, 3200);
   }, []);
+
+  // Runtime Notification Permission Request (Android 13+ / API 33+)
+  const requestAndroidNotificationPermission = useCallback(async (): Promise<boolean> => {
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          showToast('Medication alarms require notification permission.');
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.warn('Error requesting notification permission:', err);
+        return false;
+      }
+    }
+    return true;
+  }, [showToast]);
+
+  // Request notification permission on app mount
+  useEffect(() => {
+    void requestAndroidNotificationPermission();
+  }, [requestAndroidNotificationPermission]);
 
   // Restore state from AsyncStorage
   useEffect(() => {
@@ -135,9 +172,110 @@ export default function App() {
         }
       } catch (e) {
         console.warn('Error restoring local storage:', e);
+      } finally {
+        setIsStorageLoaded(true);
       }
     })();
   }, []);
+
+  // Android Hardware Back Button listener
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (showAddMedModal) {
+        setShowAddMedModal(false);
+        return true;
+      }
+      if (showSkipModal) {
+        setShowSkipModal(false);
+        setSkipTargetId(null);
+        return true;
+      }
+      if (showAuthModal) {
+        setShowAuthModal(false);
+        return true;
+      }
+      if (showProfilePickerModal) {
+        setShowProfilePickerModal(false);
+        return true;
+      }
+      if (activeTab !== 'schedule') {
+        setActiveTab('schedule');
+        return true;
+      }
+      return false;
+    };
+
+    const backSub = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    return () => backSub.remove();
+  }, [showAddMedModal, showSkipModal, showAuthModal, showProfilePickerModal, activeTab]);
+
+  // Background Notification Action Reconciliation
+  const reconcileNativeTakenDoses = useCallback(async () => {
+    if (Platform.OS !== 'android') return;
+    try {
+      const takenIds = await getNativeActionTakenDoses();
+      if (!takenIds || takenIds.length === 0) return;
+
+      const takenSet = new Set(takenIds);
+      let updatedDoses: DoseSlot[] = [];
+      let hadUpdates = false;
+
+      setDoses((prevDoses) => {
+        const next = prevDoses.map((d) => {
+          if (takenSet.has(d.id) && d.status !== 'taken') {
+            hadUpdates = true;
+            return { ...d, status: 'taken' as const, skipReason: undefined };
+          }
+          return d;
+        });
+        updatedDoses = next;
+        return next;
+      });
+
+      if (hadUpdates) {
+        await AsyncStorage.setItem(STORAGE_KEYS.DOSES, JSON.stringify(updatedDoses));
+        const todayStr = new Date().toISOString().slice(0, 10);
+        for (const id of takenIds) {
+          const target = updatedDoses.find((d) => d.id === id);
+          if (target) {
+            await enqueueMobileSyncEvent({
+              type: 'DOSE_STATUS_CHANGED',
+              profileId: activeProfile.id,
+              doseId: target.id,
+              medicineName: target.medicineName,
+              strength: target.strength,
+              scheduledDate: todayStr,
+              scheduledMinutes: target.scheduledMinutes,
+              status: 'taken',
+              takenAt: new Date().toISOString(),
+            });
+          }
+        }
+        showToast('Synced doses confirmed taken from notification shade');
+      }
+
+      await clearNativeActionTakenDoses();
+    } catch (err) {
+      console.warn('Reconcile native taken doses error:', err);
+    }
+  }, [activeProfile.id, showToast]);
+
+  // Reconcile on startup once storage is loaded
+  useEffect(() => {
+    if (isStorageLoaded) {
+      void reconcileNativeTakenDoses();
+    }
+  }, [isStorageLoaded, reconcileNativeTakenDoses]);
+
+  // Reconcile on app resume from background
+  useEffect(() => {
+    const appStateSub = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        void reconcileNativeTakenDoses();
+      }
+    });
+    return () => appStateSub.remove();
+  }, [reconcileNativeTakenDoses]);
 
   const persistDoses = async (updated: DoseSlot[]) => {
     setDoses(updated);
@@ -428,6 +566,12 @@ export default function App() {
   };
 
   const handleToggleAlarms = async (val: boolean) => {
+    if (val) {
+      const granted = await requestAndroidNotificationPermission();
+      if (!granted) {
+        showToast('Medication alarms require notification permission.');
+      }
+    }
     setAlarmsEnabled(val);
     await AsyncStorage.setItem(STORAGE_KEYS.ALARMS_ENABLED, String(val));
     if (val) {
@@ -607,10 +751,41 @@ export default function App() {
     [doses, takenCount]
   );
 
+  // Flash guard: While storage is being read asynchronously on startup, render splash placeholder
+  if (!isStorageLoaded) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#020617',
+          },
+        ]}
+      >
+        <StatusBar style="light" />
+        <View style={{ alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+          <View style={styles.logoMark}>
+            <Text style={styles.logoCross}>+</Text>
+          </View>
+          <Text style={{ color: '#F8FAFC', fontSize: 20, fontWeight: '800' }}>Curewell</Text>
+          <ActivityIndicator size="small" color="#0D9488" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // If user has locked app with a PIN
   if (isLocked) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[
+          styles.container,
+          { paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0 },
+        ]}
+      >
         <StatusBar style="light" />
         <View style={styles.lockContainer}>
           <Text style={{ fontSize: 48, marginBottom: 16 }}>🔒</Text>
@@ -662,7 +837,12 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0 },
+      ]}
+    >
       <StatusBar style="light" />
 
       {/* Floating Toast Notification */}

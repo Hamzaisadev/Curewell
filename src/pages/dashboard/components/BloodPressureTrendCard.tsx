@@ -288,10 +288,10 @@ export function BloodPressureTrendCard({ onOpenLog }: BloodPressureTrendCardProp
                 </span>
               </div>
 
-              <div className="relative cursor-crosshair">
+              <div className="relative cursor-crosshair touch-none">
                 <svg
                   ref={svgRef}
-                  className="w-full h-28 overflow-visible select-none"
+                  className="w-full h-28 overflow-visible select-none touch-none"
                   viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                   preserveAspectRatio="none"
                   onPointerMove={handlePointerMove}

@@ -110,7 +110,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                       'relative flex items-center justify-between px-3 py-2 text-xs sm:text-sm font-medium rounded-xl text-content cursor-pointer select-none outline-none transition-colors',
                       'hover:bg-surface-hover hover:text-accent focus:bg-accent/10 focus:text-accent data-[highlighted]:bg-accent/10 data-[highlighted]:text-accent',
                       isSelected &&
-                        'bg-accent text-accent-onaccent font-bold hover:bg-accent hover:text-accent-onaccent focus:bg-accent focus:text-accent-onaccent data-[highlighted]:bg-accent data-[highlighted]:text-accent-onaccent',
+                        'bg-accent text-content-onaccent font-bold hover:bg-accent hover:text-content-onaccent focus:bg-accent focus:text-content-onaccent data-[highlighted]:bg-accent data-[highlighted]:text-content-onaccent',
                       opt.disabled && 'opacity-50 pointer-events-none'
                     )}
                   >

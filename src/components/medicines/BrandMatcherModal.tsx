@@ -49,7 +49,9 @@ export function BrandMatcherModal({
   const [brandA, setBrandA] = useState(initialBrandA);
   const [brandB, setBrandB] = useState(initialBrandB);
   const [isLoading, setIsLoading] = useState(false);
-  const [isOrdering, setIsOrdering] = useState(false);
+
+  const [whatsappLaunched, setWhatsappLaunched] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const [result, setResult] = useState<CompareMedicinesResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -94,9 +96,11 @@ export function BrandMatcherModal({
     setBrandB('');
     setResult(null);
     setErrorMessage(null);
+    setWhatsappLaunched(false);
+    setIsConfirmed(false);
   };
 
-  const handleOneTapOrderAlternative = () => {
+  const handleLaunchWhatsAppOrder = () => {
     if (!result?.brand_b) return;
 
     const targetBrand = result.brand_b.brand_name;
@@ -125,7 +129,21 @@ export function BrandMatcherModal({
         : 'Est. ~40% savings',
     });
 
-    // Automatically record purchase expense in finance.ts
+    // Launch WhatsApp without prematurely mutating expense records
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setWhatsappLaunched(true);
+  };
+
+  const handleConfirmReceivedAndLogExpense = () => {
+    if (!result?.brand_b) return;
+
+    const targetBrand = result.brand_b.brand_name;
+    const targetGeneric = result.brand_b.generic_name;
+    const targetStrength = result.brand_b.strength;
+    const genericAlt = findGenericAlternative(result.brand_a.brand_name, result.brand_a.strength);
+    const estPrice = genericAlt?.genericPriceEst || 350;
+
+    // Explicitly record purchase expense in finance.ts upon receipt confirmation
     recordMedicinePurchaseExpense({
       profileId,
       medicineName: `${targetBrand}${targetGeneric ? ` (${targetGeneric})` : ''}`,
@@ -142,12 +160,12 @@ export function BrandMatcherModal({
       strength: targetStrength || undefined,
     });
 
-    // Launch WhatsApp
-    window.open(url, '_blank', 'noopener,noreferrer');
-    setIsOrdering(true);
+    setIsConfirmed(true);
     setTimeout(() => {
-      setIsOrdering(false);
-    }, 2000);
+      setIsConfirmed(false);
+      setWhatsappLaunched(false);
+      onClose();
+    }, 1500);
   };
 
   return (
@@ -305,25 +323,59 @@ export function BrandMatcherModal({
                 <p className="text-[11px] text-emerald-900/80 dark:text-emerald-300/80 leading-relaxed">
                   Switch to <strong>{result.brand_b.brand_name}</strong> to save on your prescription. Automatically formats WhatsApp refill & records expense in your finance tracker.
                 </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleOneTapOrderAlternative}
-                  disabled={isOrdering}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 tap-spring"
-                >
-                  {isOrdering ? (
-                    <>
-                      <CheckIcon size={14} />
-                      Alternative Order Dispatched & Logged!
-                    </>
-                  ) : (
-                    <>
-                      <MessageCircle size={15} />
-                      1-Tap Order {result.brand_b.brand_name} via WhatsApp
-                    </>
-                  )}
-                </Button>
+                {!whatsappLaunched ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleLaunchWhatsAppOrder}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 tap-spring"
+                  >
+                    <MessageCircle size={15} />
+                    1-Tap Order {result.brand_b.brand_name} via WhatsApp
+                  </Button>
+                ) : (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-2xs text-emerald-950 dark:text-emerald-200">
+                      WhatsApp chat opened. When you receive your order from the pharmacy, confirm below to log the expense:
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleConfirmReceivedAndLogExpense}
+                      disabled={isConfirmed}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 tap-spring"
+                    >
+                      {isConfirmed ? (
+                        <>
+                          <CheckIcon size={14} />
+                          Medicine Received & Expense Logged!
+                        </>
+                      ) : (
+                        <>
+                          <CheckIcon size={14} />
+                          Confirm Medicine Received & Log Expense
+                        </>
+                      )}
+                    </Button>
+                    <div className="flex items-center justify-center gap-2 text-3xs text-content-subtle">
+                      <button
+                        type="button"
+                        onClick={handleLaunchWhatsAppOrder}
+                        className="text-emerald-700 dark:text-emerald-300 hover:underline font-semibold cursor-pointer"
+                      >
+                        Re-open WhatsApp
+                      </button>
+                      <span>•</span>
+                      <button
+                        type="button"
+                        onClick={() => setWhatsappLaunched(false)}
+                        className="hover:underline cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

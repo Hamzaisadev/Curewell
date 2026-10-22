@@ -50,6 +50,8 @@ export function ConfirmDialog({
               to confirm:
             </p>
             <Input
+              id="confirm-phrase-input"
+              aria-label={`Type ${requiredPhrase} to confirm`}
               value={typedPhrase}
               onChange={(e) => setTypedPhrase(e.target.value)}
               placeholder={`Type "${requiredPhrase}"`}

@@ -51,6 +51,8 @@ export function RollerNumberInput({
   inputRef: externalInputRef,
   onEnter,
 }: RollerNumberInputProps) {
+  const reactId = React.useId();
+  const inputId = id || reactId;
   const [inputValue, setInputValue] = useState<string>(value.toString());
   const [isFocused, setIsFocused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -192,19 +194,19 @@ export function RollerNumberInput({
 
   const sizeStyles = {
     sm: {
-      btn: 'w-7 sm:w-8 h-8 sm:h-9 shrink-0',
+      btn: 'min-w-[44px] min-h-[44px] w-11 h-11 shrink-0',
       input: 'h-8 sm:h-9 text-sm sm:text-base font-bold w-12 sm:w-14 min-w-0',
       wrapper: 'gap-0.5 sm:gap-1 max-w-full',
       unit: 'text-2xs',
     },
     md: {
-      btn: 'w-7.5 sm:w-9 h-9 sm:h-10 shrink-0',
+      btn: 'min-w-[44px] min-h-[44px] w-11 h-11 shrink-0',
       input: 'h-9 sm:h-10 text-base sm:text-lg font-bold w-12 sm:w-16 min-w-0',
       wrapper: 'gap-1 sm:gap-1.5 max-w-full',
       unit: 'text-xs',
     },
     lg: {
-      btn: 'w-9 sm:w-11 h-11 sm:h-13 shrink-0',
+      btn: 'min-w-[44px] min-h-[44px] w-12 h-12 shrink-0',
       input: 'h-11 sm:h-13 text-2xl sm:text-3xl font-black w-20 sm:w-24 min-w-0',
       wrapper: 'gap-1.5 sm:gap-2 max-w-full',
       unit: 'text-sm font-bold',
@@ -214,9 +216,9 @@ export function RollerNumberInput({
   return (
     <div className={clsx('flex flex-col items-center select-none', className)}>
       {label && (
-        <span className="text-xs font-bold text-content-muted mb-1.5 flex items-center gap-1">
+        <label htmlFor={inputId} className="text-xs font-bold text-content-muted mb-1.5 flex items-center gap-1 cursor-pointer">
           {label}
-        </span>
+        </label>
       )}
 
       {/* Main Stepper & Scrubbing Field */}
@@ -259,7 +261,7 @@ export function RollerNumberInput({
         >
           <input
             ref={activeInputRef}
-            id={id}
+            id={inputId}
             name={name}
             type="number"
             value={inputValue}

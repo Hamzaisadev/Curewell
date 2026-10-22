@@ -66,7 +66,7 @@ export function UpNextCard({ className = '', refreshKey = 0 }: UpNextCardProps) 
       (a.visit_date || '').localeCompare(b.visit_date || '')
     );
 
-    const targetVisit = sortedUpcoming[0] || visits[0] || null;
+    const targetVisit = sortedUpcoming[0] || null;
 
     return {
       lowStockMeds: lowStock,

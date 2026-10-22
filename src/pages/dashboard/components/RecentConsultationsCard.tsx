@@ -6,28 +6,12 @@ import type { Visit } from '../../../lib/db/visits';
 import { formatDateMedium } from '../../../lib/time';
 import { StethoscopeIcon, ChevronRightIcon } from '../../../components/ui/icons';
 
-function formatDoctorDisplay(v: Visit, index: number): string {
+function formatDoctorDisplay(v: Visit): string {
   const raw = v.doctor_name?.trim();
   if (raw && !raw.toLowerCase().includes('consulting physician')) {
     return raw.startsWith('Dr.') ? raw : `Dr. ${raw}`;
   }
-  // Clinical specialty attribution when generic placeholder was seeded
-  const diag = (v.diagnosis || '').toLowerCase();
-  if (diag.includes('knee') || diag.includes('joint') || diag.includes('bone') || diag.includes('stiff')) {
-    return 'Dr. Tariq Mahmood (Orthopedics)';
-  }
-  if (diag.includes('bp') || diag.includes('hypertension') || diag.includes('cardio') || diag.includes('heart')) {
-    return 'Dr. Ayesha Siddiqui (Cardiology)';
-  }
-  if (diag.includes('glucose') || diag.includes('diabetes') || diag.includes('sugar') || diag.includes('fasting')) {
-    return 'Dr. Zainab Farooq (Endocrinology)';
-  }
-  const defaultDocs = [
-    'Dr. Tariq Mahmood (Internal Medicine)',
-    'Dr. Ayesha Siddiqui (Cardiology)',
-    'Dr. Bilal Farooq (General Practice)',
-  ];
-  return defaultDocs[index % defaultDocs.length]!;
+  return v.clinic_name ? `Physician at ${v.clinic_name}` : 'Consulting Physician';
 }
 
 export function RecentConsultationsCard() {
@@ -90,7 +74,7 @@ export function RecentConsultationsCard() {
           </div>
         ) : visits.length > 0 ? (
           <div className="space-y-2.5">
-            {visits.map((v, idx) => (
+            {visits.map((v) => (
               <Link
                 key={v.id}
                 to={`/visits/${v.id}`}
@@ -99,7 +83,7 @@ export function RecentConsultationsCard() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className="text-xs font-bold text-content truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                      {formatDoctorDisplay(v, idx)}
+                      {formatDoctorDisplay(v)}
                     </h4>
                     {v.clinic_name && (
                       <span className="text-2xs text-content-subtle truncate">

@@ -776,11 +776,12 @@
 
     <!-- STANDALONE INTERACTIVE DECK HUD -->
     <div id="standalone-hud" data-hyperframes-ignore>
-      <button id="hud-prev" type="button">◀ Prev</button>
+      <button id="hud-prev" type="button" aria-label="Previous Slide">◀ Prev</button>
       <span id="hud-counter" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;min-width:110px;text-align:center;">Slide 01 / 12</span>
-      <button id="hud-next" type="button" class="primary">Next ▶</button>
+      <button id="hud-next" type="button" class="primary" aria-label="Next Slide">Next ▶</button>
       <button id="hud-play" type="button">⏯ Auto-Play</button>
       <button id="hud-notes-btn" type="button">📝 Notes</button>
+      <button id="hud-hide-btn" type="button" title="Hide controls (auto-hides after 5s; press 'H' or move mouse to restore)">👁 Hide</button>
     </div>
     <div id="standalone-notes" data-hyperframes-ignore></div>
 
@@ -898,21 +899,101 @@
         });
       }
 
+      var hudEl = document.getElementById("standalone-hud");
+      var hideBtn = document.getElementById("hud-hide-btn");
+      var isHudVisible = true;
+      var idleTimer = null;
+
+      function hideHud() {
+        if (!isHudVisible) return;
+        isHudVisible = false;
+        if (hudEl) {
+          gsap.to(hudEl, {
+            opacity: 0,
+            y: 18,
+            duration: 0.5,
+            ease: "power2.inOut",
+            onComplete: function () {
+              if (hudEl) hudEl.style.pointerEvents = "none";
+            }
+          });
+        }
+        if (notesBox && notesBox.style.display === "block") {
+          gsap.to(notesBox, {
+            opacity: 0,
+            y: 18,
+            duration: 0.5,
+            ease: "power2.inOut",
+            onComplete: function () {
+              if (notesBox) notesBox.style.display = "none";
+            }
+          });
+        }
+      }
+
+      function showHud() {
+        isHudVisible = true;
+        if (hudEl) {
+          hudEl.style.pointerEvents = "auto";
+          gsap.to(hudEl, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" });
+        }
+        resetIdleTimer();
+      }
+
+      function resetIdleTimer() {
+        if (idleTimer) clearTimeout(idleTimer);
+        // Auto-hide controls after 5 seconds of inactivity
+        idleTimer = setTimeout(function () {
+          hideHud();
+        }, 5000);
+      }
+
+      if (hideBtn) {
+        hideBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          hideHud();
+        });
+      }
+
+      // Restore HUD on any mouse movement or touch interaction
+      window.addEventListener("mousemove", function () {
+        if (!isHudVisible) showHud();
+        else resetIdleTimer();
+      });
+
+      window.addEventListener("pointerdown", function () {
+        if (!isHudVisible) showHud();
+        else resetIdleTimer();
+      });
+
       var prevBtn = document.getElementById("hud-prev");
       var nextBtn = document.getElementById("hud-next");
       var playBtn = document.getElementById("hud-play");
       var notesBtn = document.getElementById("hud-notes-btn");
 
-      if (prevBtn) prevBtn.addEventListener("click", function () { goToSlide(curSlide - 1); });
-      if (nextBtn) nextBtn.addEventListener("click", function () { goToSlide(curSlide + 1); });
-      if (notesBtn) notesBtn.addEventListener("click", function () {
-        if (notesBox) notesBox.style.display = notesBox.style.display === "block" ? "none" : "block";
+      if (prevBtn) prevBtn.addEventListener("click", function (e) { e.stopPropagation(); goToSlide(curSlide - 1); resetIdleTimer(); });
+      if (nextBtn) nextBtn.addEventListener("click", function (e) { e.stopPropagation(); goToSlide(curSlide + 1); resetIdleTimer(); });
+      if (notesBtn) notesBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (notesBox) {
+          var isOpening = notesBox.style.display !== "block";
+          if (isOpening) {
+            notesBox.style.display = "block";
+            gsap.fromTo(notesBox, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" });
+          } else {
+            notesBox.style.display = "none";
+          }
+        }
+        resetIdleTimer();
       });
-      if (playBtn) playBtn.addEventListener("click", function () {
+
+      if (playBtn) playBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
         if (isAutoPlaying) {
           if (autoTween) { autoTween.kill(); autoTween = null; }
           isAutoPlaying = false;
           playBtn.textContent = "⏯ Auto-Play";
+          resetIdleTimer();
           return;
         }
         isAutoPlaying = true;
@@ -922,7 +1003,7 @@
         var proxy = { t: startT };
         autoTween = gsap.to(proxy, {
           t: 95.99,
-          duration: remainingT, // Real-time 1:1 speed: 8 seconds per slide for a calm, premium watch
+          duration: remainingT,
           ease: "none",
           onUpdate: function () {
             curSlide = Math.min(11, Math.floor(proxy.t / 8));
@@ -934,17 +1015,40 @@
             playBtn.textContent = "⏯ Auto-Play";
           }
         });
+        resetIdleTimer();
       });
 
+      // Keyboard navigation: Arrow keys ALWAYS work, even when controls are hidden!
       window.addEventListener("keydown", function (e) {
-        if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); goToSlide(curSlide + 1); }
-        if (e.key === "ArrowLeft") { e.preventDefault(); goToSlide(curSlide - 1); }
+        if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+          e.preventDefault();
+          goToSlide(curSlide + 1);
+          resetIdleTimer();
+        } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+          e.preventDefault();
+          goToSlide(curSlide - 1);
+          resetIdleTimer();
+        } else if (e.key === "h" || e.key === "H") {
+          e.preventDefault();
+          if (isHudVisible) hideHud();
+          else showHud();
+        }
       });
 
-      // Initialize on Slide 1 (gracefully reveal Slide 1)
+      // Listen to postMessage from parent window (for iframe embeds inside React app)
+      window.addEventListener("message", function (event) {
+        if (!event.data) return;
+        if (event.data === "NEXT_SLIDE") { goToSlide(curSlide + 1); resetIdleTimer(); }
+        if (event.data === "PREV_SLIDE") { goToSlide(curSlide - 1); resetIdleTimer(); }
+        if (event.data === "TOGGLE_HUD") { if (isHudVisible) hideHud(); else showHud(); }
+        if (event.data === "HIDE_HUD") { hideHud(); }
+      });
+
+      // Initialize on Slide 1 & start initial 5-second auto-hide timer
       tl.seek(0);
       syncScenesAtTime(0);
       goToSlide(0);
+      resetIdleTimer();
     </script>
   </body>
 </html>

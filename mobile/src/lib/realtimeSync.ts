@@ -323,29 +323,30 @@ export async function flushOfflineOutbox(): Promise<number> {
     for (const item of queue) {
       let delivered = false;
 
-      // 1. Send over Supabase Realtime WebSocket Broadcast
+      // 1. Send over Supabase Realtime WebSocket Broadcast (best-effort notification to active peers)
       if (isChannelSubscribed) {
         try {
-          const resp = await channel.send({
+          await channel.send({
             type: 'broadcast',
             event: 'curewell_sync_event',
             payload: item.event,
           });
-          if (resp === 'ok') {
-            delivered = true;
-          }
         } catch {
-          delivered = false;
+          // ignore broadcast failure; database persistence is authoritative
         }
       }
 
-      // 2. Also write to Supabase PostgreSQL tables when session/UUID is available
+      // 2. Persist to Supabase PostgreSQL tables - delivered is ONLY true when DB write succeeds
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+
         if (item.event.type === 'DOSE_STATUS_CHANGED') {
           const e = item.event;
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
             e.doseId
           );
+
           if (isUuid) {
             const { error } = await supabase
               .from('doses')
@@ -356,15 +357,106 @@ export async function flushOfflineOutbox(): Promise<number> {
               })
               .eq('id', e.doseId);
             if (!error) delivered = true;
+          } else {
+            // doseId is not a valid UUID (e.g. dose-1729...)
+            // Search or update by medicineName & scheduledMinutes, or record it cleanly
+            let targetMedId =
+              e.medicineId &&
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                e.medicineId
+              )
+                ? e.medicineId
+                : null;
+
+            if (!targetMedId && e.medicineName) {
+              let medQuery = supabase
+                .from('medicines')
+                .select('id')
+                .ilike('medicine_name', e.medicineName.trim());
+              if (
+                e.profileId &&
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                  e.profileId
+                )
+              ) {
+                medQuery = medQuery.eq('profile_id', e.profileId);
+              } else if (userId) {
+                medQuery = medQuery.eq('user_id', userId);
+              }
+              const { data: medData } = await medQuery.limit(1).maybeSingle();
+              if (medData?.id) {
+                targetMedId = medData.id;
+              }
+            }
+
+            if (targetMedId) {
+              // Try updating existing dose row matching targetMedId, scheduledDate, scheduledMinutes
+              let doseQuery = supabase
+                .from('doses')
+                .select('id')
+                .eq('medicine_id', targetMedId)
+                .eq('scheduled_date', e.scheduledDate)
+                .eq('scheduled_minutes', e.scheduledMinutes);
+
+              if (
+                e.profileId &&
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                  e.profileId
+                )
+              ) {
+                doseQuery = doseQuery.eq('profile_id', e.profileId);
+              }
+
+              const { data: existingDose } = await doseQuery.limit(1).maybeSingle();
+
+              if (existingDose?.id) {
+                const { error: updateErr } = await supabase
+                  .from('doses')
+                  .update({
+                    status: e.status,
+                    taken_at: e.status === 'taken' ? e.takenAt || new Date().toISOString() : null,
+                    skipped_reason: e.status === 'skipped' ? e.skipReason || null : null,
+                  })
+                  .eq('id', existingDose.id);
+                if (!updateErr) delivered = true;
+              } else if (userId) {
+                // If no dose row exists for today yet, insert it cleanly
+                const targetProfileId =
+                  e.profileId &&
+                  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                    e.profileId
+                  )
+                    ? e.profileId
+                    : userId;
+
+                const { error: insertErr } = await supabase.from('doses').insert({
+                  user_id: userId,
+                  profile_id: targetProfileId,
+                  medicine_id: targetMedId,
+                  scheduled_date: e.scheduledDate,
+                  scheduled_minutes: e.scheduledMinutes,
+                  status: e.status,
+                  taken_at: e.status === 'taken' ? e.takenAt || new Date().toISOString() : null,
+                  skipped_reason: e.status === 'skipped' ? e.skipReason || null : null,
+                });
+                if (!insertErr) delivered = true;
+              }
+            }
           }
         } else if (item.event.type === 'MEDICINE_CREATED') {
-          const { data: sessionData } = await supabase.auth.getSession();
-          const userId = sessionData?.session?.user?.id;
           if (userId) {
             const m = item.event.medicine;
+            const targetProfileId =
+              item.event.profileId &&
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                item.event.profileId
+              )
+                ? item.event.profileId
+                : userId;
+
             const { error } = await supabase.from('medicines').insert({
               user_id: userId,
-              profile_id: item.event.profileId || userId,
+              profile_id: targetProfileId,
               medicine_name: m.medicine_name,
               generic_name: m.generic_name,
               strength: m.strength,
@@ -380,8 +472,8 @@ export async function flushOfflineOutbox(): Promise<number> {
             if (!error) delivered = true;
           }
         }
-      } catch {
-        // Ignore DB error if offline; WebSocket broadcast or next retry handles it
+      } catch (err) {
+        console.warn('DB sync error in flushOfflineOutbox:', err);
       }
 
       if (delivered) {

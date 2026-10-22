@@ -24,6 +24,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Select } from '../../components/ui/Select';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
 import { Dialog } from '../../components/ui/Dialog';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { VitalsGauge } from '../../components/ui/VitalsGauge';
 import { RollingNumber } from '../../components/ui/RollingNumber';
@@ -64,6 +65,8 @@ export function VitalsTrackerPage() {
   const systolicInputRef = useRef<HTMLInputElement>(null);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'glucose' | 'bp'; id: string; summary: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Auto-focus primary input when modal opens
   useEffect(() => {
@@ -164,6 +167,24 @@ export function VitalsTrackerPage() {
       setIsSaving(false);
     }
   }, [systolic, diastolic, effectiveUserId, effectiveProfileId, isSaving, pulse, bpArm, bpPosture, bpNotes, loadData]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === 'glucose') {
+        await deleteGlucoseReading(deleteTarget.id);
+      } else {
+        await deleteBloodPressureReading(deleteTarget.id);
+      }
+      setDeleteTarget(null);
+      await loadData();
+    } catch (err) {
+      console.error('Failed to delete vital reading:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deleteTarget, loadData]);
 
   // Global Keyboard Shortcuts: L/N to log, Enter to save active modal, G/1 for Glucose, B/2 for BP
   useEffect(() => {
@@ -448,7 +469,15 @@ export function VitalsTrackerPage() {
 
                             <button
                               type="button"
-                              onClick={() => log.id && deleteGlucoseReading(log.id).then(loadData)}
+                              onClick={() => {
+                                if (log.id) {
+                                  setDeleteTarget({
+                                    type: 'glucose',
+                                    id: log.id,
+                                    summary: `${log.value_mg_dl} mg/dL (${log.type.replace('_', ' ')}) on ${new Date(log.measured_at).toLocaleDateString()}`,
+                                  });
+                                }
+                              }}
                               className="text-content-subtle hover:text-risk-text p-1.5 rounded hover:bg-surface-hover transition-colors cursor-pointer"
                               title="Delete entry"
                               aria-label="Delete glucose entry"
@@ -577,7 +606,15 @@ export function VitalsTrackerPage() {
 
                             <button
                               type="button"
-                              onClick={() => log.id && deleteBloodPressureReading(log.id).then(loadData)}
+                              onClick={() => {
+                                if (log.id) {
+                                  setDeleteTarget({
+                                    type: 'bp',
+                                    id: log.id,
+                                    summary: `${log.systolic}/${log.diastolic} mmHg on ${new Date(log.measured_at).toLocaleDateString()}`,
+                                  });
+                                }
+                              }}
                               className="text-content-subtle hover:text-risk-text p-1.5 rounded hover:bg-surface-hover transition-colors cursor-pointer"
                               title="Delete entry"
                               aria-label="Delete blood pressure entry"
@@ -979,6 +1016,19 @@ export function VitalsTrackerPage() {
             </div>
           </form>
         </Dialog>
+
+        <ConfirmDialog
+          open={Boolean(deleteTarget)}
+          onOpenChange={(open) => {
+            if (!open) setDeleteTarget(null);
+          }}
+          title="Delete Vital Reading"
+          description={`Are you sure you want to permanently delete this ${deleteTarget?.type === 'glucose' ? 'blood glucose' : 'blood pressure'} entry (${deleteTarget?.summary})? This cannot be undone.`}
+          confirmLabel="Delete Reading"
+          tone="danger"
+          loading={isDeleting}
+          onConfirm={handleConfirmDelete}
+        />
       </motion.div>
     </AppShell>
   );

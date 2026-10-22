@@ -233,7 +233,7 @@ export function QuickVitalsModal({
                   <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-line/60">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-content-muted">Target Status:</span>
-                      <Badge tone={VITAL_TONE[gEval.tone].badge} size="sm" withIcon>
+                      <Badge tone={VITAL_TONE[gEval.tone].badge} size="sm" withIcon role="status" aria-live="polite">
                         {gEval.label}
                       </Badge>
                     </div>
@@ -337,7 +337,7 @@ export function QuickVitalsModal({
                       </span>
                       <span className="text-2xs font-bold text-content-subtle">mmHg</span>
                     </div>
-                    <Badge tone={VITAL_TONE[bpEval.tone].badge} size="sm" withIcon>
+                    <Badge tone={VITAL_TONE[bpEval.tone].badge} size="sm" withIcon role="status" aria-live="polite">
                       {bpEval.label}
                     </Badge>
                   </div>

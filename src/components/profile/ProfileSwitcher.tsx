@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { clsx } from 'clsx';
 import { useAuth } from '../../lib/auth/AuthContext';
@@ -62,17 +63,17 @@ export function ProfileSwitcher() {
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
           className={clsx(
-            'inline-flex items-center gap-1.5 h-10 px-2.5 sm:px-3 rounded-full border transition-all cursor-pointer',
+            'inline-flex items-center gap-1.5 h-10 px-2 sm:px-3 rounded-full border transition-all cursor-pointer max-w-[125px] sm:max-w-none shrink min-w-0',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
             colorClasses,
             'hover:shadow-xs'
           )}
           aria-label={`Switch profile: currently ${activeProfile.full_name}`}
         >
-          <span className="text-sm select-none" aria-hidden="true">
+          <span className="text-sm select-none shrink-0" aria-hidden="true">
             {emoji}
           </span>
-          <span className="text-xs font-bold truncate max-w-28 sm:max-w-36 text-content">
+          <span className="text-xs font-bold truncate max-w-16 sm:max-w-28 md:max-w-36 text-content">
             {shortName}
           </span>
           {activeProfile.relationship !== 'self' && (
@@ -158,13 +159,13 @@ export function ProfileSwitcher() {
 
             {/* Settings Link */}
             <DropdownMenu.Item asChild>
-              <a
-                href="/settings"
+              <Link
+                to="/settings"
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-content-muted hover:text-content hover:bg-surface-hover cursor-pointer select-none outline-none transition-colors"
               >
                 <SettingsIcon size={13} className="shrink-0 text-content-subtle" />
                 <span>Manage Family Profiles</span>
-              </a>
+              </Link>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

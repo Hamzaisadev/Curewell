@@ -122,16 +122,8 @@ export function DoseCard({
     }
   };
 
-  const handleRowClick = () => {
-    toggleExpand();
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      // Ignore if event target is an interactive button inside
-      if ((e.target as HTMLElement).tagName === 'BUTTON') {
-        return;
-      }
       e.preventDefault();
       toggleExpand();
     }
@@ -165,7 +157,7 @@ export function DoseCard({
         'group relative overflow-hidden rounded-2xl border bg-surface-raised transition-all duration-200 shadow-2xs hover:shadow-card-hover text-left',
         isExpanded && 'ring-1 ring-accent/25 shadow-sm',
         status === 'missed'
-          ? 'border-amber-300 dark:border-amber-700/60 bg-amber-500/5 hover:border-amber-500'
+          ? 'border-warn-border bg-warn-bg/20 hover:border-warn-border'
           : status === 'taken'
             ? 'border-line/60 bg-surface-raised'
             : 'border-line hover:border-line-strong',
@@ -176,34 +168,35 @@ export function DoseCard({
       <span
         className={clsx(
           'absolute top-0 bottom-0 left-0 w-1.5 transition-all',
-          status === 'taken' ? 'bg-teal-600' : status === 'missed' ? 'bg-amber-600' : slot.surface
+          status === 'taken' ? 'bg-ok-border' : status === 'missed' ? 'bg-warn-border' : slot.surface
         )}
         aria-hidden="true"
       />
 
       {/* Collapsed Row Header (Single Scannable Line) */}
       <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={isExpanded}
-        aria-label={`${medicineName}, ${formatDoseTime(scheduledMinutes)}. Click to ${isExpanded ? 'collapse' : 'expand'} details and refill options.`}
-        onClick={handleRowClick}
-        onKeyDown={handleKeyDown}
         className={clsx(
-          'cursor-pointer select-none pl-4.5 sm:pl-5 pr-3.5 sm:pr-4 py-3 sm:py-3.5 flex items-center justify-between gap-3 min-h-[64px] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent',
+          'select-none pl-4.5 sm:pl-5 pr-3.5 sm:pr-4 py-3 sm:py-3.5 flex items-center justify-between gap-3 min-h-[64px]',
           isExpanded && 'bg-surface-sunken/30'
         )}
       >
-        {/* Left Side: Scheduled Time + Medicine Name & Dosage */}
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        {/* Left Side: Scheduled Time + Medicine Name & Dosage (Disclosure Button) */}
+        <button
+          type="button"
+          aria-expanded={isExpanded}
+          aria-label={`${medicineName}, ${formatDoseTime(scheduledMinutes)}. Click to ${isExpanded ? 'collapse' : 'expand'} details and refill options.`}
+          onClick={toggleExpand}
+          onKeyDown={handleKeyDown}
+          className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer rounded-xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+        >
           {/* Scheduled Time Chip */}
           <span
             className={clsx(
               'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black border shadow-2xs shrink-0 transition-colors',
               status === 'taken'
-                ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 border-emerald-300 dark:border-emerald-700'
+                ? 'bg-ok-bg text-ok-text border-ok-border'
                 : status === 'missed'
-                  ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-950 dark:text-amber-100 border-amber-300 dark:border-amber-700'
+                  ? 'bg-warn-bg text-warn-text border-warn-border'
                   : 'bg-surface-sunken text-content border-line-strong/60'
             )}
           >
@@ -212,16 +205,16 @@ export function DoseCard({
               className={clsx(
                 'shrink-0',
                 status === 'taken'
-                  ? 'text-emerald-800 dark:text-emerald-300'
+                  ? 'text-ok-text'
                   : status === 'missed'
-                    ? 'text-amber-900 dark:text-amber-300'
+                    ? 'text-warn-text'
                     : 'text-accent'
               )}
             >
               {status === 'taken' ? (
-                <CheckCircle2 size={13} className="text-teal-600 dark:text-teal-400" />
+                <CheckCircle2 size={13} className="text-ok-text" />
               ) : status === 'missed' ? (
-                <AlertCircle size={13} className="text-amber-600 dark:text-amber-400" />
+                <AlertCircle size={13} className="text-warn-text" />
               ) : (
                 slot.icon(13)
               )}
@@ -236,7 +229,7 @@ export function DoseCard({
             <h3
               className={clsx(
                 'text-sm sm:text-base font-bold text-content leading-snug tracking-tight truncate',
-                status === 'taken' && 'line-through text-content-muted decoration-teal-500/50'
+                status === 'taken' && 'line-through text-content-muted decoration-accent/50'
               )}
               title={medicineName}
             >
@@ -246,12 +239,12 @@ export function DoseCard({
             {/* Dosage & Metadata pills */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {strength && (
-                <span className="px-2 py-0.5 rounded-md bg-surface-sunken border border-line text-content font-bold text-[11px]">
+                <span className="px-2 py-0.5 rounded-md bg-surface-sunken border border-line text-content font-bold text-2xs">
                   {strength}
                 </span>
               )}
               {doseAmount && (
-                <span className="text-content-muted font-medium text-[11px] truncate">
+                <span className="text-content-muted font-medium text-2xs truncate">
                   {doseAmount}
                 </span>
               )}
@@ -265,17 +258,17 @@ export function DoseCard({
               {!isExpanded && hasSpecificMealInstruction && (
                 <span
                   className={clsx(
-                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border transition-colors shadow-2xs',
+                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-bold border transition-colors shadow-2xs',
                     relation === 'empty_stomach'
-                      ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200'
-                      : 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200'
+                      ? 'bg-info-bg border-info-border text-info-text'
+                      : 'bg-warn-bg border-warn-border text-warn-text'
                   )}
                   title={contextualMealInstruction}
                 >
                   {relation === 'empty_stomach' ? (
-                    <Droplets size={11} className="text-sky-700 dark:text-sky-400 shrink-0" />
+                    <Droplets size={11} className="text-info-text shrink-0" />
                   ) : (
-                    <Utensils size={11} className="text-amber-700 dark:text-amber-400 shrink-0" />
+                    <Utensils size={11} className="text-warn-text shrink-0" />
                   )}
                   <span className="truncate max-w-[180px] sm:max-w-[280px]">
                     {contextualMealInstruction}
@@ -284,24 +277,23 @@ export function DoseCard({
               )}
             </div>
           </div>
-        </div>
+        </button>
 
-        {/* Right Side: Primary "Log Taken" Action & Expand Chevron */}
+        {/* Right Side: Primary "Log Taken" Action & Dedicated Expand Disclosure Button */}
         <div className="flex items-center gap-2 shrink-0">
           {!readOnly && isActionable && (
             <Button
               variant="primary"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 onTake?.();
               }}
               leftIcon={<CheckIcon size={14} />}
               className={clsx(
                 'h-8 sm:h-9 px-3 sm:px-4 text-xs font-bold rounded-xl whitespace-nowrap tap-spring shadow-2xs cursor-pointer',
                 status === 'missed'
-                  ? 'bg-amber-600 hover:bg-amber-700 border-amber-600 text-white'
-                  : 'bg-teal-600 hover:bg-teal-700 border-teal-600 text-white'
+                  ? 'bg-warn-text hover:brightness-95 border-warn-border text-content-onaccent'
+                  : 'bg-accent hover:bg-accent-hover border-accent text-content-onaccent'
               )}
             >
               {status === 'missed' ? 'Log Overdue' : 'Log Taken'}
@@ -309,8 +301,8 @@ export function DoseCard({
           )}
 
           {!readOnly && status === 'taken' && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-500/10 text-teal-700 dark:text-teal-400 text-xs font-bold border border-teal-500/20">
-              <CheckCircle2 size={13} className="text-teal-600 dark:text-teal-400" />
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-ok-bg text-ok-text text-xs font-bold border border-ok-border">
+              <CheckCircle2 size={13} className="text-ok-text" />
               <span className="hidden sm:inline">Logged</span>
             </span>
           )}
@@ -322,16 +314,19 @@ export function DoseCard({
             </span>
           )}
 
-          {/* Expand/Collapse Chevron Indicator */}
-          <div
+          {/* Dedicated Expand/Collapse Disclosure Chevron Button */}
+          <button
+            type="button"
+            onClick={toggleExpand}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
             className={clsx(
-              'w-7 h-7 rounded-lg flex items-center justify-center text-content-subtle hover:text-content hover:bg-surface-hover transition-transform duration-200',
-              isExpanded && 'rotate-180 text-accent'
+              'w-8 h-8 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-content-subtle hover:text-content hover:bg-surface-hover transition-colors duration-200 cursor-pointer',
+              isExpanded && 'text-accent'
             )}
-            aria-hidden="true"
           >
-            <ChevronDown size={16} />
-          </div>
+            <ChevronDown size={16} className={clsx('transition-transform duration-200', isExpanded && 'rotate-180')} />
+          </button>
         </div>
       </div>
 
@@ -356,20 +351,20 @@ export function DoseCard({
                       className={clsx(
                         'inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border shadow-2xs',
                         isOutOfStock
-                          ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                          ? 'bg-risk-bg text-risk-text border-risk-border'
                           : isLowStock
-                            ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20'
+                            ? 'bg-warn-bg text-warn-text border-warn-border'
                             : 'bg-surface-sunken text-content border-line'
                       )}
                     >
                       {isOutOfStock ? (
                         <>
-                          <AlertCircle size={13} className="text-rose-600 dark:text-rose-400" />
+                          <AlertCircle size={13} className="text-risk-text" />
                           Out of stock (0 left in cabinet)
                         </>
                       ) : isLowStock ? (
                         <>
-                          <AlertCircle size={13} className="text-amber-600 dark:text-amber-400" />
+                          <AlertCircle size={13} className="text-warn-text" />
                           Low stock: {remaining} remaining
                         </>
                       ) : (
@@ -392,14 +387,14 @@ export function DoseCard({
                       className={clsx(
                         'inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border shadow-2xs',
                         relation === 'empty_stomach'
-                          ? 'bg-sky-100 dark:bg-sky-950/60 border-sky-300 dark:border-sky-700 text-sky-950 dark:text-sky-200'
-                          : 'bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200'
+                          ? 'bg-info-bg border-info-border text-info-text'
+                          : 'bg-warn-bg border-warn-border text-warn-text'
                       )}
                     >
                       {relation === 'empty_stomach' ? (
-                        <Droplets size={12} className="text-sky-700 dark:text-sky-400" />
+                        <Droplets size={12} className="text-info-text" />
                       ) : (
-                        <Utensils size={12} className="text-amber-700 dark:text-amber-400" />
+                        <Utensils size={12} className="text-warn-text" />
                       )}
                       {contextualMealInstruction}
                     </span>

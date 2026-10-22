@@ -19,6 +19,8 @@ export interface MedicalDatePickerProps {
   placeholder?: string;
   mode?: 'recent' | 'birthdate' | 'all';
   showAge?: boolean;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean | 'true' | 'false';
 }
 
 const MONTHS = [
@@ -94,6 +96,8 @@ export function MedicalDatePicker({
   placeholder,
   mode = 'recent',
   showAge = false,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': _ariaInvalid,
 }: MedicalDatePickerProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<'days' | 'months' | 'years'>('days');
@@ -267,58 +271,54 @@ export function MedicalDatePicker({
         }}
       >
         {/* Full-width, Spacious Themed Date Button */}
-        <Popover.Trigger asChild>
-          <button
-            type="button"
-            id={id}
-            disabled={disabled}
-            aria-label={placeholder || (mode === 'birthdate' ? 'Select date of birth' : 'Select date')}
-            className={twMerge(
-              'h-12 w-full bg-surface-raised border border-line-strong rounded-[var(--radius-md)] px-3 text-xs sm:text-sm text-content flex items-center justify-between transition-all select-none cursor-pointer shadow-2xs',
-              'hover:border-accent hover:bg-surface-hover focus:border-accent focus:outline-2 focus:outline-offset-2 focus:outline-accent',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              isCalendarOpen && 'border-accent ring-2 ring-accent/20'
-            )}
-          >
-            {/* Direct date text on left */}
-            <span
-              className={clsx(
-                'whitespace-nowrap font-medium text-xs sm:text-sm tracking-tight text-left min-w-0 pr-1',
-                isSelected ? 'text-content' : 'text-content-muted'
+        <div className="relative flex items-center w-full">
+          <Popover.Trigger asChild>
+            <button
+              type="button"
+              id={id}
+              disabled={disabled}
+              aria-describedby={ariaDescribedBy}
+              aria-label={placeholder || (mode === 'birthdate' ? 'Select date of birth' : 'Select date')}
+              className={twMerge(
+                'h-12 w-full bg-surface-raised border border-line-strong rounded-[var(--radius-md)] pl-3 pr-16 text-xs sm:text-sm text-content flex items-center justify-between transition-all select-none cursor-pointer shadow-2xs text-left',
+                'hover:border-accent hover:bg-surface-hover focus:border-accent focus:outline-2 focus:outline-offset-2 focus:outline-accent',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                isCalendarOpen && 'border-accent ring-2 ring-accent/20'
               )}
             >
-              {formattedDisplayDate}
-            </span>
+              {/* Direct date text on left */}
+              <span
+                className={clsx(
+                  'whitespace-nowrap font-medium text-xs sm:text-sm tracking-tight text-left min-w-0 pr-1',
+                  isSelected ? 'text-content' : 'text-content-muted'
+                )}
+              >
+                {formattedDisplayDate}
+              </span>
+            </button>
+          </Popover.Trigger>
 
-            {/* Right actions: Clear (X) + Calendar Icon */}
-            <div className="flex items-center gap-1.5 shrink-0 ml-1 text-content-subtle">
-              {value && !disabled && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onChange('');
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.stopPropagation();
-                      onChange('');
-                    }
-                  }}
-                  className="p-1 rounded-md text-content-subtle hover:text-content hover:bg-surface-sunken transition cursor-pointer"
-                  aria-label="Clear selected date"
-                >
-                  <XIcon size={12} />
-                </span>
-              )}
-              <CalendarIcon
-                size={16}
-                className={clsx('transition-colors', isSelected ? 'text-accent' : 'text-content-subtle')}
-              />
-            </div>
-          </button>
-        </Popover.Trigger>
+          {/* Right actions: Clear (X) + Calendar Icon */}
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 shrink-0 pointer-events-none text-content-subtle">
+            {value && !disabled && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange('');
+                }}
+                className="pointer-events-auto p-1.5 rounded-md text-content-subtle hover:text-content hover:bg-surface-sunken transition cursor-pointer flex items-center justify-center min-w-[32px] min-h-[32px]"
+                aria-label="Clear selected date"
+              >
+                <XIcon size={14} />
+              </button>
+            )}
+            <CalendarIcon
+              size={16}
+              className={clsx('transition-colors pointer-events-none', isSelected ? 'text-accent' : 'text-content-subtle')}
+            />
+          </div>
+        </div>
 
         {/* Floating Themed Popover with 80px Top Header Clearance */}
         <Popover.Portal>
@@ -328,7 +328,7 @@ export function MedicalDatePicker({
             sideOffset={6}
             collisionPadding={{ top: 80, bottom: 24, left: 16, right: 16 }}
             avoidCollisions
-            className="w-76 max-w-[calc(100vw-2rem)] p-3 rounded-2xl bg-surface-raised border border-line-strong shadow-over z-[100] animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+            className="w-84 max-w-[calc(100vw-2rem)] p-3 rounded-2xl bg-surface-raised border border-line-strong shadow-over z-[100] animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
           >
             {/* Header with Custom Month & Year Buttons + Navigation */}
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-line">
@@ -340,7 +340,7 @@ export function MedicalDatePicker({
                   className={clsx(
                     'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
                     calendarView === 'months'
-                      ? 'bg-accent text-accent-onaccent'
+                      ? 'bg-accent text-content-onaccent'
                       : 'bg-surface-hover text-content hover:bg-surface-sunken'
                   )}
                   aria-label="Choose month"
@@ -356,7 +356,7 @@ export function MedicalDatePicker({
                   className={clsx(
                     'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
                     calendarView === 'years'
-                      ? 'bg-accent text-accent-onaccent'
+                      ? 'bg-accent text-content-onaccent'
                       : 'bg-surface-hover text-content hover:bg-surface-sunken'
                   )}
                   aria-label="Choose year"
@@ -384,7 +384,7 @@ export function MedicalDatePicker({
                       }
                     }
                   }}
-                  className="h-6.5 w-6.5 rounded-md flex items-center justify-center text-content-muted hover:text-content hover:bg-surface-hover transition cursor-pointer"
+                  className="min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-content-muted hover:text-content hover:bg-surface-hover transition cursor-pointer"
                   aria-label="Previous page"
                 >
                   <ChevronLeftIcon size={14} />
@@ -406,7 +406,7 @@ export function MedicalDatePicker({
                       }
                     }
                   }}
-                  className="h-6.5 w-6.5 rounded-md flex items-center justify-center text-content-muted hover:text-content hover:bg-surface-hover transition cursor-pointer"
+                  className="min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-content-muted hover:text-content hover:bg-surface-hover transition cursor-pointer"
                   aria-label="Next page"
                 >
                   <ChevronRightIcon size={14} />
@@ -415,7 +415,7 @@ export function MedicalDatePicker({
                 <button
                   type="button"
                   onClick={() => setIsCalendarOpen(false)}
-                  className="h-6.5 w-6.5 rounded-md flex items-center justify-center text-content-muted hover:text-content hover:bg-surface-hover transition ml-0.5 cursor-pointer"
+                  className="min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-content-muted hover:text-content hover:bg-surface-hover transition ml-0.5 cursor-pointer"
                   aria-label="Close calendar"
                 >
                   <XIcon size={13} />
@@ -426,7 +426,7 @@ export function MedicalDatePicker({
             {/* VIEW 1: Custom Themed Year Picker Grid */}
             {calendarView === 'years' && (
               <div className="space-y-1.5">
-                <div className="text-[10px] font-bold text-content-subtle uppercase px-1">
+                <div className="text-2xs font-bold text-content-subtle uppercase px-1">
                   Select Year (1900 – {mode === 'recent' ? currentYear + 5 : currentYear})
                 </div>
                 <div
@@ -448,7 +448,7 @@ export function MedicalDatePicker({
                         className={clsx(
                           'h-8 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer',
                           isSelectedYear
-                            ? 'bg-accent text-accent-onaccent font-bold shadow-xs'
+                            ? 'bg-accent text-content-onaccent font-bold shadow-xs'
                             : 'bg-surface-hover text-content hover:bg-surface-sunken hover:text-accent'
                         )}
                       >
@@ -463,7 +463,7 @@ export function MedicalDatePicker({
             {/* VIEW 2: Custom Themed Month Picker Grid */}
             {calendarView === 'months' && (
               <div className="space-y-1.5">
-                <div className="text-[10px] font-bold text-content-subtle uppercase px-1">
+                <div className="text-2xs font-bold text-content-subtle uppercase px-1">
                   Select Month ({viewYear})
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 py-0.5">
@@ -480,7 +480,7 @@ export function MedicalDatePicker({
                         className={clsx(
                           'h-8 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer',
                           isSelectedMonth
-                            ? 'bg-accent text-accent-onaccent font-bold shadow-xs'
+                            ? 'bg-accent text-content-onaccent font-bold shadow-xs'
                             : 'bg-surface-hover text-content hover:bg-surface-sunken hover:text-accent'
                         )}
                       >
@@ -498,7 +498,7 @@ export function MedicalDatePicker({
                 {/* Weekday headers */}
                 <div className="grid grid-cols-7 gap-0.5 text-center mb-1">
                   {WEEKDAYS.map((wd) => (
-                    <span key={wd} className="text-[10px] font-bold text-content-subtle uppercase">
+                    <span key={wd} className="text-2xs font-bold text-content-subtle uppercase">
                       {wd}
                     </span>
                   ))}
@@ -518,9 +518,9 @@ export function MedicalDatePicker({
                         disabled={isFutureDisabled}
                         onClick={() => handleSelectDateFromCalendar(cell.dateStr)}
                         className={clsx(
-                          'h-7 w-7 text-xs font-semibold rounded-lg flex items-center justify-center transition-all relative mx-auto cursor-pointer',
+                          'min-w-[38px] min-h-[44px] w-full text-xs font-semibold rounded-lg flex items-center justify-center transition-all relative mx-auto cursor-pointer',
                           isSelectedDay
-                            ? 'bg-accent text-accent-onaccent font-bold shadow-xs'
+                            ? 'bg-accent text-content-onaccent font-bold shadow-xs'
                             : isFutureDisabled
                               ? 'text-content-subtle opacity-20 cursor-not-allowed'
                               : cell.isCurrentMonth
@@ -548,7 +548,7 @@ export function MedicalDatePicker({
                   Today
                 </button>
               ) : (
-                <span className="text-[11px] text-content-subtle">
+                <span className="text-2xs text-content-subtle">
                   {ageDisplay || 'Select date of birth'}
                 </span>
               )}
@@ -572,8 +572,8 @@ export function MedicalDatePicker({
       {/* Calculated Age Preview (if showAge enabled) */}
       {showAge && ageDisplay && (
         <div className="flex items-center gap-1.5 text-xs text-content-muted pl-0.5 animate-in fade-in duration-200 whitespace-nowrap overflow-hidden">
-          <span className="text-[11px] font-medium text-content-subtle shrink-0 whitespace-nowrap">Calculated age:</span>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-hover border border-line text-content font-semibold text-[11px] shrink-0 whitespace-nowrap">
+          <span className="text-2xs font-medium text-content-subtle shrink-0 whitespace-nowrap">Calculated age:</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-hover border border-line text-content font-semibold text-2xs shrink-0 whitespace-nowrap">
             {ageDisplay}
           </span>
         </div>

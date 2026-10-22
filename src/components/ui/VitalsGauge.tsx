@@ -56,6 +56,12 @@ export function VitalsGauge({
 
   return (
     <div
+      role="meter"
+      aria-label={label}
+      aria-valuenow={value}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuetext={statusText ? `${value} ${unit}, ${statusText}` : `${value} ${unit}`}
       className={twMerge(
         clsx(
           'relative p-4 rounded-2xl border border-line bg-surface-raised shadow-card flex flex-col items-center justify-center select-none overflow-hidden',

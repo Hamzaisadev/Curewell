@@ -354,7 +354,7 @@ export function MobileCompanionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between max-w-md mx-auto relative select-none pb-20">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between max-w-md mx-auto relative select-none pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {/* Toast Notification */}
       <Toast
         open={Boolean(toastMessage)}
@@ -1175,7 +1175,7 @@ export function MobileCompanionPage() {
       {/* Persistent Bottom Tab Navigation */}
       <nav
         aria-label="Companion Navigation"
-        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-2 py-2 flex items-center justify-around"
+        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around"
       >
         <button
           type="button"

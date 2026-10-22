@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { AppShell } from '../../components/layout/AppShell';
@@ -6,7 +6,6 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Field } from '../../components/ui/Field';
 import { Input } from '../../components/ui/Input';
-import { Logo } from '../../components/ui/Logo';
 import { GoogleIcon } from '../../components/ui/GoogleIcon';
 import {
   ShieldCheck,
@@ -39,7 +38,16 @@ export function LoginPage() {
     clearVerificationState,
   } = useAuth();
 
-  const initialEmail = (location.state as { email?: string })?.email || '';
+  const locationState = location.state as { from?: { pathname: string; search?: string }; email?: string } | null;
+  const initialEmail = locationState?.email || '';
+  const redirectTarget = locationState?.from
+    ? `${locationState.from.pathname}${locationState.from.search || ''}`
+    : '/';
+
+  const navigateToDestination = useCallback(() => {
+    navigate(redirectTarget, { replace: true });
+  }, [navigate, redirectTarget]);
+
   const [signInMethod, setSignInMethod] = useState<SignInMethod>('credentials');
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
@@ -69,14 +77,14 @@ export function LoginPage() {
       signInWithSmartQr(pairToken).then((res) => {
         setIsLoading(false);
         if (!res.error) {
-          navigate('/');
+          navigateToDestination();
         } else {
           setSignInMethod('qr');
           setErrorMessage(res.error);
         }
       });
     }
-  }, [signInWithSmartQr, navigate]);
+  }, [signInWithSmartQr, navigateToDestination]);
 
   // 2. Cleanup camera stream when unmounting or switching tabs
   const stopCamera = () => {
@@ -174,7 +182,7 @@ export function LoginPage() {
       setErrorMessage(error);
     } else {
       stopCamera();
-      navigate('/');
+      navigateToDestination();
     }
   };
 
@@ -189,7 +197,7 @@ export function LoginPage() {
         setIsLoading(false);
         if (!error) {
           stopCamera();
-          navigate('/');
+          navigateToDestination();
         } else {
           setErrorMessage(error);
         }
@@ -237,7 +245,7 @@ export function LoginPage() {
         setSuggestSignUp(true);
       }
     } else {
-      navigate('/');
+      navigateToDestination();
     }
   };
 
@@ -266,16 +274,16 @@ export function LoginPage() {
 
   return (
     <AppShell>
-      <div className="min-h-[85vh] flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="flex-1 w-full flex items-center justify-center p-4 sm:p-6 pb-8 sm:pb-12">
+        <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
           {/* Left Column: Professional Medical OS Deck (Desktop) */}
-          <div className="hidden lg:flex lg:col-span-5 flex-col space-y-6 pr-4">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-subtle border border-accent/20 text-xs font-semibold text-accent">
+          <div className="hidden lg:flex lg:col-span-5 flex-col space-y-4 pr-2">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-subtle border border-accent/20 text-xs font-semibold text-accent">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                 Clinical Health OS
               </div>
-              <h2 className="text-3xl font-black tracking-tight text-content leading-tight">
+              <h2 className="text-2xl xl:text-3xl font-black tracking-tight text-content leading-tight">
                 Your medical history, <span className="gradient-text-teal">structured and actionable.</span>
               </h2>
               <p className="text-xs text-content-muted leading-relaxed">
@@ -284,10 +292,10 @@ export function LoginPage() {
             </div>
 
             {/* Feature Cards */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-raised border border-line-strong">
-                <div className="w-9 h-9 rounded-lg bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0">
-                  <FileText size={18} />
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-raised border border-line-strong">
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0">
+                  <FileText size={16} />
                 </div>
                 <div className="text-xs">
                   <p className="font-semibold text-content">Multilingual Prescription OCR</p>
@@ -295,9 +303,9 @@ export function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-raised border border-line-strong">
-                <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                  <Activity size={18} />
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-raised border border-line-strong">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                  <Activity size={16} />
                 </div>
                 <div className="text-xs">
                   <p className="font-semibold text-content">ADA / AHA Biomarker Tracking</p>
@@ -306,7 +314,7 @@ export function LoginPage() {
               </div>
             </div>
 
-            <div className="pt-2 text-[11px] text-content-subtle flex items-center gap-2">
+            <div className="pt-1 text-[11px] text-content-subtle flex items-center gap-2">
               <ShieldCheck size={14} className="text-teal-600 shrink-0" />
               <span>Offline-first architecture with encrypted local storage</span>
             </div>
@@ -314,49 +322,68 @@ export function LoginPage() {
 
           {/* Right Column: Dual-Mode Sign In Form (Email/Password OR Smart QR Code) */}
           <div className="lg:col-span-7 w-full max-w-md mx-auto">
-            <div className="text-center space-y-2 mb-5">
-              <div className="flex justify-center mb-2">
-                <Logo size="lg" />
-              </div>
+            <div className="text-center space-y-1 mb-3">
               <h1 className="text-2xl font-black text-content tracking-tight">Sign In to Curewell</h1>
               <p className="text-xs text-content-muted">
-                Sign in with your Email &amp; Password or scan the Smart QR Code from your web browser
+                Sign in with your Email &amp; Password or scan the Smart QR Code
               </p>
             </div>
 
-            <Card className="p-6 sm:p-8 shadow-sm glass-card border border-line rounded-2xl space-y-5">
-              {/* Two-Way Sign-In Method Switcher */}
-              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-surface border border-line">
+            <Card className="p-5 sm:p-6 shadow-sm glass-card border border-line rounded-2xl space-y-4">
+              {/* Two-Way Sign-In Method Switcher (Sleek Apple/Linear style segmented pill) */}
+              <div
+                role="tablist"
+                aria-label="Sign-in method"
+                className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60"
+              >
                 <button
                   type="button"
+                  role="tab"
+                  aria-selected={signInMethod === 'credentials'}
                   onClick={() => {
                     stopCamera();
                     setSignInMethod('credentials');
                     setErrorMessage(null);
                   }}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
                     signInMethod === 'credentials'
-                      ? 'bg-accent text-content-onaccent shadow-xs'
-                      : 'text-content-muted hover:text-content'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold border border-slate-200/60 dark:border-slate-700/60'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-semibold'
                   }`}
                 >
-                  <KeyRound size={14} />
+                  <KeyRound
+                    size={14}
+                    className={
+                      signInMethod === 'credentials'
+                        ? 'text-teal-600 dark:text-teal-400'
+                        : 'text-slate-400'
+                    }
+                  />
                   <span>Email &amp; Password</span>
                 </button>
 
                 <button
                   type="button"
+                  role="tab"
+                  aria-selected={signInMethod === 'qr'}
                   onClick={() => {
                     setSignInMethod('qr');
                     setErrorMessage(null);
                   }}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
                     signInMethod === 'qr'
-                      ? 'bg-accent text-content-onaccent shadow-xs'
-                      : 'text-content-muted hover:text-content'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold border border-slate-200/60 dark:border-slate-700/60'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-semibold'
                   }`}
                 >
-                  <QrCode size={14} />
+                  <QrCode
+                    size={14}
+                    className={
+                      signInMethod === 'qr'
+                        ? 'text-teal-600 dark:text-teal-400'
+                        : 'text-slate-400'
+                    }
+                  />
                   <span>Scan Smart QR</span>
                 </button>
               </div>
@@ -378,29 +405,36 @@ export function LoginPage() {
 
               {/* METHOD 1: EMAIL & PASSWORD SIGN IN */}
               {signInMethod === 'credentials' ? (
-                <div className="space-y-4">
+                <div className="space-y-3.5">
                   {/* Google OAuth One-Click Sign In */}
-                  <Button
+                  <button
                     type="button"
-                    variant="secondary"
                     onClick={handleGoogleSignIn}
                     disabled={isLoading || isGoogleLoading}
-                    loading={isGoogleLoading}
-                    className="w-full h-11 text-xs font-bold border border-line bg-surface hover:bg-surface-raised flex items-center justify-center gap-2.5 transition-all shadow-2xs"
+                    className="w-full h-11 rounded-xl bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2.5 shadow-2xs transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                   >
-                    {!isGoogleLoading && <GoogleIcon className="w-4 h-4 shrink-0" />}
-                    <span>{isGoogleLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
-                  </Button>
+                    {isGoogleLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+                        <span>Connecting to Google...</span>
+                      </span>
+                    ) : (
+                      <>
+                        <GoogleIcon className="w-4 h-4 shrink-0" />
+                        <span>Continue with Google</span>
+                      </>
+                    )}
+                  </button>
 
-                  <div className="relative flex items-center justify-center py-0.5">
-                    <div className="border-t border-line w-full" />
-                    <span className="bg-surface px-3 text-[11px] font-semibold text-content-subtle uppercase tracking-wider shrink-0">
+                  <div className="relative flex items-center justify-center my-3">
+                    <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
+                    <span className="bg-surface px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
                       or sign in with email
                     </span>
-                    <div className="border-t border-line w-full" />
+                    <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
                   </div>
 
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-3.5">
                   {needsEmailVerification && (
                     <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-content space-y-2">
                       <p className="font-semibold text-amber-500 flex items-center gap-1.5">
@@ -471,9 +505,9 @@ export function LoginPage() {
                       />
                       <button
                         type="button"
-                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-content-subtle hover:text-content text-xs font-semibold select-none"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center text-content-subtle hover:text-content text-xs font-semibold select-none focus-visible:outline-2 focus-visible:outline-accent rounded-md"
                       >
                         {showPassword ? 'Hide' : 'Show'}
                       </button>
@@ -494,7 +528,7 @@ export function LoginPage() {
                   <Button
                     type="submit"
                     variant="primary"
-                    className="w-full h-12 text-sm font-bold tap-spring"
+                    className="w-full h-11 text-sm font-bold tap-spring"
                     loading={isLoading}
                   >
                     Sign In
@@ -504,115 +538,139 @@ export function LoginPage() {
             ) : (
                 /* METHOD 2: SMART QR CODE AUTO-SIGN-IN */
                 <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-surface border border-line text-center space-y-3">
-                    {cameraActive ? (
-                      <div className="space-y-3">
-                        <div className="relative w-full aspect-square max-w-[240px] mx-auto rounded-2xl overflow-hidden bg-slate-950 border-2 border-teal-500">
-                          <video
-                            ref={videoRef}
-                            className="w-full h-full object-cover"
-                            playsInline
-                            muted
-                          />
-                          <div className="absolute inset-4 border-2 border-teal-400/70 rounded-xl pointer-events-none" />
-                        </div>
-                        <p className="text-2xs text-content-muted">
-                          Point camera at the <strong>Smart QR Code</strong> on your web browser (&ldquo;Phone App / APK&rdquo; button).
-                        </p>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={stopCamera}
-                          className="w-full text-xs"
-                        >
-                          Close Camera
-                        </Button>
+                  {cameraActive ? (
+                    <div className="p-4 rounded-2xl bg-surface border border-line text-center space-y-3">
+                      <div className="relative w-full aspect-square max-w-[240px] mx-auto rounded-2xl overflow-hidden bg-slate-950 border-2 border-teal-500 shadow-md">
+                        <video
+                          ref={videoRef}
+                          className="w-full h-full object-cover"
+                          playsInline
+                          muted
+                        />
+                        <div className="absolute inset-4 border-2 border-teal-400/70 rounded-xl pointer-events-none animate-pulse" />
                       </div>
-                    ) : (
-                      <>
-                        <div className="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto">
-                          <QrCode size={26} />
+                      <p className="text-xs text-content-muted">
+                        Point camera at the <strong>Smart QR Code</strong> on your computer screen (&ldquo;Phone App / APK&rdquo; in the top bar).
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={stopCamera}
+                        className="w-full h-10 text-xs font-semibold"
+                      >
+                        Close Camera
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Guidance Card with Full-Width Single-Line Camera Action */}
+                      <div className="p-4 sm:p-5 rounded-2xl bg-teal-500/5 border border-teal-500/20 text-center space-y-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto shadow-2xs">
+                          <QrCode size={26} className="stroke-[2.2]" />
                         </div>
                         <div className="space-y-1">
-                          <h3 className="text-sm font-bold text-content">
+                          <h3 className="text-sm sm:text-base font-bold text-content">
                             Instant Sign-In via Smart QR
                           </h3>
-                          <p className="text-2xs text-content-muted leading-relaxed">
-                            Open Curewell on your computer, click <strong>Phone App / APK</strong> in the top bar, and scan the custom QR code.
+                          <p className="text-xs text-content-muted leading-relaxed max-w-sm mx-auto">
+                            Scan the QR code displayed on your computer, or enter your 6-digit pairing code below.
                           </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            onClick={handleStartCameraScan}
-                            className="text-xs h-10 font-bold"
-                          >
-                            <Camera size={15} className="mr-1.5" />
-                            Scan QR with Camera
-                          </Button>
+                        {/* Full-width single-line button: never wraps, perfectly centered */}
+                        <button
+                          type="button"
+                          onClick={handleStartCameraScan}
+                          className="w-full h-11 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                        >
+                          <Camera size={16} />
+                          <span>Scan QR Code with Camera</span>
+                        </button>
 
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={handlePasteFromClipboard}
-                            className="text-xs h-10 font-bold"
-                          >
-                            <ClipboardPaste size={15} className="mr-1.5" />
-                            Paste Smart Link
-                          </Button>
+                        {cameraError && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 font-medium pt-1">{cameraError}</p>
+                        )}
+                      </div>
+
+                      {/* Clean Divider */}
+                      <div className="relative flex items-center justify-center py-0.5">
+                        <div className="border-t border-line w-full" />
+                        <span className="bg-surface px-3 text-[11px] font-semibold text-content-subtle uppercase tracking-wider shrink-0">
+                          or enter code / link
+                        </span>
+                        <div className="border-t border-line w-full" />
+                      </div>
+
+                      {/* Manual Smart QR Token / Pairing Code Form with Integrated Paste Button */}
+                      <form onSubmit={handleSmartQrSubmit} className="space-y-3">
+                        <div className="space-y-1.5">
+                          <label htmlFor="smart-qr-token" className="block text-xs font-semibold text-content">
+                            6-Digit Pairing Code or Smart QR Link
+                          </label>
+                          <div className="relative flex items-center">
+                            <input
+                              id="smart-qr-token"
+                              type="text"
+                              value={qrInput}
+                              onChange={(e) => {
+                                setQrInput(e.target.value);
+                                if (errorMessage) setErrorMessage(null);
+                              }}
+                              placeholder="e.g. 482-910 or paste Smart QR link"
+                              className="w-full h-11 pl-3.5 pr-20 rounded-xl border border-line bg-surface text-content text-xs sm:text-sm font-mono placeholder:text-content-subtle placeholder:font-sans focus:outline-hidden focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                              autoComplete="off"
+                              disabled={isLoading}
+                            />
+                            <button
+                              type="button"
+                              onClick={handlePasteFromClipboard}
+                              className="absolute right-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-hover border border-line text-content text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 shadow-2xs"
+                              title="Paste from clipboard"
+                            >
+                              <ClipboardPaste size={13} className="text-teal-600 dark:text-teal-400" />
+                              <span>Paste</span>
+                            </button>
+                          </div>
                         </div>
-                      </>
-                    )}
 
-                    {cameraError && (
-                      <p className="text-2xs text-amber-500 font-medium pt-1">{cameraError}</p>
-                    )}
-                  </div>
-
-                  {/* Manual Smart QR Token / Pairing Code Form */}
-                  <form onSubmit={handleSmartQrSubmit} className="space-y-3">
-                    <Field
-                      id="smart-qr-input"
-                      label="Or Enter Smart QR Link / 6-Digit Pairing Code"
-                    >
-                      <Input
-                        type="text"
-                        value={qrInput}
-                        onChange={(e) => setQrInput(e.target.value)}
-                        placeholder="e.g. 482-910 or paste Smart QR link"
-                        disabled={isLoading}
-                      />
-                    </Field>
-
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      className="w-full h-11 text-xs font-bold"
-                      loading={isLoading}
-                    >
-                      Verify Smart QR &amp; Sign In Automatically
-                    </Button>
-                  </form>
+                        <button
+                          type="submit"
+                          disabled={isLoading || !qrInput.trim()}
+                          className="w-full h-11 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                        >
+                          {isLoading ? (
+                            <span className="flex items-center gap-2">
+                              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Verifying code...</span>
+                            </span>
+                          ) : (
+                            <>
+                              <CheckCircle2 size={16} />
+                              <span>Verify &amp; Sign In</span>
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Desktop-Only Sign Up Link (Phone/Mobile is Sign-In Only) */}
-              <div className="hidden md:block mt-6 pt-5 border-t border-line text-center text-xs text-content-muted">
+              {/* Sign Up Link */}
+              <div className="mt-4 pt-3.5 border-t border-line text-center text-xs text-content-muted">
                 Don&apos;t have an account?{' '}
                 <button
                   type="button"
                   onClick={handleGoToSignUp}
                   className="text-accent font-bold hover:underline inline-block"
                 >
-                  Create an account on Web
+                  Create an account
                 </button>
               </div>
             </Card>
 
-            <div className="text-center text-[11px] text-content-subtle mt-4">
+            <div className="text-center text-[11px] text-content-subtle mt-3">
               Protected by patient data privacy standards &amp; encrypted storage.
             </div>
           </div>

@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Field } from '../../components/ui/Field';
+import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { Dialog } from '../../components/ui/Dialog';
@@ -46,6 +47,14 @@ export function MedicineDetailPage() {
     common_instructions: string;
   } | null>(null);
   const [isLoadingExplainer, setIsLoadingExplainer] = useState(false);
+
+  // Edit Regimen Modal
+  const [isEditRegimenOpen, setIsEditRegimenOpen] = useState(false);
+  const [editDoseAmount, setEditDoseAmount] = useState('');
+  const [editFrequencyCode, setEditFrequencyCode] = useState<Tables<'medicines'>['frequency_code']>('OD');
+  const [editWithFood, setEditWithFood] = useState<string>('after');
+  const [editInstructions, setEditInstructions] = useState('');
+  const [isSavingRegimen, setIsSavingRegimen] = useState(false);
 
   // Side Effect Modal
   const [isSideEffectModalOpen, setIsSideEffectModalOpen] = useState(false);
@@ -109,6 +118,36 @@ export function MedicineDetailPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleOpenEditRegimen = () => {
+    if (!medicine) return;
+    setEditDoseAmount(medicine.dose_amount || '');
+    setEditFrequencyCode(medicine.frequency_code || 'OD');
+    setEditWithFood(medicine.with_food ? 'after' : 'before');
+    setEditInstructions(medicine.instructions || '');
+    setIsEditRegimenOpen(true);
+  };
+
+  const handleSaveRegimen = async () => {
+    if (!medicine) return;
+    setIsSavingRegimen(true);
+    try {
+      await medicinesRepo.updateMedicine(medicine.id, {
+        dose_amount: editDoseAmount.trim() || undefined,
+        frequency_code: editFrequencyCode,
+        with_food: editWithFood === 'after',
+        instructions: editInstructions.trim() || undefined,
+      });
+      setToastMessage('Prescription regimen updated successfully.');
+      setIsEditRegimenOpen(false);
+      await loadData();
+    } catch (err) {
+      console.error('Failed to update regimen:', err);
+      setToastMessage('Failed to update prescription regimen.');
+    } finally {
+      setIsSavingRegimen(false);
+    }
+  };
 
   const handleSaveSideEffect = async () => {
     if (!medicine || !symptomText.trim()) return;
@@ -190,6 +229,13 @@ export function MedicineDetailPage() {
         description={`${medicine.strength || ''} ${medicine.form || ''} • ${freqDesc}`}
         action={
           <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleOpenEditRegimen}
+            >
+              Edit Regimen
+            </Button>
             <Button
               variant="secondary"
               size="sm"
@@ -473,6 +519,80 @@ export function MedicineDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Edit Regimen Modal */}
+      <Dialog
+        open={isEditRegimenOpen}
+        onOpenChange={setIsEditRegimenOpen}
+        title="Edit Prescription Regimen"
+        description={`Update dosage, daily frequency, or food instructions for ${medicine.medicine_name}.`}
+      >
+        <div className="space-y-4 pt-1">
+          <Field id="edit-dose" label="Dosage / Amount per Intake">
+            <Input
+              id="edit-dose"
+              value={editDoseAmount}
+              onChange={(e) => setEditDoseAmount(e.target.value)}
+              placeholder="e.g. 1 tablet, 500mg, 2 puffs"
+            />
+          </Field>
+
+          <Field id="edit-freq" label="Frequency">
+            <Select
+              id="edit-freq"
+              value={editFrequencyCode || 'OD'}
+              onValueChange={(val) => setEditFrequencyCode(val as Tables<'medicines'>['frequency_code'])}
+              options={[
+                { value: 'OD', label: 'Once daily (OD)' },
+                { value: 'BD', label: 'Twice daily (BD)' },
+                { value: 'TDS', label: 'Three times daily (TDS)' },
+                { value: 'QID', label: 'Four times daily (QID)' },
+                { value: 'WEEKLY', label: 'Once weekly' },
+                { value: 'PRN', label: 'As needed (PRN)' },
+              ]}
+            />
+          </Field>
+
+          <Field id="edit-food" label="Meal Timing / Food Relation">
+            <Select
+              id="edit-food"
+              value={editWithFood}
+              onValueChange={setEditWithFood}
+              options={[
+                { value: 'after', label: 'With / After Food' },
+                { value: 'before', label: 'Empty Stomach / Before Food' },
+              ]}
+            />
+          </Field>
+
+          <Field id="edit-notes" label="Special Instructions (Optional)">
+            <Textarea
+              id="edit-notes"
+              value={editInstructions}
+              onChange={(e) => setEditInstructions(e.target.value)}
+              placeholder="e.g. Take with a full glass of water, do not crush tablet"
+              rows={2}
+            />
+          </Field>
+
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-line">
+            <Button
+              variant="ghost"
+              onClick={() => setIsEditRegimenOpen(false)}
+              disabled={isSavingRegimen}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveRegimen}
+              loading={isSavingRegimen}
+            >
+              Save Regimen Changes
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* Log Side Effect Modal */}
       <Dialog

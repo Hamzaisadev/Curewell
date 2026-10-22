@@ -13,6 +13,8 @@ import { UpNextCard } from './components/UpNextCard';
 import { RecentConsultationsCard } from './components/RecentConsultationsCard';
 import { ClinicalDossierCard } from './components/ClinicalDossierCard';
 import { EmergencyHotlinesStripCard } from './components/EmergencyHotlinesStripCard';
+import { DrugInteractionRadarCard } from './components/DrugInteractionRadarCard';
+import { LabsCard } from './components/LabsCard';
 import { QuickVitalsModal } from '../../components/vitals/QuickVitalsModal';
 import { useAuth } from '../../lib/auth/AuthContext';
 import {
@@ -128,6 +130,12 @@ export function DashboardPage() {
             <AdherenceHabitsCard refreshKey={scheduleRefreshKey} />
             <UpNextCard refreshKey={scheduleRefreshKey} />
           </div>
+        </div>
+
+        {/* ── Clinical Safety Radar & Diagnostic Biomarkers ────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          <DrugInteractionRadarCard />
+          <LabsCard />
         </div>
 
         {/* ── Doctor's Brief & Clinical Consultations ────────────────── */}

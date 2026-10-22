@@ -43,7 +43,7 @@ export function AppShell({
         <main
           className={`flex-1 w-full mx-auto flex flex-col min-h-0 ${widthClass} ${
             noPadding
-              ? 'p-0 pb-16 md:pb-0'
+              ? 'p-0 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0'
               : 'py-5 md:py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-10'
           } ${fixedViewport ? 'overflow-hidden' : ''}`}
         >

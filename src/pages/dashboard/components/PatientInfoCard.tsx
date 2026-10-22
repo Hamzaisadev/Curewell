@@ -260,9 +260,10 @@ export function PatientInfoCard() {
                       Allergy:{' '}
                       {profile?.allergies &&
                       !String(profile.allergies).toLowerCase().includes('no known') &&
-                      !String(profile.allergies).toLowerCase().includes('nkda')
+                      !String(profile.allergies).toLowerCase().includes('nkda') &&
+                      String(profile.allergies).toLowerCase() !== 'none'
                         ? profile.allergies
-                        : activeReactions[0]?.medicine_name || 'Paracetamol'}
+                        : activeReactions[0]?.medicine_name || activeReactions[0]?.note || 'Unspecified Adverse Reaction'}
                     </span>
                   </span>
                 </>

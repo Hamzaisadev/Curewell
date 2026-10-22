@@ -25,7 +25,11 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExternalLinkIcon,
+  CameraIcon,
 } from '../../components/ui/icons';
+import { uploadProfileAvatar, removeProfileAvatar } from '../../lib/files/profileAvatar';
+import { MedicalDatePicker } from '../../components/ui/MedicalDatePicker';
+import { BloodGroupPicker } from '../../components/ui/BloodGroupPicker';
 import { AddFamilyProfileModal } from '../../components/profile/AddFamilyProfileModal';
 import { ShifaMedicalPassportModal } from '../../components/onboarding/ShifaMedicalPassportModal';
 import { MobileCompanionModal } from '../../components/companion/MobileCompanionModal';
@@ -99,6 +103,17 @@ export function SettingsPage() {
   const [allergiesText, setAllergiesText] = useState('');
   const [conditionsText, setConditionsText] = useState('');
 
+  // Avatar upload state
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clinical profile state
+  const [dateOfBirth, setDateOfBirth] = useState<string>('');
+  const [bloodGroup, setBloodGroup] = useState<string>('');
+  const [emergencyContactName, setEmergencyContactName] = useState<string>('');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState<string>('');
+
   // Family profile management state
   const [isAddProfileModalOpen, setIsAddProfileModalOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<{ id: string; name: string } | null>(null);
@@ -149,6 +164,11 @@ export function SettingsPage() {
           setProfile(p);
           setFullName(p.full_name || '');
           setSex(p.sex || 'undisclosed');
+          setAvatarUrl(p.avatar_url || null);
+          setDateOfBirth(p.date_of_birth || '');
+          setBloodGroup(p.blood_group || '');
+          setEmergencyContactName(p.emergency_contact_name || '');
+          setEmergencyContactPhone(p.emergency_contact_phone || '');
           setAllergiesText(
             Array.isArray(p.allergies) ? (p.allergies as string[]).join(', ') : (p.allergies as string) || ''
           );
@@ -343,6 +363,42 @@ export function SettingsPage() {
     setToastMessage('Opening WhatsApp to send test caregiver alert...');
   };
 
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id || !effectiveUserId) return;
+    setIsUploadingAvatar(true);
+    try {
+      const { publicUrl, updatedProfile } = await uploadProfileAvatar(file, effectiveUserId, profile.id);
+      setAvatarUrl(publicUrl);
+      setProfile(updatedProfile);
+      await refreshProfile();
+      setToastMessage('Profile photo updated successfully.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to upload photo';
+      setToastMessage(msg);
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarFileInputRef.current) avatarFileInputRef.current.value = '';
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!profile?.id || !effectiveUserId) return;
+    setIsUploadingAvatar(true);
+    try {
+      const updated = await removeProfileAvatar(effectiveUserId, profile.id, avatarUrl);
+      setAvatarUrl(null);
+      setProfile(updated);
+      await refreshProfile();
+      setToastMessage('Profile photo removed.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to remove photo';
+      setToastMessage(msg);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!profile) return;
     setIsSavingProfile(true);
@@ -359,8 +415,12 @@ export function SettingsPage() {
       await profilesRepo.updateProfile(profile.id, {
         full_name: fullName.trim() || 'Patient',
         sex,
+        date_of_birth: dateOfBirth || null,
+        blood_group: (bloodGroup as 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'unknown') || null,
         allergies: allergyArr.join(', '),
         chronic_conditions: condArr.join(', '),
+        emergency_contact_name: emergencyContactName.trim() || null,
+        emergency_contact_phone: emergencyContactPhone.trim() || null,
       });
 
       await refreshProfile();
@@ -802,6 +862,71 @@ export function SettingsPage() {
               </button>
             </div>
 
+            {/* Interactive Profile Avatar Uploader */}
+            <div className="p-4 rounded-2xl bg-surface-raised border border-line flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+                <div className="relative group shrink-0">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={fullName || 'Patient'}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-line shadow-xs"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-xl font-bold border-2 border-line shadow-xs">
+                      {fullName ? fullName.charAt(0).toUpperCase() : 'P'}
+                    </div>
+                  )}
+                  {isUploadingAvatar && (
+                    <div className="absolute inset-0 rounded-full bg-slate-900/60 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-content">Patient Photo / Avatar</h3>
+                  <p className="text-xs text-content-muted">
+                    Upload a clinical portrait for medical dossiers and caregiver identification.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                <input
+                  ref={avatarFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarSelect}
+                  aria-label="Upload profile photo"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={isUploadingAvatar}
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  className="text-xs"
+                >
+                  <CameraIcon size={14} className="mr-1.5" />
+                  {avatarUrl ? 'Change Photo' : 'Upload Photo'}
+                </Button>
+                {avatarUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isUploadingAvatar}
+                    onClick={handleAvatarRemove}
+                    className="text-xs text-risk-text hover:bg-risk-bg"
+                  >
+                    <TrashIcon size={14} className="mr-1" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field id="set-name" label="Full Name" required>
                 <Input
@@ -826,6 +951,28 @@ export function SettingsPage() {
               </Field>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field id="set-dob" label="Date of Birth" hint="Calculates age and pediatric/geriatric dosing">
+                <MedicalDatePicker
+                  id="set-dob"
+                  value={dateOfBirth}
+                  onChange={(val) => setDateOfBirth(val)}
+                  mode="birthdate"
+                  showAge
+                  placeholder="Select date of birth"
+                />
+              </Field>
+
+              <Field id="set-blood" label="Blood Group" hint="Critical for emergency transfusion dossiers">
+                <BloodGroupPicker
+                  id="set-blood"
+                  value={bloodGroup}
+                  onChange={(val) => setBloodGroup(val)}
+                  placeholder="Select blood group"
+                />
+              </Field>
+            </div>
+
             <Field id="set-allergies" label="Known Drug & Food Allergies" hint="Comma-separated (e.g. Penicillin, Sulfa drugs, Peanuts)">
               <Input
                 value={allergiesText}
@@ -841,6 +988,25 @@ export function SettingsPage() {
                 placeholder="e.g. Hypertension, Asthma"
               />
             </Field>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field id="set-emergency-name" label="Emergency Contact (ICE Name)" hint="First responder or family contact name">
+                <Input
+                  value={emergencyContactName}
+                  onChange={(e) => setEmergencyContactName(e.target.value)}
+                  placeholder="e.g. Sarah Khan (Spouse)"
+                />
+              </Field>
+
+              <Field id="set-emergency-phone" label="Emergency Contact Phone" hint="Speed-dial number during critical triage">
+                <Input
+                  type="tel"
+                  value={emergencyContactPhone}
+                  onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                  placeholder="e.g. +92 300 1234567"
+                />
+              </Field>
+            </div>
 
             <div className="flex justify-end pt-2 border-t border-ink-100">
               <Button variant="primary" onClick={handleSaveProfile} loading={isSavingProfile}>

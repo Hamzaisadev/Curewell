@@ -62,7 +62,7 @@ export function Toast({ open, onClose, message, tone = 'ok', durationMs = 5000 }
         type="button"
         onClick={onClose}
         aria-label="Dismiss"
-        className="shrink-0 -mr-1 -mt-0.5 p-1 rounded-[var(--radius-sm)] opacity-70 hover:opacity-100 transition-opacity"
+        className="shrink-0 -mr-2 -my-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-[var(--radius-sm)] opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
       >
         <XIcon size={16} />
       </button>

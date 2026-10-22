@@ -23,6 +23,7 @@ import {
   CheckIcon,
   SearchIcon,
   MenuIcon,
+  PhoneIcon,
 } from '../../components/ui/icons';
 import { medicinesRepo, visitsRepo, reportsRepo, profilesRepo, sideEffectsRepo, vitalsRepo, chatRepo, dosesRepo } from '../../lib/db';
 import { assembleClinicalContext } from '../../domain/patientDossier';
@@ -158,8 +159,15 @@ export function AssistantPage() {
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const [activeEmergencyAlert, setActiveEmergencyAlert] = useState<{
+    matchedLabels: string[];
+    caregiverName?: string;
+    caregiverPhone?: string;
+  } | null>(null);
 
   const isNearBottomRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const prevInputRef = useRef('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const keepAliveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -551,7 +559,28 @@ export function AssistantPage() {
   const handleChatScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 120;
+    const nearBottom = scrollHeight - scrollTop - clientHeight < 120;
+    isNearBottomRef.current = nearBottom;
+    setIsScrolledUp(!nearBottom);
+  };
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+      isNearBottomRef.current = true;
+      setIsScrolledUp(false);
+    }
+  };
+
+  const handleStopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
   };
 
   // Smart smooth or instant scroll to bottom
@@ -856,20 +885,28 @@ export function AssistantPage() {
 
     // Pre-flight Synchronous Emergency Red-Flag Interlock
     const redFlagCheck = checkRedFlags(text);
-    const emergencyNotice: Message | null = redFlagCheck.isEmergency
-      ? {
-          id: `emergency-${Date.now()}`,
-          role: 'assistant',
-          content: `🚨 **EMERGENCY MEDICAL WARNING**\n\nThe symptoms you reported (${redFlagCheck.matchedLabels.join(', ')}) require immediate clinical attention.\n\n**Emergency Ambulance & Medical Helplines:**\n- **Rescue 1122:** [Call 1122](tel:1122) (Medical & Disaster Services)\n- **Edhi Ambulance:** [Call 115](tel:115) (Ambulance Relief)\n- **Chhipa Ambulance:** [Call 1020](tel:1020) (Emergency Service)\n\n*Please proceed to the nearest emergency department or call an ambulance immediately. Do not delay emergency medical care for online consultations.*`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          safetyAlerts: [
-            `CRITICAL TRIAGE: Detected red flags for ${redFlagCheck.matchedLabels.join(', ')}. Please contact emergency medical services immediately.`
-          ],
-        }
-      : null;
+    if (redFlagCheck.isEmergency) {
+      const patientProfile = profile || authProfile;
+      const caregiverPhone = patientProfile?.emergency_contact_phone || undefined;
+      const caregiverName = patientProfile?.emergency_contact_name || 'Caregiver';
 
-    if (emergencyNotice) {
-      setMessages((prev) => [...prev, userMsg, emergencyNotice, initialBotMsg]);
+      setActiveEmergencyAlert({
+        matchedLabels: redFlagCheck.matchedLabels,
+        caregiverPhone,
+        caregiverName,
+      });
+
+      const emergencyNotice: Message = {
+        id: `emergency-${Date.now()}`,
+        role: 'assistant',
+        content: `🚨 **EMERGENCY MEDICAL WARNING**\n\nThe symptoms you reported (${redFlagCheck.matchedLabels.join(', ')}) require immediate clinical attention.\n\n**Emergency Ambulance & Medical Helplines:**\n- **Rescue 1122:** [Call 1122](tel:1122) (Medical & Disaster Services)\n- **Edhi Ambulance:** [Call 115](tel:115) (Ambulance Relief)\n- **Chhipa Ambulance:** [Call 1020](tel:1020) (Emergency Service)\n${caregiverPhone ? `- **Caregiver ICE Contact:** [Call ${caregiverName} (${caregiverPhone})](tel:${caregiverPhone})\n` : ''}\n*Please proceed to the nearest emergency department or call an ambulance immediately. Routine LLM consultation halted to prevent delaying emergency care.*`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        safetyAlerts: [
+          `CRITICAL TRIAGE: Detected red flags for ${redFlagCheck.matchedLabels.join(', ')}. Please contact emergency medical services immediately.`
+        ],
+      };
+
+      setMessages((prev) => [...prev, userMsg, emergencyNotice]);
       chatRepo.createMessage({
         session_id: currentSessionId,
         user_id: effectiveUserId,
@@ -880,9 +917,17 @@ export function AssistantPage() {
           safetyAlerts: emergencyNotice.safetyAlerts,
         },
       }).catch((err) => console.warn('Failed to persist emergency notice:', err));
-    } else {
-      setMessages((prev) => [...prev, userMsg, initialBotMsg]);
+
+      setInput('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+      setAttachedImage(null);
+      setIsLoading(false);
+      return;
     }
+
+    setMessages((prev) => [...prev, userMsg, initialBotMsg]);
 
     setInput('');
     if (textareaRef.current) {
@@ -919,8 +964,11 @@ export function AssistantPage() {
           image_mime: null,
         }));
 
+      abortControllerRef.current = new AbortController();
+
       const response = await fetch(resolveApiUrl('/api/chat-assistant'), {
         method: 'POST',
+        signal: abortControllerRef.current.signal,
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -1075,6 +1123,10 @@ export function AssistantPage() {
         }).catch((err) => console.warn('Failed to persist bot message:', err));
       }
     } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // Stopped by user — keep whatever tokens were accumulated
+        return;
+      }
       const msg = err instanceof Error ? err.message : 'Error communicating with assistant';
       const errorContent = `Sorry, I encountered an issue: ${msg}. Please try again.`;
       setMessages((prev) =>
@@ -1097,6 +1149,7 @@ export function AssistantPage() {
       }).catch((e) => console.warn('Failed to persist error message:', e));
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
       if (fileInputRef.current && currentImg) {
         fileInputRef.current.value = '';
       }
@@ -1338,7 +1391,56 @@ export function AssistantPage() {
 
           {/* Tab 1: Full-Height Clean Consultation Chat */}
           {activeTab === 'chat' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-surface-sunken/40">
+            <div className="flex-1 flex flex-col min-h-0 bg-surface-sunken/40 relative">
+              {/* Acute Emergency Symptom Interlock Sticky Banner */}
+              {activeEmergencyAlert && (
+                <div className="sticky top-0 z-30 bg-rose-600 text-white shadow-md border-b border-rose-700 px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-200 shrink-0">
+                  <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <AlertTriangleIcon size={20} className="shrink-0 mt-0.5 text-white animate-bounce" />
+                      <div>
+                        <p className="font-extrabold text-xs sm:text-sm uppercase tracking-wide">
+                          Emergency Symptom Detected: {activeEmergencyAlert.matchedLabels.join(', ')}
+                        </p>
+                        <p className="text-2xs sm:text-xs text-rose-100">
+                          Automatic response paused. Seek emergency medical evaluation immediately.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+                      <a
+                        href="tel:1122"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-rose-700 font-bold text-xs hover:bg-rose-50 transition-colors shadow-xs"
+                      >
+                        <PhoneIcon size={13} /> Call 1122
+                      </a>
+                      <a
+                        href="tel:115"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-800 text-white font-bold text-xs hover:bg-rose-900 border border-rose-500 transition-colors shadow-xs"
+                      >
+                        <PhoneIcon size={13} /> Call 115
+                      </a>
+                      {activeEmergencyAlert.caregiverPhone && (
+                        <a
+                          href={`tel:${activeEmergencyAlert.caregiverPhone}`}
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-800 text-white font-bold text-xs hover:bg-rose-900 border border-rose-500 transition-colors shadow-xs"
+                        >
+                          <PhoneIcon size={13} /> Call {activeEmergencyAlert.caregiverName || 'Caregiver'}
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setActiveEmergencyAlert(null)}
+                        className="p-1 rounded-lg text-rose-200 hover:text-white hover:bg-rose-700/60 transition-colors ml-auto sm:ml-0 cursor-pointer"
+                        aria-label="Dismiss emergency banner"
+                      >
+                        <XIcon size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Scrollable Messages Stream */}
               <div
                 ref={chatContainerRef}
@@ -1842,20 +1944,33 @@ export function AssistantPage() {
                       disabled={isLoading}
                     />
 
-                    {/* Send Button */}
-                    <button
-                      type="submit"
-                      disabled={(!input.trim() && !attachedImage) || isLoading}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 cursor-pointer ${
-                        input.trim() || attachedImage
-                          ? 'bg-accent text-accent-onaccent shadow-xs hover:opacity-90 active:scale-95'
-                          : 'bg-surface-raised border border-line text-content-subtle cursor-not-allowed opacity-50'
-                      }`}
-                      title="Send message"
-                      aria-label="Send message"
-                    >
-                      <SendIcon size={16} />
-                    </button>
+                    {/* Send Button or Stop Button */}
+                    {isLoading ? (
+                      <button
+                        type="button"
+                        onClick={handleStopGenerating}
+                        aria-label="Stop generating response"
+                        className="h-10 px-3.5 rounded-xl bg-risk-bg text-risk-text border border-risk-border font-bold text-xs flex items-center gap-1.5 hover:bg-risk-bg/80 transition-all shrink-0 cursor-pointer shadow-2xs"
+                        title="Stop response generation"
+                      >
+                        <div className="w-2.5 h-2.5 rounded-2xs bg-current" />
+                        <span>Stop</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={!input.trim() && !attachedImage}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                          input.trim() || attachedImage
+                            ? 'bg-accent text-accent-onaccent shadow-xs hover:opacity-90 active:scale-95'
+                            : 'bg-surface-raised border border-line text-content-subtle cursor-not-allowed opacity-50'
+                        }`}
+                        title="Send message"
+                        aria-label="Send message"
+                      >
+                        <SendIcon size={16} />
+                      </button>
+                    )}
                   </form>
 
                   <p className="text-center text-[11px] text-content-subtle flex items-center justify-center gap-1.5">
@@ -1864,6 +1979,24 @@ export function AssistantPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Floating Scroll-to-Bottom Indicator */}
+              {isScrolledUp && (
+                <div className="absolute bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 z-20 animate-in fade-in slide-in-from-bottom-2 duration-150 pointer-events-auto">
+                  <button
+                    type="button"
+                    onClick={scrollToBottom}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-raised border border-line-strong text-content shadow-lg hover:bg-surface-hover text-xs font-bold backdrop-blur-md cursor-pointer transition-all hover:scale-105"
+                    aria-label="Scroll to latest response"
+                  >
+                    <span className="text-accent font-black">↓</span>
+                    <span>Latest response</span>
+                    {isLoading && (
+                      <span className="w-2 h-2 rounded-full bg-accent animate-ping ml-0.5" />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

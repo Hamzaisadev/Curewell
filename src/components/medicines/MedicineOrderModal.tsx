@@ -80,6 +80,7 @@ export function MedicineOrderModal({
   const [purchasePrice, setPurchasePrice] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'instore'>('whatsapp');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [whatsappLaunched, setWhatsappLaunched] = useState(false);
 
   // Sync profile pharmacy
   useEffect(() => {
@@ -89,6 +90,13 @@ export function MedicineOrderModal({
   }, [profileId]);
 
   // When medicine changes, default to generic if available
+  useEffect(() => {
+    if (!isOpen) {
+      setWhatsappLaunched(false);
+      setIsSuccess(false);
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (genericAlternative) {
       setSelectedTier('generic');
@@ -166,7 +174,7 @@ export function MedicineOrderModal({
     saveDeliveryArea(newArea);
   };
 
-  const handleConfirmWhatsAppOrder = () => {
+  const handleLaunchWhatsAppOrder = () => {
     if (!activePharmacyInfo.phone.trim()) {
       setIsEditingCustomPharmacy(true);
       return;
@@ -190,6 +198,12 @@ export function MedicineOrderModal({
         : undefined,
     });
 
+    // Launch WhatsApp deep link without mutating inventory or recording expense prematurely
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setWhatsappLaunched(true);
+  };
+
+  const handleConfirmReceivedAndLogExpense = () => {
     // 1. Record purchase into finance tracker
     recordMedicinePurchaseExpense({
       profileId,
@@ -204,18 +218,16 @@ export function MedicineOrderModal({
         : `Refill ordered via WhatsApp (${activePharmacyInfo.name}) - Prescribed brand`,
     });
 
-    // 2. Automatically update cabinet inventory
+    // 2. Update cabinet inventory
     const newStock = stockCount + packQuantity;
     currentInventory[medicine.id] = newStock;
     writeInventory(profileId, currentInventory);
     onStockUpdated?.(newStock);
 
-    // 3. Launch WhatsApp deep link
-    window.open(url, '_blank', 'noopener,noreferrer');
-
     setIsSuccess(true);
     setTimeout(() => {
       setIsSuccess(false);
+      setWhatsappLaunched(false);
       onClose();
     }, 1500);
   };
@@ -611,27 +623,65 @@ export function MedicineOrderModal({
             </div>
 
             {/* WhatsApp Order Action */}
-            <Button
-              variant="primary"
-              onClick={handleConfirmWhatsAppOrder}
-              disabled={isSuccess}
-              className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold rounded-xl shadow-xs text-sm flex items-center justify-center gap-2 tap-spring"
-            >
-              {isSuccess ? (
-                <>
-                  <Check size={18} />
-                  Order Dispatched & Logged to Expenses!
-                </>
-              ) : (
-                <>
+            {!whatsappLaunched ? (
+              <div className="space-y-2">
+                <Button
+                  variant="primary"
+                  onClick={handleLaunchWhatsAppOrder}
+                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold rounded-xl shadow-xs text-sm flex items-center justify-center gap-2 tap-spring"
+                >
                   <MessageCircle size={18} />
                   Order via WhatsApp · PKR {activeEstimatedTotal.toLocaleString()}
-                </>
-              )}
-            </Button>
-            <p className="text-[11px] text-content-subtle text-center">
-              Opens WhatsApp with pre-filled order & automatically records PKR {activeEstimatedTotal.toLocaleString()} into your Health Expenses tracker.
-            </p>
+                </Button>
+                <p className="text-[11px] text-content-subtle text-center">
+                  Opens WhatsApp with pre-filled order. Cabinet inventory and expenses will only update after you confirm receipt.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                <div className="flex items-start gap-2">
+                  <MessageCircle size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-content">
+                    WhatsApp opened for <strong>{activePharmacyInfo.name}</strong>. Once you have received your medicine, confirm below to log the expense and update your stock.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={handleConfirmReceivedAndLogExpense}
+                  disabled={isSuccess}
+                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white font-bold rounded-xl shadow-xs text-xs sm:text-sm flex items-center justify-center gap-2 tap-spring"
+                >
+                  {isSuccess ? (
+                    <>
+                      <Check size={18} />
+                      Medicine Received, Stock Updated & Expense Logged!
+                    </>
+                  ) : (
+                    <>
+                      <Check size={18} />
+                      Confirm Medicine Received & Log Expense
+                    </>
+                  )}
+                </Button>
+                <div className="flex items-center justify-center gap-3 pt-1 text-2xs">
+                  <button
+                    type="button"
+                    onClick={handleLaunchWhatsAppOrder}
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    Re-open WhatsApp Chat
+                  </button>
+                  <span className="text-line-strong">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappLaunched(false)}
+                    className="text-content-subtle hover:text-content hover:underline cursor-pointer"
+                  >
+                    Back to Order Details
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

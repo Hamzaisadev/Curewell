@@ -80,6 +80,45 @@ export function SegmentedControl<T extends string = string>({
     lg: 'p-1.5 rounded-2xl',
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    const enabledIndices: number[] = options
+      .map((opt, i) => (opt.disabled ? -1 : i))
+      .filter((i) => i !== -1);
+
+    if (enabledIndices.length === 0) return;
+
+    let targetIndex = -1;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const currentPos = enabledIndices.indexOf(currentIndex);
+      const nextPos = (currentPos + 1) % enabledIndices.length;
+      targetIndex = enabledIndices[nextPos] ?? -1;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const currentPos = enabledIndices.indexOf(currentIndex);
+      const prevPos = (currentPos - 1 + enabledIndices.length) % enabledIndices.length;
+      targetIndex = enabledIndices[prevPos] ?? -1;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      targetIndex = enabledIndices[0] ?? -1;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      targetIndex = enabledIndices[enabledIndices.length - 1] ?? -1;
+    }
+
+    if (targetIndex !== -1 && targetIndex !== currentIndex) {
+      const targetOption = options[targetIndex];
+      if (targetOption) {
+        onChange(targetOption.value);
+        const targetEl = containerRef.current?.querySelector<HTMLButtonElement>(
+          `[data-tab-value="${targetOption.value}"]`
+        );
+        targetEl?.focus();
+      }
+    }
+  };
+
   const activeIndicatorTone = {
     default: 'bg-surface-raised border border-line-strong shadow-card text-content',
     teal: 'bg-surface-raised border border-teal-200/80 shadow-card text-teal-950',
@@ -116,7 +155,7 @@ export function SegmentedControl<T extends string = string>({
         }}
       />
 
-      {options.map((opt) => {
+      {options.map((opt, idx) => {
         const isActive = opt.value === value;
         return (
           <button
@@ -126,6 +165,8 @@ export function SegmentedControl<T extends string = string>({
             aria-selected={isActive}
             disabled={opt.disabled}
             data-tab-value={opt.value}
+            tabIndex={isActive ? 0 : -1}
+            onKeyDown={(e) => handleKeyDown(e, idx)}
             onClick={() => onChange(opt.value)}
             className={twMerge(
               clsx(
