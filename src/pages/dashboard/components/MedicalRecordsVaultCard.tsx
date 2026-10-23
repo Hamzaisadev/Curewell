@@ -45,22 +45,22 @@ export function MedicalRecordsVaultCard() {
   }, [profile?.id]);
 
   return (
-    <div className="bg-surface rounded-3xl border border-line p-4 sm:p-5 shadow-card hover:shadow-raise transition-all duration-200 flex flex-col justify-between h-full">
+    <div className="bg-surface rounded-2xl border border-line p-4 sm:p-5 shadow-card hover:shadow-raise transition-colors duration-200 flex flex-col justify-between h-full">
       <div>
         {/* ── Header ────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between pb-2 mb-3 border-b border-line/40">
           <div className="flex items-center gap-2">
-            <span className="text-teal-600 dark:text-teal-400">
+            <span className="text-accent">
               <FolderIcon size={16} />
             </span>
-            <h2 className="text-xs font-bold text-content uppercase tracking-wider text-content-muted">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-content-muted">
               Diagnostic Records Vault
             </h2>
           </div>
 
           <Link
             to="/reports"
-            className="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline flex items-center gap-0.5"
+            className="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-0.5"
           >
             <span>All Files</span>
             <ChevronRightIcon size={13} />
@@ -79,13 +79,13 @@ export function MedicalRecordsVaultCard() {
               <Link
                 key={r.id}
                 to={`/reports/${r.id}`}
-                className="p-3 rounded-2xl bg-surface-sunken/60 dark:bg-ink-900/30 border border-line/40 flex items-center justify-between gap-3 hover:border-brand-500/40 transition-colors group"
+                className="p-3 rounded-2xl bg-surface-sunken/60 border border-line/40 flex items-center justify-between gap-3 hover:border-brand-500/40 transition-colors group"
               >
                 <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-content truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                  <h4 className="text-xs font-bold text-content truncate group-hover:text-brand-600 transition-colors">
                     {r.title || r.lab_name || 'Diagnostic Report'}
                   </h4>
-                  <p className="text-[11px] text-content-subtle font-mono mt-0.5">
+                  <p className="text-2xs text-content-subtle font-mono mt-0.5">
                     {formatReportDateSafe(r.report_date, profile?.date_of_birth)}
                   </p>
                 </div>
