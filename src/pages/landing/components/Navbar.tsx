@@ -7,13 +7,12 @@ import { Logo } from '../../../components/ui/Logo';
 interface NavAnchor {
   href: string;
   label: string;
-  badge?: string;
   hideOnLg?: boolean;
 }
 
 const NAV_ANCHORS: NavAnchor[] = [
   { href: '#story-scroller', label: 'Clinical Journey' },
-  { href: '#collision-radar', label: 'Collision Radar', badge: 'Safety' },
+  { href: '#collision-radar', label: 'Collision Radar' },
   { href: '#vitals-lab', label: 'Vitals Lab' },
   { href: '#doctor-perspective', label: 'Doctor Dossier', hideOnLg: true },
   { href: '#security', label: 'Privacy Enclave' },
@@ -60,13 +59,13 @@ export function Navbar() {
     <header className="fixed top-0 sm:top-3 inset-x-0 z-50 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pointer-events-none transition-all duration-300 w-full">
       <nav
         aria-label="Primary Navigation"
-        className={`pointer-events-auto transition-all duration-300 relative rounded-2xl w-full max-w-full overflow-hidden ${
+        className={`pointer-events-auto transition-all duration-300 relative rounded-2xl w-full max-w-full ${
           scrolled
             ? 'bg-white/90 backdrop-blur-xl border border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.08)]'
             : 'bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-[0_2px_12px_rgba(15,23,42,0.03)]'
         }`}
       >
-        <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4 lg:gap-3 xl:gap-6 px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4 lg:gap-3 xl:gap-5 px-4 sm:px-6 xl:px-7">
           {/* Brand Logo & Clinical Badge */}
           <Link
             to="/"
@@ -75,11 +74,8 @@ export function Navbar() {
           >
             <Logo variant="mark" size="md" className="group-hover:scale-105 transition-transform duration-200 shrink-0" />
             <div className="flex flex-col">
-              <span className="text-base sm:text-lg xl:text-xl font-black tracking-tight text-slate-900 leading-tight flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-base sm:text-lg xl:text-xl font-black tracking-tight text-slate-900 leading-tight whitespace-nowrap">
                 <span>Curewell</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 font-bold border border-teal-200/60 hidden xl:inline-block">
-                  OS 4.0
-                </span>
               </span>
               <span className="text-[8px] sm:text-[9px] font-mono font-bold text-teal-700 tracking-widest uppercase whitespace-nowrap">
                 CLINICAL HEALTH VAULT
@@ -104,27 +100,13 @@ export function Navbar() {
                   }`}
                 >
                   <span>{anchor.label}</span>
-                  {anchor.badge && (
-                    <span className="hidden xl:inline-block text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                      {anchor.badge}
-                    </span>
-                  )}
                 </a>
               );
             })}
           </div>
 
-          {/* Enclave Telemetry & Action CTAs */}
+          {/* Action CTAs */}
           <div className="hidden md:flex items-center gap-1.5 xl:gap-3 shrink-0 ml-auto">
-            {/* Live Micro-Telemetry Pill */}
-            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-[10px] font-mono text-slate-600">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-              </span>
-              <span>ENCLAVE 8ms</span>
-            </div>
-
             <Link
               to="/login"
               className="text-xs xl:text-sm font-bold text-slate-700 hover:text-teal-900 px-2.5 xl:px-3 py-1.5 xl:py-2 transition-colors rounded-lg xl:rounded-xl hover:bg-slate-100/60 whitespace-nowrap"
@@ -178,11 +160,6 @@ export function Navbar() {
                 className="flex items-center justify-between px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-900 rounded-xl transition-colors"
               >
                 <span>{anchor.label}</span>
-                {anchor.badge && (
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                    {anchor.badge}
-                  </span>
-                )}
               </a>
             ))}
 
