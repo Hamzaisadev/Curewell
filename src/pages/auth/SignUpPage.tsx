@@ -279,9 +279,9 @@ export function SignUpPage() {
                 onClick={handleGoogleSignUp}
                 disabled={isLoading || isGoogleLoading}
                 loading={isGoogleLoading}
+                leftIcon={!isGoogleLoading && <GoogleIcon className="w-4 h-4 shrink-0" />}
                 className="w-full h-11 text-xs font-bold border border-line bg-surface hover:bg-surface-raised flex items-center justify-center gap-2.5 transition-all shadow-2xs"
               >
-                {!isGoogleLoading && <GoogleIcon className="w-4 h-4 shrink-0" />}
                 <span>{isGoogleLoading ? 'Connecting to Google...' : 'Sign up with Google'}</span>
               </Button>
 
