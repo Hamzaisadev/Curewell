@@ -1104,10 +1104,10 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
 
       {/* Bento Unified Medicine Hub Control Strip */}
       <div className="p-3 sm:p-4 px-4 sm:px-6 rounded-3xl bg-surface-raised border border-line shadow-2xs mb-6 overflow-visible relative z-30">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 w-full">
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 sm:gap-4 w-full min-w-0">
           {/* Left: App Title & Segmented Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0 min-w-0">
+            <div className="flex items-center gap-3 shrink-0">
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-accent text-white flex items-center justify-center shrink-0 shadow-xs">
                 {activeTab === 'schedule' ? (
                   <CalendarIcon size={18} className="text-white" />
@@ -1126,7 +1126,7 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
             </div>
 
             {/* Seamless Tab Switcher */}
-            <div className="w-full sm:w-auto">
+            <div className="w-full sm:w-auto shrink-0">
               <SegmentedControl<MedicineHubTab>
                 value={activeTab}
                 onChange={handleTabChange}
@@ -1146,7 +1146,7 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
           </div>
 
           {/* Right: Quick Action Hub & Date Navigator */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 flex-wrap sm:flex-nowrap justify-between sm:justify-end min-w-0">
             {activeTab === 'schedule' && (
               <div className="flex items-center gap-1 shrink-0" ref={calendarRef}>
                 <button
@@ -1158,18 +1158,18 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
                   <ChevronLeftIcon size={13} />
                 </button>
 
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsCalendarOpen((prev) => !prev);
                     }}
-                    className="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-surface-sunken hover:bg-surface-hover border border-line text-content text-xs font-bold shadow-2xs tap-spring whitespace-nowrap transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-surface-sunken hover:bg-surface-hover border border-line text-content text-xs font-bold shadow-2xs tap-spring whitespace-nowrap transition-all cursor-pointer"
                     aria-expanded={isCalendarOpen}
                     aria-label="Select date"
                   >
-                    <CalendarIcon size={13} className="text-accent" />
+                    <CalendarIcon size={13} className="text-accent shrink-0" />
                     <span>{displayDateLabel}</span>
                     <ChevronDownIcon
                       size={11}
@@ -1319,18 +1319,19 @@ export function UnifiedMedicineHubPage({ defaultTab }: UnifiedMedicineHubPagePro
                 size="sm"
                 onClick={() => setBrandMatcherState({ open: true })}
                 leftIcon={<MedicineIcon size={14} />}
-                className="h-8 px-2.5 sm:px-3 text-xs font-bold rounded-xl tap-spring shadow-2xs"
+                className="h-8 px-2 sm:px-3 text-xs font-bold rounded-xl tap-spring shadow-2xs shrink-0"
                 title="Compare generic and brand medicines"
               >
-                Compare Brands
+                <span className="hidden sm:inline">Compare Brands</span>
+                <span className="sm:hidden">Compare</span>
               </Button>
 
-              <Link to="/prescriptions/new">
+              <Link to="/prescriptions/new" className="inline-flex shrink-0">
                 <Button
                   variant="primary"
                   size="sm"
                   leftIcon={<Plus size={13} />}
-                  className="h-8 px-2.5 sm:px-3 text-xs font-bold rounded-xl tap-spring shadow-2xs"
+                  className="h-8 px-2.5 sm:px-3 text-xs font-bold rounded-xl tap-spring shadow-2xs shrink-0 whitespace-nowrap"
                 >
                   Scan Rx
                 </Button>

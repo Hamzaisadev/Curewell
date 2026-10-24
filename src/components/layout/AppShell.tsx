@@ -28,7 +28,7 @@ export function AppShell({
     ? 'max-w-7xl px-4 md:px-8'
     : maxWidth === 'full'
     ? 'max-w-none px-4 md:px-8'
-    : 'max-w-[1200px] px-4 sm:px-6 md:px-8';
+    : 'max-w-7xl px-4 sm:px-6 lg:px-8';
 
   return (
     <ErrorBoundary>
