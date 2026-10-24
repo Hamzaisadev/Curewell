@@ -5,7 +5,7 @@ import { clsx } from 'clsx';
 import { Logo } from '../ui/Logo';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { PRIMARY_NAV, SECONDARY_NAV, isNavItemActive } from './navigation';
-import { ProfileSwitcher } from '../profile/ProfileSwitcher';
+import { AddFamilyProfileModal } from '../profile/AddFamilyProfileModal';
 import { MobileCompanionModal } from '../companion/MobileCompanionModal';
 import {
   SearchIcon,
@@ -15,6 +15,7 @@ import {
   FileTextIcon,
   LogOutIcon,
   AndroidIcon,
+  CheckIcon,
 } from '../ui/icons';
 
 const menuPanel = clsx(
@@ -29,10 +30,26 @@ const menuItem = clsx(
   'data-[highlighted]:bg-surface-hover data-[highlighted]:text-content'
 );
 
+function getRelationshipEmoji(relationship?: string | null): string {
+  switch (relationship) {
+    case 'parent':
+      return '👴';
+    case 'spouse':
+      return '💍';
+    case 'child':
+      return '🧒';
+    case 'self':
+      return '👤';
+    default:
+      return '👥';
+  }
+}
+
 export function TopBar() {
   const location = useLocation();
-  const { user, profile, isGuest, signOut } = useAuth();
+  const { user, profile, activeProfile, profiles, switchProfile, isGuest, signOut } = useAuth();
   const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
+  const [isAddFamilyModalOpen, setIsAddFamilyModalOpen] = useState(false);
 
   // Radix closes on select, but a route change driven by anything else (back
   // button, redirect) should close it too.
@@ -61,13 +78,13 @@ export function TopBar() {
   if (isAuthPage) {
     return (
       <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/90 backdrop-blur-md print:hidden">
-        <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6 md:px-8">
+        <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center rounded-[var(--radius-sm)]" aria-label="Curewell home">
             <Logo size="md" />
           </Link>
           <Link
             to={location.pathname === '/login' ? '/signup' : '/login'}
-            className="inline-flex items-center h-10 px-3 sm:px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors"
+            className="inline-flex items-center h-9 px-3 sm:px-4 text-xs font-bold rounded-lg border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors"
           >
             {location.pathname === '/login' ? 'Create account' : 'Sign in'}
           </Link>
@@ -87,8 +104,8 @@ export function TopBar() {
   const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/90 backdrop-blur-md print:hidden overflow-x-clip">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6 md:px-8 min-w-0">
+    <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/90 backdrop-blur-md print:hidden">
+      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8 min-w-0">
         <Link
           to="/"
           className="flex items-center shrink-0 rounded-[var(--radius-sm)]"
@@ -97,7 +114,7 @@ export function TopBar() {
           <Logo size="md" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 shrink-0" aria-label="Main">
+        <nav className="hidden md:flex items-center gap-1 lg:gap-1.5 shrink-0" aria-label="Main">
           {PRIMARY_NAV.map((link) => {
             const active = isNavItemActive(link.path, location.pathname);
 
@@ -108,10 +125,10 @@ export function TopBar() {
                   to={link.path}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'group relative inline-flex items-center gap-1.5 px-3 py-1.5 mx-0.5 lg:mx-1 text-xs font-bold rounded-full transition-all duration-200 whitespace-nowrap cursor-pointer shadow-2xs shrink-0',
+                    'group relative inline-flex items-center gap-1.5 px-3 py-1.5 mx-0.5 text-xs font-semibold rounded-full transition-all duration-200 whitespace-nowrap cursor-pointer shrink-0',
                     active
-                      ? 'bg-accent text-content-onaccent shadow-sm border border-accent ring-2 ring-accent/25'
-                      : 'bg-accent-subtle/70 text-accent-onsubtle border border-accent/30 hover:border-accent hover:bg-accent-subtle hover:shadow-xs'
+                      ? 'bg-accent text-content-onaccent shadow-xs border border-accent ring-2 ring-accent/20'
+                      : 'bg-accent-subtle/70 text-accent-onsubtle border border-accent/30 hover:border-accent hover:bg-accent-subtle'
                   )}
                 >
                   <span
@@ -137,9 +154,9 @@ export function TopBar() {
                 aria-current={active ? 'page' : undefined}
                 className={clsx(
                   isSecondaryOnMdLg ? 'hidden xl:inline-flex' : 'inline-flex',
-                  'px-2.5 lg:px-3 py-2 text-xs font-semibold rounded-[var(--radius-md)] transition-colors whitespace-nowrap shrink-0',
+                  'px-2.5 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap shrink-0',
                   active
-                    ? 'bg-accent-subtle text-accent-onsubtle'
+                    ? 'bg-accent-subtle text-accent-onsubtle font-semibold'
                     : 'text-content-muted hover:text-content hover:bg-surface-hover'
                 )}
               >
@@ -153,18 +170,18 @@ export function TopBar() {
           <DropdownMenu.Root key={`more-${menuKey}`}>
             <DropdownMenu.Trigger
               className={clsx(
-                'inline-flex items-center gap-1 px-2.5 lg:px-3 py-2 text-xs font-semibold rounded-[var(--radius-md)] transition-colors whitespace-nowrap shrink-0',
+                'inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap shrink-0',
                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
                 isMoreActive
-                  ? 'bg-accent-subtle text-accent-onsubtle'
+                  ? 'bg-accent-subtle text-accent-onsubtle font-semibold'
                   : 'text-content-muted hover:text-content hover:bg-surface-hover',
                 'data-[state=open]:bg-surface-hover data-[state=open]:text-content'
               )}
             >
               More
               <ChevronDownIcon
-                size={14}
-                className="transition-transform data-[state=open]:rotate-180"
+                size={13}
+                className="transition-transform data-[state=open]:rotate-180 text-content-subtle"
               />
             </DropdownMenu.Trigger>
 
@@ -223,144 +240,218 @@ export function TopBar() {
           </DropdownMenu.Root>
         </nav>
 
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <Link
             to="/search"
             aria-label="Search records"
             className={clsx(
-              'inline-flex items-center justify-center w-10 h-10 rounded-[var(--radius-md)] transition-colors shrink-0',
+              'inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors shrink-0',
               location.pathname === '/search'
                 ? 'bg-surface-hover text-content'
                 : 'text-content-muted hover:bg-surface-hover hover:text-content'
             )}
           >
-            <SearchIcon size={18} />
+            <SearchIcon size={17} />
           </Link>
 
           {isGuest ? (
             <Link
               to="/login"
-              className="inline-flex items-center h-10 px-4 text-xs font-bold rounded-[var(--radius-md)] border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors shrink-0"
+              className="inline-flex items-center h-9 px-4 text-xs font-bold rounded-lg border border-line bg-surface-raised text-content hover:bg-surface-hover transition-colors shrink-0"
             >
               Sign in
             </Link>
           ) : (
             <>
-              <ProfileSwitcher />
-
               {/* Mobile Companion & APK Button - compact label on md/lg to prevent header overflow */}
               <button
                 type="button"
                 onClick={() => setIsCompanionModalOpen(true)}
                 title="Get Curewell Phone App & Android APK"
                 aria-label="Curewell Mobile App & Android APK"
-                className="hidden md:inline-flex items-center gap-1.5 h-10 px-2 lg:px-2.5 rounded-[var(--radius-md)] text-xs font-semibold text-content-muted hover:text-content hover:bg-surface-hover border border-line/60 transition-colors shrink-0"
+                className="hidden md:inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg text-xs font-medium text-content-muted hover:text-content hover:bg-surface-hover border border-line/70 transition-colors shrink-0"
               >
-                <AndroidIcon size={16} className="text-teal-600 dark:text-teal-400 shrink-0" />
+                <AndroidIcon size={15} className="text-teal-600 dark:text-teal-400 shrink-0" />
                 <span className="hidden xl:inline">Phone App / APK</span>
                 <span className="hidden md:inline xl:hidden">APK</span>
               </button>
 
               <DropdownMenu.Root key={`user-${menuKey}`}>
-              <DropdownMenu.Trigger
-                className={clsx(
-                  'inline-flex items-center gap-1.5 h-10 px-1.5 sm:px-2 rounded-[var(--radius-md)] transition-colors shrink-0',
-                  'text-content-muted hover:bg-surface-hover',
-                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-                  'data-[state=open]:bg-surface-hover'
-                )}
-                aria-label="Account menu"
-              >
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={displayName}
-                    className="w-7 h-7 rounded-full object-cover border border-line shrink-0"
-                  />
-                ) : (
-                  <span className="w-7 h-7 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-xs font-bold shrink-0">
-                    {userInitial}
+                <DropdownMenu.Trigger
+                  className={clsx(
+                    'inline-flex items-center gap-1.5 h-9 px-2 sm:px-2.5 rounded-lg border border-line/70 transition-colors shrink-0',
+                    'text-content-muted hover:text-content hover:bg-surface-hover',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                    'data-[state=open]:bg-surface-hover'
+                  )}
+                  aria-label="Account menu"
+                >
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={displayName}
+                      className="w-6 h-6 rounded-full object-cover border border-line shrink-0"
+                    />
+                  ) : (
+                    <span className="w-6 h-6 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-[11px] font-bold shrink-0">
+                      {userInitial}
+                    </span>
+                  )}
+                  <span className="text-xs font-semibold hidden xl:inline-block max-w-24 truncate text-content">
+                    {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}
                   </span>
-                )}
-                <span className="text-xs font-semibold hidden xl:inline-block max-w-24 truncate text-content">
-                  {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}
-                </span>
-                <ChevronDownIcon size={13} className="text-content-subtle" />
-              </DropdownMenu.Trigger>
+                  <ChevronDownIcon size={12} className="text-content-subtle shrink-0" />
+                </DropdownMenu.Trigger>
 
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content align="end" sideOffset={8} className={menuPanel}>
-                  <div className="px-3 py-2.5 border-b border-line mb-1 flex items-center gap-2.5">
-                    {profile?.avatar_url ? (
-                      <img
-                        src={profile.avatar_url}
-                        alt={displayName}
-                        className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
-                      />
-                    ) : (
-                      <span className="w-9 h-9 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-sm font-bold shrink-0">
-                        {userInitial}
-                      </span>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-content truncate">
-                        {profile?.full_name || 'Patient'}
-                      </p>
-                      {user?.email && (
-                        <p className="text-xs text-content-subtle truncate">{user.email}</p>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content align="end" sideOffset={8} className={clsx(menuPanel, 'w-72 sm:w-80')}>
+                    <div className="px-3 py-2.5 border-b border-line mb-1 flex items-center gap-2.5">
+                      {profile?.avatar_url ? (
+                        <img
+                          src={profile.avatar_url}
+                          alt={displayName}
+                          className="w-9 h-9 rounded-full object-cover border border-line shrink-0"
+                        />
+                      ) : (
+                        <span className="w-9 h-9 rounded-full bg-accent text-content-onaccent flex items-center justify-center text-sm font-bold shrink-0">
+                          {userInitial}
+                        </span>
                       )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-content truncate">
+                            {profile?.full_name || 'Patient'}
+                          </p>
+                          {activeProfile?.relationship && activeProfile.relationship !== 'self' && (
+                            <span className="px-1.5 py-0.2 rounded-full bg-accent-subtle text-accent-onsubtle text-[10px] font-semibold shrink-0">
+                              {activeProfile.relationship.charAt(0).toUpperCase() + activeProfile.relationship.slice(1)}
+                            </span>
+                          )}
+                        </div>
+                        {user?.email && (
+                          <p className="text-xs text-content-subtle truncate">{user.email}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <DropdownMenu.Item asChild>
-                    <Link to="/settings" className={menuItem}>
-                      <SettingsIcon size={17} className="shrink-0 text-content-subtle" />
-                      Settings & profile
-                    </Link>
-                  </DropdownMenu.Item>
+                    {/* Caregiver Profile Switcher */}
+                    {profiles && profiles.length > 0 && (
+                      <div className="pb-1">
+                        <div className="px-3 pt-1 pb-1">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-content-subtle">
+                            Caregiver Profiles
+                          </p>
+                          <p className="text-2xs text-content-muted">
+                            Switch who you are tracking for:
+                          </p>
+                        </div>
 
-                  <DropdownMenu.Item asChild>
-                    <Link to="/doctor/visit-prep" className={menuItem}>
-                      <FileTextIcon size={17} className="shrink-0 text-content-subtle" />
-                      Doctor visit companion
-                    </Link>
-                  </DropdownMenu.Item>
+                        <div className="space-y-0.5 max-h-48 overflow-y-auto px-1 py-1">
+                          {profiles.map((p) => {
+                            const isActive = p.id === (activeProfile?.id || profile?.id);
+                            const pEmoji = getRelationshipEmoji(p.relationship);
+                            const pRel =
+                              p.relationship === 'self'
+                                ? 'Self'
+                                : p.relationship
+                                ? p.relationship.charAt(0).toUpperCase() + p.relationship.slice(1)
+                                : 'Dependent';
 
-                  <DropdownMenu.Item
-                    className={menuItem}
-                    onSelect={() => setIsCompanionModalOpen(true)}
-                  >
-                    <svg className="w-4 h-4 text-content-subtle shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    Mobile Companion QR
-                  </DropdownMenu.Item>
+                            return (
+                              <DropdownMenu.Item
+                                key={p.id}
+                                onSelect={() => switchProfile(p.id)}
+                                className={clsx(
+                                  'flex items-center justify-between gap-2.5 px-2.5 py-1.5 rounded-[var(--radius-md)] text-xs cursor-pointer select-none outline-none transition-colors',
+                                  isActive
+                                    ? 'bg-accent-subtle text-accent-onsubtle font-bold'
+                                    : 'text-content hover:bg-surface-hover'
+                                )}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <span className="text-base select-none shrink-0">{pEmoji}</span>
+                                  <div className="truncate">
+                                    <p className="font-semibold text-xs truncate text-content">{p.full_name}</p>
+                                    <p className="text-[10px] text-content-muted truncate">
+                                      {pRel}
+                                      {p.chronic_conditions && ` • ${p.chronic_conditions}`}
+                                    </p>
+                                  </div>
+                                </div>
 
-                  <DropdownMenu.Separator className="my-1 h-px bg-line" />
+                                {isActive && (
+                                  <span className="text-accent shrink-0">
+                                    <CheckIcon size={14} />
+                                  </span>
+                                )}
+                              </DropdownMenu.Item>
+                            );
+                          })}
+                        </div>
 
-                  <DropdownMenu.Item asChild>
-                    <button
-                      type="button"
-                      onClick={() => signOut()}
-                      className={clsx(menuItem, 'w-full text-left text-risk-text font-semibold')}
+                        <DropdownMenu.Item
+                          onSelect={() => setIsAddFamilyModalOpen(true)}
+                          className="flex items-center gap-2 px-2.5 py-1.5 mx-1 rounded-[var(--radius-md)] text-xs font-semibold text-accent hover:bg-accent-subtle cursor-pointer select-none outline-none transition-colors"
+                        >
+                          <span className="p-0.5 rounded bg-accent-subtle text-accent shrink-0">
+                            <PlusIcon size={12} />
+                          </span>
+                          <span>+ Add Family Member (Dad, Mom, Child)</span>
+                        </DropdownMenu.Item>
+
+                        <DropdownMenu.Separator className="my-1.5 h-px bg-line" />
+                      </div>
+                    )}
+
+                    <DropdownMenu.Item asChild>
+                      <Link to="/settings" className={menuItem}>
+                        <SettingsIcon size={17} className="shrink-0 text-content-subtle" />
+                        Settings & profile
+                      </Link>
+                    </DropdownMenu.Item>
+
+                    <DropdownMenu.Item asChild>
+                      <Link to="/doctor/visit-prep" className={menuItem}>
+                        <FileTextIcon size={17} className="shrink-0 text-content-subtle" />
+                        Doctor visit companion
+                      </Link>
+                    </DropdownMenu.Item>
+
+                    <DropdownMenu.Item
+                      className={menuItem}
+                      onSelect={() => setIsCompanionModalOpen(true)}
                     >
-                      <LogOutIcon size={17} className="shrink-0" />
-                      Sign out
-                    </button>
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
-          </>
-        )}
+                      <svg className="w-4 h-4 text-content-subtle shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      Mobile Companion QR
+                    </DropdownMenu.Item>
+
+                    <DropdownMenu.Separator className="my-1 h-px bg-line" />
+
+                    <DropdownMenu.Item asChild>
+                      <button
+                        type="button"
+                        onClick={() => signOut()}
+                        className={clsx(menuItem, 'w-full text-left text-risk-text font-semibold')}
+                      >
+                        <LogOutIcon size={17} className="shrink-0" />
+                        Sign out
+                      </button>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            </>
+          )}
 
           <Link
             to="/prescriptions/new"
-            className="inline-flex items-center gap-1.5 h-10 px-3 sm:px-3.5 text-xs font-bold rounded-[var(--radius-md)] bg-accent text-content-onaccent hover:bg-accent-hover active:bg-accent-active transition-colors shadow-card shrink-0 ml-0.5"
+            className="inline-flex items-center gap-1.5 h-9 px-3 sm:px-3.5 text-xs font-semibold rounded-lg bg-accent text-content-onaccent hover:bg-accent-hover active:bg-accent-active transition-colors shadow-xs shrink-0"
           >
-            <PlusIcon size={16} />
-            <span className="hidden xl:inline">Scan record</span>
-            <span className="xl:hidden hidden sm:inline">Scan</span>
+            <PlusIcon size={15} />
+            <span className="hidden sm:inline">Scan record</span>
+            <span className="sm:hidden">Scan</span>
           </Link>
         </div>
       </div>
@@ -368,6 +459,11 @@ export function TopBar() {
       <MobileCompanionModal
         isOpen={isCompanionModalOpen}
         onClose={() => setIsCompanionModalOpen(false)}
+      />
+
+      <AddFamilyProfileModal
+        isOpen={isAddFamilyModalOpen}
+        onClose={() => setIsAddFamilyModalOpen(false)}
       />
     </header>
   );
