@@ -82,25 +82,14 @@ if (fs.existsSync(gradlewPath) && sdkPath) {
   try {
     execSync(`${gradlewCmd} assembleRelease --no-daemon`, { stdio: 'inherit', cwd: androidDir });
 
-    const releaseApk = path.join(
-      androidDir,
-      'app',
-      'build',
-      'outputs',
-      'apk',
-      'release',
-      'app-release.apk'
-    );
-    const debugApk = path.join(
-      androidDir,
-      'app',
-      'build',
-      'outputs',
-      'apk',
-      'debug',
-      'app-debug.apk'
-    );
-    const apkOutput = fs.existsSync(releaseApk) ? releaseApk : debugApk;
+    const releaseApkCandidates = [
+      path.join(androidDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-arm64-v8a-release.apk'),
+      path.join(androidDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-universal-release.apk'),
+      path.join(androidDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk'),
+      path.join(androidDir, 'app', 'build', 'outputs', 'apk', 'debug', 'app-arm64-v8a-debug.apk'),
+      path.join(androidDir, 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk'),
+    ];
+    const apkOutput = releaseApkCandidates.find((cand) => fs.existsSync(cand));
 
     if (fs.existsSync(apkOutput)) {
       const targetApk = path.join(publicDownloadsDir, 'Curewell.apk');

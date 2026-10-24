@@ -11,7 +11,16 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { THEME } from '../../constants';
+import { useTheme } from '../../theme';
+import {
+  KeyIcon,
+  QrCodeIcon,
+  UserIcon,
+  XIcon,
+  CheckIcon,
+  LogOutIcon,
+  AlertTriangleIcon,
+} from '../icons';
 
 export interface AuthModalProps {
   visible: boolean;
@@ -32,6 +41,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSignInQR,
   isLoading,
 }) => {
+  const { theme, isDark } = useTheme();
+
   const [authMethod, setAuthMethod] = useState<'qr' | 'credentials'>('qr');
   const [smartQrInput, setSmartQrInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
@@ -49,7 +60,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleQrSubmit = async () => {
     if (!smartQrInput.trim()) {
-      setErrorText('Please paste a Smart QR code or pairing token.');
+      setErrorText('Please paste a Smart QR code or 6-digit pairing code.');
       return;
     }
     setErrorText(null);
@@ -81,108 +92,113 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         style={styles.backdrop}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.sheetContainer}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+        <View style={[styles.sheetContainer, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.headerRow}>
               <View>
-                <Text style={styles.eyebrow}>AUTHENTICATION & LIVE CLOUD</Text>
-                <Text style={styles.title}>
-                  {sessionEmail ? 'Caregiver Account' : 'Sign In to Curewell'}
+                <Text style={[styles.eyebrow, { color: theme.primary }]}>AUTHENTICATION &amp; CLOUD SYNC</Text>
+                <Text style={[styles.title, { color: theme.textPrimary }]}>
+                  {sessionEmail ? 'Caregiver Account' : 'Connect to Medfolio'}
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={onClose}
-                style={styles.closeIconBtn}
+                style={[styles.closeIconBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
                 accessibilityLabel="Close dialog"
               >
-                <Text style={styles.closeIconText}>✕</Text>
+                <XIcon size={16} color={theme.textMuted} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
             {/* Error Banner */}
             {errorText && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>{errorText}</Text>
+              <View style={[styles.errorBanner, { backgroundColor: theme.risk.bg, borderColor: theme.risk.border }]}>
+                <AlertTriangleIcon size={16} color={theme.risk.text} />
+                <Text style={[styles.errorText, { color: theme.risk.text }]}>{errorText}</Text>
               </View>
             )}
 
             {/* If Already Logged In */}
             {sessionEmail ? (
-              <View style={styles.activeSessionCard}>
+              <View style={[styles.activeSessionCard, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}>
                 <View style={styles.sessionStatusRow}>
-                  <View style={styles.activeDot} />
-                  <Text style={styles.sessionStatusText}>ACTIVE CLOUD SESSION</Text>
+                  <View style={[styles.activeDot, { backgroundColor: theme.ok.dot }]} />
+                  <Text style={[styles.sessionStatusText, { color: theme.ok.text }]}>ACTIVE CLOUD SESSION</Text>
                 </View>
 
-                <View style={styles.userEmailBox}>
-                  <Text style={styles.emailLabel}>Logged in as Caregiver:</Text>
-                  <Text style={styles.userEmailText}>{sessionEmail}</Text>
+                <View style={[styles.userEmailBox, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+                  <Text style={[styles.emailLabel, { color: theme.textMuted }]}>Logged in as Caregiver:</Text>
+                  <Text style={[styles.userEmailText, { color: theme.textPrimary }]}>{sessionEmail}</Text>
                 </View>
 
-                <Text style={styles.sessionHint}>
+                <Text style={[styles.sessionHint, { color: theme.textMuted }]}>
                   Prescription schedules, clinical logs, and SOS telemetry sync securely with the
-                  Curewell Web Clinical OS.
+                  Medfolio Web App.
                 </Text>
 
                 <View style={styles.sessionActions}>
                   <TouchableOpacity
-                    style={styles.signOutBtn}
+                    style={[styles.signOutBtn, { backgroundColor: theme.risk.bg, borderColor: theme.risk.border }]}
                     onPress={onSignOut}
                     disabled={isLoading}
                     activeOpacity={0.8}
                   >
                     {isLoading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <ActivityIndicator size="small" color={theme.risk.text} />
                     ) : (
-                      <Text style={styles.signOutText}>Sign Out of Device</Text>
+                      <>
+                        <LogOutIcon size={16} color={theme.risk.text} />
+                        <Text style={[styles.signOutText, { color: theme.risk.text }]}>Sign Out of Device</Text>
+                      </>
                     )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.secondaryBtn}
+                    style={[styles.secondaryBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
                     onPress={onClose}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.secondaryBtnText}>Close</Text>
+                    <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>Close</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
               /* Not Logged In - Sign-In Tabs */
               <>
-                <Text style={styles.descriptionText}>
+                <Text style={[styles.descriptionText, { color: theme.textMuted }]}>
                   Connect your phone to sync prescriptions, home-screen widget telemetry, and
                   clinical alerts in real time.
                 </Text>
 
                 {/* Segmented Method Selector */}
-                <View style={styles.segmentedRow}>
+                <View style={[styles.segmentedRow, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}>
                   <TouchableOpacity
-                    style={[styles.segmentBtn, authMethod === 'qr' && styles.segmentBtnActive]}
+                    style={[
+                      styles.segmentBtn,
+                      authMethod === 'qr' && [styles.segmentBtnActive, { backgroundColor: theme.surface }],
+                    ]}
                     onPress={() => {
                       setAuthMethod('qr');
                       setErrorText(null);
                     }}
                     activeOpacity={0.8}
                   >
+                    <QrCodeIcon size={14} color={authMethod === 'qr' ? theme.primary : theme.textMuted} />
                     <Text
                       style={[
                         styles.segmentBtnText,
-                        authMethod === 'qr' && styles.segmentBtnTextActive,
+                        { color: authMethod === 'qr' ? theme.textPrimary : theme.textMuted },
                       ]}
                     >
-                      1. Smart QR Pairing
+                      Smart QR / 6-Digit
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[
                       styles.segmentBtn,
-                      authMethod === 'credentials' && styles.segmentBtnActive,
+                      authMethod === 'credentials' && [styles.segmentBtnActive, { backgroundColor: theme.surface }],
                     ]}
                     onPress={() => {
                       setAuthMethod('credentials');
@@ -190,46 +206,55 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     activeOpacity={0.8}
                   >
+                    <UserIcon size={14} color={authMethod === 'credentials' ? theme.primary : theme.textMuted} />
                     <Text
                       style={[
                         styles.segmentBtnText,
-                        authMethod === 'credentials' && styles.segmentBtnTextActive,
+                        { color: authMethod === 'credentials' ? theme.textPrimary : theme.textMuted },
                       ]}
                     >
-                      2. Email & Password
+                      Email &amp; Password
                     </Text>
                   </TouchableOpacity>
                 </View>
 
                 {authMethod === 'qr' ? (
                   <View style={styles.tabContent}>
-                    <Text style={styles.inputLabel}>SMART QR PAIRING LINK OR TOKEN</Text>
+                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                      SMART QR PAIRING LINK OR 6-DIGIT CODE
+                    </Text>
                     <TextInput
-                      style={styles.textInput}
-                      placeholder="Paste pairing token or QR payload from Web App..."
-                      placeholderTextColor="#64748B"
+                      style={[
+                        styles.textInput,
+                        {
+                          backgroundColor: theme.surfaceSunken,
+                          borderColor: theme.lineStrong,
+                          color: theme.textPrimary,
+                        },
+                      ]}
+                      placeholder="Paste 6-digit code or QR token..."
+                      placeholderTextColor={theme.textSubtle}
                       autoCapitalize="none"
                       autoCorrect={false}
                       value={smartQrInput}
                       onChangeText={setSmartQrInput}
                     />
-                    <Text style={styles.fieldHint}>
-                      In Curewell Web OS, open Settings → Mobile Companion App to get your Smart QR
-                      code.
+                    <Text style={[styles.fieldHint, { color: theme.textMuted }]}>
+                      In Medfolio Web, open Settings → Mobile Companion App to get your code.
                     </Text>
 
                     <View style={styles.actionButtons}>
                       <TouchableOpacity
-                        style={styles.secondaryBtn}
+                        style={[styles.secondaryBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
                         onPress={onClose}
                         disabled={isLoading}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.secondaryBtnText}>Cancel</Text>
+                        <Text style={[styles.secondaryBtnText, { color: theme.textMuted }]}>Cancel</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.primaryBtn}
+                        style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
                         onPress={handleQrSubmit}
                         disabled={isLoading}
                         activeOpacity={0.8}
@@ -245,11 +270,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 ) : (
                   <View style={styles.tabContent}>
                     <View style={styles.fieldGroup}>
-                      <Text style={styles.inputLabel}>EMAIL ADDRESS</Text>
+                      <Text style={[styles.inputLabel, { color: theme.textMuted }]}>EMAIL ADDRESS</Text>
                       <TextInput
-                        style={styles.textInput}
-                        placeholder="caregiver@curewell.med"
-                        placeholderTextColor="#64748B"
+                        style={[
+                          styles.textInput,
+                          {
+                            backgroundColor: theme.surfaceSunken,
+                            borderColor: theme.lineStrong,
+                            color: theme.textPrimary,
+                          },
+                        ]}
+                        placeholder="caregiver@medfolio.health"
+                        placeholderTextColor={theme.textSubtle}
                         autoCapitalize="none"
                         keyboardType="email-address"
                         autoCorrect={false}
@@ -259,11 +291,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </View>
 
                     <View style={styles.fieldGroup}>
-                      <Text style={styles.inputLabel}>PASSWORD</Text>
+                      <Text style={[styles.inputLabel, { color: theme.textMuted }]}>PASSWORD</Text>
                       <TextInput
-                        style={styles.textInput}
+                        style={[
+                          styles.textInput,
+                          {
+                            backgroundColor: theme.surfaceSunken,
+                            borderColor: theme.lineStrong,
+                            color: theme.textPrimary,
+                          },
+                        ]}
                         placeholder="••••••••••••"
-                        placeholderTextColor="#64748B"
+                        placeholderTextColor={theme.textSubtle}
                         secureTextEntry
                         value={passwordInput}
                         onChangeText={setPasswordInput}
@@ -272,16 +311,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                     <View style={styles.actionButtons}>
                       <TouchableOpacity
-                        style={styles.secondaryBtn}
+                        style={[styles.secondaryBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
                         onPress={onClose}
                         disabled={isLoading}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.secondaryBtnText}>Cancel</Text>
+                        <Text style={[styles.secondaryBtnText, { color: theme.textMuted }]}>Cancel</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.primaryBtn}
+                        style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
                         onPress={handleCredentialsSubmit}
                         disabled={isLoading}
                         activeOpacity={0.8}
@@ -289,7 +328,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         {isLoading ? (
                           <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
-                          <Text style={styles.primaryBtnText}>Sign In & Sync</Text>
+                          <Text style={styles.primaryBtnText}>Sign In &amp; Sync</Text>
                         )}
                       </TouchableOpacity>
                     </View>
@@ -307,15 +346,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     padding: 16,
   },
   sheetContainer: {
-    backgroundColor: '#0F172A',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#334155',
     maxHeight: '90%',
     overflow: 'hidden',
   },
@@ -329,73 +366,66 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   eyebrow: {
-    color: '#2DD4BF',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   title: {
-    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '800',
     marginTop: 2,
   },
   closeIconBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#1E293B',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeIconText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '700',
-  },
   errorBanner: {
-    backgroundColor: '#7F1D1D44',
-    borderWidth: 1,
-    borderColor: '#EF4444',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderRadius: 10,
+    borderWidth: 1,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
   errorText: {
-    color: '#FCA5A5',
     fontSize: 12,
     fontWeight: '700',
+    flex: 1,
   },
   descriptionText: {
-    color: THEME.textMuted,
     fontSize: 12,
     lineHeight: 18,
   },
   segmentedRow: {
     flexDirection: 'row',
-    backgroundColor: '#020617',
     padding: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1E293B',
   },
   segmentBtn: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     paddingVertical: 10,
     borderRadius: 9,
-    alignItems: 'center',
   },
   segmentBtnActive: {
-    backgroundColor: THEME.primary,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   segmentBtnText: {
-    color: '#94A3B8',
     fontSize: 12,
     fontWeight: '700',
-  },
-  segmentBtnTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
   },
   tabContent: {
     gap: 12,
@@ -404,23 +434,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   inputLabel: {
-    color: '#94A3B8',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   textInput: {
-    backgroundColor: '#020617',
-    borderWidth: 1,
-    borderColor: '#334155',
     borderRadius: 12,
-    color: '#FFFFFF',
+    borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 13,
   },
   fieldHint: {
-    color: '#64748B',
     fontSize: 11,
     lineHeight: 16,
   },
@@ -431,31 +456,22 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     flex: 1,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
     borderRadius: 12,
+    borderWidth: 1,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryBtnText: {
-    color: '#E2E8F0',
     fontSize: 13,
     fontWeight: '700',
   },
   primaryBtn: {
     flex: 2,
-    backgroundColor: THEME.primary,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
   },
   primaryBtnText: {
     color: '#FFFFFF',
@@ -463,10 +479,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   activeSessionCard: {
-    backgroundColor: '#020617',
-    borderWidth: 1,
-    borderColor: '#1E293B',
     borderRadius: 14,
+    borderWidth: 1,
     padding: 16,
     gap: 12,
   },
@@ -479,34 +493,27 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10B981',
   },
   sessionStatusText: {
-    color: '#10B981',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   userEmailBox: {
-    backgroundColor: '#0F172A',
-    borderWidth: 1,
-    borderColor: '#334155',
     borderRadius: 10,
+    borderWidth: 1,
     padding: 12,
   },
   emailLabel: {
-    color: '#94A3B8',
     fontSize: 11,
     fontWeight: '600',
   },
   userEmailText: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
     marginTop: 2,
   },
   sessionHint: {
-    color: '#94A3B8',
     fontSize: 12,
     lineHeight: 18,
   },
@@ -515,16 +522,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   signOutBtn: {
-    backgroundColor: '#7F1D1D',
-    borderRadius: 12,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#EF4444',
   },
   signOutText: {
-    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
   },

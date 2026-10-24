@@ -1,18 +1,28 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { THEME } from '../constants';
+import { useTheme } from '../theme';
 
 export interface ToastProps {
   message: string | null;
 }
 
 export const Toast: React.FC<ToastProps> = ({ message }) => {
+  const { theme, isDark } = useTheme();
+
   if (!message) return null;
 
   return (
     <View style={styles.floatingWrapper} pointerEvents="none">
-      <View style={styles.toastBanner}>
-        <View style={styles.indicatorDot} />
+      <View
+        style={[
+          styles.toastBanner,
+          {
+            backgroundColor: theme.primary,
+            borderColor: theme.accent,
+          },
+        ]}
+      >
+        <View style={[styles.indicatorDot, { backgroundColor: '#A7F3D0' }]} />
         <Text style={styles.toastBannerText}>{message}</Text>
       </View>
     </View>
@@ -31,25 +41,22 @@ const styles = StyleSheet.create({
   toastBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.primary,
-    borderColor: '#14B8A6',
     borderWidth: 1,
     paddingVertical: 9,
     paddingHorizontal: 16,
     borderRadius: 24,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
     maxWidth: '96%',
     gap: 8,
   },
   indicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#A7F3D0',
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   toastBannerText: {
     color: '#FFFFFF',

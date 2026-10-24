@@ -6,7 +6,7 @@
     "scheme": "curewell",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.curewell.health"
@@ -31,7 +31,14 @@
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
-      "./plugins/withCurewellAndroidWidget.js"
+      "./plugins/withCurewellAndroidWidget.js",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0D9488"
+        }
+      ]
     ],
     "web": {
       "favicon": "./assets/favicon.png"

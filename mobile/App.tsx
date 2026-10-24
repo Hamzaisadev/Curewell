@@ -14,9 +14,13 @@ import {
   AppStateStatus,
   ActivityIndicator,
   StatusBar as RNStatusBar,
+  StyleSheet,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeProvider, useTheme } from './src/theme';
 import { supabase } from './src/lib/supabase';
 import {
   enqueueMobileSyncEvent,
@@ -29,6 +33,7 @@ import {
   scheduleNativeOfflineAlarm,
   getNativeActionTakenDoses,
   clearNativeActionTakenDoses,
+  areNotificationsEnabled,
 } from './src/native/CurewellNativeBridge';
 
 import {
@@ -49,6 +54,15 @@ import {
 } from './src/constants';
 import { styles } from './src/styles/commonStyles';
 
+// SVG Icons
+import {
+  LogoCrossIcon,
+  LockIcon,
+  ShieldIcon,
+  BellIcon,
+  CheckIcon,
+} from './src/components/icons';
+
 // Components
 import { Header, TabBar, Toast } from './src/components';
 import {
@@ -65,12 +79,21 @@ import {
   SosScreen,
   AlarmsScreen,
   ClinicalSuiteScreen,
+  PairingScreen,
+  SettingsScreen,
 } from './src/screens';
 
-export default function App() {
+import {
+  verifyCompanionPairingToken,
+  extractPairingTokenFromInput,
+} from './src/lib/companionPairing';
+
+function AppMain() {
+  const { theme, isDark } = useTheme();
+
   const [activeTab, setActiveTab] = useState<TabKey>('schedule');
   const [profiles, setProfiles] = useState<PatientProfile[]>(DEFAULT_PROFILES);
-  const [activeProfileId, setActiveProfileId] = useState<string>(DEFAULT_PROFILES[0].id);
+  const [activeProfileId, setActiveProfileId] = useState<string>('');
 
   const [doses, setDoses] = useState<DoseSlot[]>(INITIAL_DOSES);
   const [vitals, setVitals] = useState<VitalLog[]>(INITIAL_VITALS);
@@ -93,7 +116,7 @@ export default function App() {
   // Toast banner notice
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
 
-  // Storage initialization state (PIN flash guard)
+  // Storage initialization state (guard)
   const [isStorageLoaded, setIsStorageLoaded] = useState<boolean>(false);
 
   // PIN Lock screen state
@@ -101,10 +124,21 @@ export default function App() {
   const [isLocked, setIsLocked] = useState<boolean>(false);
   const [pinInput, setPinInput] = useState<string>('');
 
-  const activeProfile = useMemo(
-    () => profiles.find((p) => p.id === activeProfileId) || profiles[0],
-    [profiles, activeProfileId]
-  );
+  const activeProfile: PatientProfile = useMemo(() => {
+    const found = profiles.find((p) => p.id === activeProfileId);
+    if (found) return found;
+    if (profiles.length > 0) return profiles[0]!;
+    return {
+      id: 'default',
+      fullName: 'Medfolio Patient',
+      relationship: 'Self',
+      bloodGroup: 'Unknown',
+      allergies: 'None recorded',
+      chronicConditions: 'Primary Health Dossier',
+      emergencyContactName: 'Emergency Contact',
+      emergencyContactPhone: '',
+    };
+  }, [profiles, activeProfileId]);
 
   const showToast = useCallback((msg: string) => {
     setBannerNotice(msg);
@@ -113,62 +147,98 @@ export default function App() {
     }, 3200);
   }, []);
 
-  // Runtime Notification Permission Request (Android 13+ / API 33+)
+  // Request Android Notification Permission gracefully
   const requestAndroidNotificationPermission = useCallback(async (): Promise<boolean> => {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
+    if (Platform.OS === 'android') {
       try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          showToast('Medication alarms require notification permission.');
-          return false;
+        if (Platform.Version >= 33) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+            {
+              title: 'Medfolio Medication Alarms',
+              message:
+                'Allow Medfolio to send you critical medication reminders and sound alarms on time.',
+              buttonPositive: 'Allow',
+              buttonNegative: 'Later',
+            }
+          );
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            return true;
+          }
         }
-        return true;
+        const expoRes = await Notifications.requestPermissionsAsync();
+        return expoRes.granted;
       } catch (err) {
-        console.warn('Error requesting notification permission:', err);
+        console.warn('Notification permission check note:', err);
         return false;
       }
     }
     return true;
-  }, [showToast]);
-
-  // Request notification permission on app mount
-  useEffect(() => {
-    void requestAndroidNotificationPermission();
-  }, [requestAndroidNotificationPermission]);
+  }, []);
 
   // Restore state from AsyncStorage
   useEffect(() => {
     (async () => {
       try {
-        const [rawDoses, rawVitals, rawLabs, rawPin, rawProf, rawAlarms, rawSession] =
-          await Promise.all([
-            AsyncStorage.getItem(STORAGE_KEYS.DOSES),
-            AsyncStorage.getItem(STORAGE_KEYS.VITALS),
-            AsyncStorage.getItem(STORAGE_KEYS.LABS),
-            AsyncStorage.getItem(STORAGE_KEYS.PIN),
-            AsyncStorage.getItem(STORAGE_KEYS.PROFILE_ID),
-            AsyncStorage.getItem(STORAGE_KEYS.ALARMS_ENABLED),
-            AsyncStorage.getItem(STORAGE_KEYS.SESSION),
-          ]);
+        const [
+          rawDoses,
+          rawVitals,
+          rawLabs,
+          rawPin,
+          rawProfId,
+          rawSavedProfile,
+          rawAlarms,
+          rawSession,
+        ] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.DOSES),
+          AsyncStorage.getItem(STORAGE_KEYS.VITALS),
+          AsyncStorage.getItem(STORAGE_KEYS.LABS),
+          AsyncStorage.getItem(STORAGE_KEYS.PIN),
+          AsyncStorage.getItem(STORAGE_KEYS.PROFILE_ID),
+          AsyncStorage.getItem(STORAGE_KEYS.PROFILE),
+          AsyncStorage.getItem(STORAGE_KEYS.ALARMS_ENABLED),
+          AsyncStorage.getItem(STORAGE_KEYS.SESSION),
+        ]);
 
-        if (rawDoses) setDoses(JSON.parse(rawDoses));
-        if (rawVitals) {
-          setVitals(JSON.parse(rawVitals));
-        } else {
-          setVitals(INITIAL_VITALS);
+        if (rawDoses) {
+          try {
+            setDoses(JSON.parse(rawDoses));
+          } catch {}
         }
-        if (rawLabs) setLabReports(JSON.parse(rawLabs));
+        if (rawVitals) {
+          try {
+            setVitals(JSON.parse(rawVitals));
+          } catch {}
+        }
+        if (rawLabs) {
+          try {
+            setLabReports(JSON.parse(rawLabs));
+          } catch {}
+        }
         if (rawPin) {
           setSavedPin(rawPin);
           setIsLocked(true);
         }
-        if (rawProf) setActiveProfileId(rawProf);
+
+        if (rawSavedProfile) {
+          try {
+            const parsedProf = JSON.parse(rawSavedProfile);
+            if (parsedProf?.id) {
+              setProfiles([parsedProf]);
+              setActiveProfileId(parsedProf.id);
+            }
+          } catch {}
+        } else if (rawProfId) {
+          setActiveProfileId(rawProfId);
+        }
+
         if (rawAlarms !== null) setAlarmsEnabled(rawAlarms === 'true');
+
         if (rawSession) {
-          const parsed = JSON.parse(rawSession);
-          if (parsed?.email) setSessionEmail(parsed.email);
+          try {
+            const parsed = JSON.parse(rawSession);
+            if (parsed?.email) setSessionEmail(parsed.email);
+          } catch {}
         }
       } catch (e) {
         console.warn('Error restoring local storage:', e);
@@ -260,14 +330,12 @@ export default function App() {
     }
   }, [activeProfile.id, showToast]);
 
-  // Reconcile on startup once storage is loaded
   useEffect(() => {
     if (isStorageLoaded) {
       void reconcileNativeTakenDoses();
     }
   }, [isStorageLoaded, reconcileNativeTakenDoses]);
 
-  // Reconcile on app resume from background
   useEffect(() => {
     const appStateSub = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
@@ -294,22 +362,25 @@ export default function App() {
 
   // Sync Native Android Home-Screen Widget whenever doses or profile change
   useEffect(() => {
-    const takenCount = doses.filter((d) => d.status === 'taken').length;
-    const totalCount = doses.length;
+    if (profiles.length === 0) return;
+    const taken = doses.filter((d) => d.status === 'taken').length;
+    const total = doses.length;
     const nextPending = doses.find((d) => d.status === 'pending');
     const nextDoseText = nextPending
       ? `Next: ${nextPending.medicineName} ${nextPending.strength} at ${nextPending.scheduledTime} (${nextPending.mealRelation})`
-      : 'All scheduled doses completed for today!';
+      : doses.length > 0
+      ? 'All scheduled doses completed for today!'
+      : 'No scheduled medications today';
 
     syncAndroidHomeWidget({
       profileName: activeProfile.fullName,
-      takenCount,
-      totalCount,
+      takenCount: taken,
+      totalCount: total,
       nextDoseText,
       bloodGroup: activeProfile.bloodGroup,
       allergies: activeProfile.allergies,
     });
-  }, [doses, activeProfile]);
+  }, [doses, activeProfile, profiles.length]);
 
   // Real-time Supabase WebSocket Subscription + Outbox Status
   useEffect(() => {
@@ -336,7 +407,7 @@ export default function App() {
             return next;
           });
           Vibration.vibrate(30);
-          showToast(`Live WebSocket Sync: ${event.medicineName} marked as ${event.status} on Web`);
+          showToast(`Live Sync: ${event.medicineName} marked as ${event.status} on Web`);
         } else if (event.type === 'MEDICINE_CREATED') {
           const m = event.medicine;
           const bucket: TimeBucket =
@@ -353,7 +424,7 @@ export default function App() {
             id: m.id,
             medicineName: m.medicine_name,
             genericName: m.generic_name || 'Prescribed Regimen',
-            strength: m.strength || m.dose_amount || '500mg',
+            strength: m.strength || m.dose_amount || 'Standard dose',
             bucket,
             scheduledTime: m.scheduledTime || timeStr,
             scheduledMinutes: m.scheduledMinutes ?? mins,
@@ -376,7 +447,7 @@ export default function App() {
             return next;
           });
 
-          // Arm Native Offline AlarmManager for new medicine from Web
+          // Arm Native Offline AlarmManager for new medicine
           const target = new Date();
           target.setHours(
             Math.floor(newSlot.scheduledMinutes / 60),
@@ -395,7 +466,7 @@ export default function App() {
           );
 
           Vibration.vibrate([0, 40, 60, 40]);
-          showToast(`Live WebSocket Sync: ${newSlot.medicineName} added from Web & Alarm Armed!`);
+          showToast(`Live Sync: ${newSlot.medicineName} added from Web & Alarm Armed!`);
         }
       },
       (connected, outboxCount) => {
@@ -459,7 +530,7 @@ export default function App() {
     await persistDoses(updated);
     setShowSkipModal(false);
     setSkipTargetId(null);
-    showToast(`Dose marked as skipped (${reason}) & synced to Web`);
+    showToast(`Dose marked as skipped (${reason}) & synced`);
     if (target) {
       const todayStr = new Date().toISOString().slice(0, 10);
       await enqueueMobileSyncEvent({
@@ -507,7 +578,7 @@ export default function App() {
     const slot: DoseSlot = {
       id: `dose-${Date.now()}`,
       medicineName: med.medicineName.trim(),
-      genericName: med.genericName.trim() || 'Active Prescription',
+      genericName: med.genericName.trim() || 'Prescribed Regimen',
       strength: med.strength.trim() || '1 tab',
       bucket: med.bucket,
       scheduledTime: med.scheduledTime,
@@ -583,7 +654,7 @@ export default function App() {
 
   const handleManualSync = async () => {
     Vibration.vibrate(40);
-    showToast('Flushing offline outbox queue to Curewell Cloud...');
+    showToast('Flushing offline outbox queue to Medfolio Cloud...');
     await flushOfflineOutbox();
   };
 
@@ -596,114 +667,52 @@ export default function App() {
   };
 
   const handleSmartQrSignIn = async (rawQrOrUrl: string) => {
-    const trimmed = rawQrOrUrl.trim();
-    if (!trimmed) return;
     setIsAuthLoading(true);
-
-    const decompressUuid = (val: string): string => {
-      if (!val.startsWith('~') || val.length !== 23 || !globalThis.atob) return val;
-      try {
-        const b64 = val.slice(1).replace(/-/g, '+').replace(/_/g, '/') + '==';
-        const bin = globalThis.atob(b64);
-        let hex = '';
-        for (let i = 0; i < bin.length; i++) {
-          hex += bin.charCodeAt(i).toString(16).padStart(2, '0');
-        }
-        if (hex.length !== 32) return val;
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-      } catch {
-        return val;
-      }
-    };
-
-    let token = trimmed;
-    if (trimmed.includes('pair=')) {
-      const match = trimmed.match(/[?&]pair=([^&#\s]+)/);
-      if (match?.[1]) token = decodeURIComponent(match[1]);
-    }
-
     try {
-      let userId = '';
-      let profileId = '';
-      let profileName = 'Paired Patient';
-      let userEmail = '';
-      let refreshToken = '';
+      const token = extractPairingTokenFromInput(rawQrOrUrl);
+      const result = verifyCompanionPairingToken(token);
 
-      if (token.startsWith('c1.')) {
-        const b64url = token.slice(3);
-        const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-        const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-        const decodedStr = decodeURIComponent(
-          Array.prototype.map
-            .call(globalThis.atob ? globalThis.atob(padded) : '', (c: string) =>
-              '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-            )
-            .join('')
-        );
-        if (decodedStr.startsWith('{')) {
-          const wire = JSON.parse(decodedStr);
-          userId = decompressUuid(wire.u || '');
-          profileId = decompressUuid(wire.p || userId);
-          profileName = wire.n || 'Paired Patient';
-          userEmail = wire.e || '';
-          refreshToken = wire.r || '';
-        } else {
-          const parts = decodedStr.split('|');
-          userId = decompressUuid(parts[0] || '');
-          profileId = parts[1] === '.' ? userId : decompressUuid(parts[1] || userId);
-          profileName = parts[2] || 'Paired Patient';
-          const extra = parts[5] || '';
-          if (extra.startsWith('r:')) refreshToken = extra.slice(2);
-          else if (extra.startsWith('e:')) userEmail = extra.slice(2);
-        }
-      } else if (globalThis.atob) {
-        const decoded = JSON.parse(decodeURIComponent(globalThis.atob(token)));
-        userId = decompressUuid(decoded.userId || '');
-        profileId = decompressUuid(decoded.profileId || userId);
-        profileName = decoded.profileName || 'Paired Patient';
-        userEmail = decoded.userEmail || '';
-        refreshToken = decoded.refreshToken || '';
-      }
-
-      if (!userId) {
-        showToast('Invalid Smart QR token. Please scan the QR code from Web dashboard.');
+      if (!result.valid || !result.payload) {
+        showToast(result.error || 'Invalid Smart QR code.');
         setIsAuthLoading(false);
         return;
       }
 
-      if (refreshToken) {
-        const { data } = await supabase.auth.refreshSession({
-          refresh_token: refreshToken,
-        });
-        if (data?.user?.email) {
-          userEmail = data.user.email;
-          setSessionEmail(userEmail);
-        }
+      const { payload } = result;
+
+      if (payload.refreshToken) {
+        await supabase.auth.refreshSession({ refresh_token: payload.refreshToken });
       }
 
       const pairedProfile: PatientProfile = {
-        id: profileId || userId,
-        fullName: profileName,
+        id: payload.profileId || payload.userId,
+        fullName: payload.profileName || 'Paired Patient',
         relationship: 'Self',
-        bloodGroup: 'O+',
-        allergies: 'Synced via Smart QR',
-        chronicConditions: 'Synced from Curewell Web',
+        bloodGroup: 'Unknown',
+        allergies: 'None recorded',
+        chronicConditions: 'Synced from Medfolio Web',
         emergencyContactName: 'Emergency Contact',
-        emergencyContactPhone: '1122',
+        emergencyContactPhone: '',
       };
 
-      setProfiles((prev) => {
-        const exists = prev.some((p) => p.id === pairedProfile.id);
-        return exists ? prev : [pairedProfile, ...prev];
-      });
+      setProfiles([pairedProfile]);
       setActiveProfileId(pairedProfile.id);
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(pairedProfile));
       await AsyncStorage.setItem(STORAGE_KEYS.PROFILE_ID, pairedProfile.id);
+
+      if (payload.userEmail) {
+        setSessionEmail(payload.userEmail);
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.SESSION,
+          JSON.stringify({ email: payload.userEmail })
+        );
+      }
 
       setShowAuthModal(false);
       Vibration.vibrate([0, 40, 60, 40]);
-      showToast(`Signed in automatically as ${profileName}!`);
+      showToast(`Signed in automatically as ${pairedProfile.fullName}!`);
     } catch {
-      showToast('Could not verify Smart QR token.');
+      showToast('Could not verify pairing code.');
     } finally {
       setIsAuthLoading(false);
     }
@@ -716,20 +725,35 @@ export default function App() {
         email: email.trim().toLowerCase(),
         password: pass,
       });
-      if (error) {
-        showToast(`Sign in error: ${error.message}`);
+      if (error || !data.user) {
+        showToast(`Sign in error: ${error?.message || 'Authentication failed'}`);
         setIsAuthLoading(false);
         return;
       }
-      if (data.user) {
-        setSessionEmail(data.user.email || null);
-        await AsyncStorage.setItem(
-          STORAGE_KEYS.SESSION,
-          JSON.stringify({ email: data.user.email })
-        );
-        setShowAuthModal(false);
-        showToast(`Signed in as ${data.user.email}!`);
-      }
+      setSessionEmail(data.user.email || null);
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.SESSION,
+        JSON.stringify({ email: data.user.email })
+      );
+
+      const userProfile: PatientProfile = {
+        id: data.user.id,
+        fullName: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Caregiver',
+        relationship: 'Self',
+        bloodGroup: 'Unknown',
+        allergies: 'None recorded',
+        chronicConditions: 'Primary Health Dossier',
+        emergencyContactName: 'Emergency Contact',
+        emergencyContactPhone: '',
+      };
+
+      setProfiles([userProfile]);
+      setActiveProfileId(userProfile.id);
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(userProfile));
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILE_ID, userProfile.id);
+
+      setShowAuthModal(false);
+      showToast(`Signed in as ${data.user.email}!`);
     } catch {
       showToast('Network error during sign-in.');
     } finally {
@@ -740,8 +764,66 @@ export default function App() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setSessionEmail(null);
-    await AsyncStorage.removeItem(STORAGE_KEYS.SESSION);
-    showToast('Signed out of Curewell account.');
+    setProfiles([]);
+    setActiveProfileId('');
+    setDoses([]);
+    setVitals([]);
+    setLabReports([]);
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.SESSION,
+      STORAGE_KEYS.PROFILE,
+      STORAGE_KEYS.PROFILE_ID,
+      STORAGE_KEYS.DOSES,
+      STORAGE_KEYS.VITALS,
+      STORAGE_KEYS.LABS,
+    ]);
+    showToast('Signed out of Medfolio. Device unpaired.');
+  };
+
+  const handlePairedSuccess = async (params: {
+    profile: PatientProfile;
+    sessionEmail?: string;
+    doses?: DoseSlot[];
+    vitals?: VitalLog[];
+  }) => {
+    setProfiles([params.profile]);
+    setActiveProfileId(params.profile.id);
+    await AsyncStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(params.profile));
+    await AsyncStorage.setItem(STORAGE_KEYS.PROFILE_ID, params.profile.id);
+
+    if (params.sessionEmail) {
+      setSessionEmail(params.sessionEmail);
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.SESSION,
+        JSON.stringify({ email: params.sessionEmail })
+      );
+    }
+
+    if (params.doses && params.doses.length > 0) {
+      setDoses(params.doses);
+      await AsyncStorage.setItem(STORAGE_KEYS.DOSES, JSON.stringify(params.doses));
+    } else {
+      setDoses([]);
+      await AsyncStorage.setItem(STORAGE_KEYS.DOSES, JSON.stringify([]));
+    }
+
+    if (params.vitals && params.vitals.length > 0) {
+      setVitals(params.vitals);
+      await AsyncStorage.setItem(STORAGE_KEYS.VITALS, JSON.stringify(params.vitals));
+    } else {
+      setVitals([]);
+      await AsyncStorage.setItem(STORAGE_KEYS.VITALS, JSON.stringify([]));
+    }
+  };
+
+  const handleSetPin = async (newPin: string | null) => {
+    if (newPin) {
+      setSavedPin(newPin);
+      await AsyncStorage.setItem(STORAGE_KEYS.PIN, newPin);
+    } else {
+      setSavedPin(null);
+      await AsyncStorage.removeItem(STORAGE_KEYS.PIN);
+    }
   };
 
   const takenCount = useMemo(() => doses.filter((d) => d.status === 'taken').length, [doses]);
@@ -751,61 +833,103 @@ export default function App() {
     [doses, takenCount]
   );
 
-  // Flash guard: While storage is being read asynchronously on startup, render splash placeholder
+  // Flash guard: Initial storage reading placeholder
   if (!isStorageLoaded) {
     return (
       <SafeAreaView
         style={[
           styles.container,
           {
+            backgroundColor: theme.background,
             paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: '#020617',
           },
         ]}
       >
-        <StatusBar style="light" />
-        <View style={{ alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-          <View style={styles.logoMark}>
-            <Text style={styles.logoCross}>+</Text>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <View style={{ alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+          <View style={[styles.logoMark, { backgroundColor: theme.primary, width: 44, height: 44, borderRadius: 12 }]}>
+            <LogoCrossIcon size={26} color="#FFFFFF" strokeWidth={2.5} />
           </View>
-          <Text style={{ color: '#F8FAFC', fontSize: 20, fontWeight: '800' }}>Curewell</Text>
-          <ActivityIndicator size="small" color="#0D9488" />
+          <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: '900', letterSpacing: -0.4 }}>
+            Medfolio
+          </Text>
+          <ActivityIndicator size="small" color={theme.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
-  // If user has locked app with a PIN
+  // MANDATORY AUTH / PAIRING GUARD: If unauthenticated on fresh install, render PairingScreen!
+  const isPaired = Boolean(sessionEmail || (profiles.length > 0 && activeProfileId));
+
+  if (!isPaired) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.background,
+            paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0,
+          },
+        ]}
+      >
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <Toast message={bannerNotice} />
+        <PairingScreen onPairedSuccess={handlePairedSuccess} onToast={showToast} />
+      </SafeAreaView>
+    );
+  }
+
+  // PIN Lock Screen
   if (isLocked) {
     return (
       <SafeAreaView
         style={[
           styles.container,
-          { paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0 },
+          {
+            backgroundColor: theme.background,
+            paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0,
+          },
         ]}
       >
-        <StatusBar style="light" />
-        <View style={styles.lockContainer}>
-          <Text style={{ fontSize: 48, marginBottom: 16 }}>🔒</Text>
-          <Text style={styles.lockTitle}>Curewell Health Vault</Text>
-          <Text style={styles.lockSubtitle}>Enter 4-digit PIN to access medical records</Text>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <Toast message={bannerNotice} />
+        <View style={[lockStyles.lockContainer, { backgroundColor: theme.background }]}>
+          <View style={[lockStyles.iconCircle, { backgroundColor: theme.surfaceAccent, borderColor: theme.line }]}>
+            <LockIcon size={32} color={theme.primary} />
+          </View>
+          <Text style={[lockStyles.lockTitle, { color: theme.textPrimary }]}>
+            Medfolio Health Vault
+          </Text>
+          <Text style={[lockStyles.lockSubtitle, { color: theme.textMuted }]}>
+            Enter 4-digit PIN to access medical records
+          </Text>
 
-          <View style={styles.pinDotsRow}>
-            {[0, 1, 2, 3].map((idx) => (
-              <View
-                key={idx}
-                style={[styles.pinDot, pinInput.length > idx && styles.pinDotActive]}
-              />
-            ))}
+          <View style={lockStyles.pinDotsRow}>
+            {[0, 1, 2, 3].map((idx) => {
+              const filled = pinInput.length > idx;
+              return (
+                <View
+                  key={idx}
+                  style={[
+                    lockStyles.pinDot,
+                    {
+                      backgroundColor: filled ? theme.primary : theme.surfaceSunken,
+                      borderColor: filled ? theme.primary : theme.lineStrong,
+                    },
+                  ]}
+                />
+              );
+            })}
           </View>
 
-          <View style={styles.numpadGrid}>
+          <View style={lockStyles.numpadGrid}>
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((val) => (
               <TouchableOpacity
                 key={val}
-                style={styles.numpadKey}
+                style={[lockStyles.numpadKey, { backgroundColor: theme.surface, borderColor: theme.line }]}
                 onPress={() => {
                   Vibration.vibrate(20);
                   if (val === 'C') {
@@ -826,11 +950,30 @@ export default function App() {
                     }
                   }
                 }}
+                activeOpacity={0.7}
               >
-                <Text style={styles.numpadKeyText}>{val}</Text>
+                <Text style={[lockStyles.numpadKeyText, { color: theme.textPrimary }]}>{val}</Text>
               </TouchableOpacity>
             ))}
           </View>
+
+          <TouchableOpacity
+            style={lockStyles.forgotPinBtn}
+            onPress={() => {
+              Alert.alert(
+                'Forgot PIN?',
+                'You can sign out of this device and unpair your account to reset access.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign Out & Reset', style: 'destructive', onPress: handleSignOut },
+                ]
+              );
+            }}
+          >
+            <Text style={[lockStyles.forgotPinText, { color: theme.textMuted }]}>
+              Forgot PIN? Sign Out &amp; Reset
+            </Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -840,10 +983,13 @@ export default function App() {
     <SafeAreaView
       style={[
         styles.container,
-        { paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0 },
+        {
+          backgroundColor: theme.background,
+          paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 0,
+        },
       ]}
     >
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* Floating Toast Notification */}
       <Toast message={bannerNotice} />
@@ -858,8 +1004,8 @@ export default function App() {
 
       {/* Active Screen View */}
       <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        style={[styles.scrollArea, { backgroundColor: theme.background }]}
+        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
       >
         {activeTab === 'schedule' && (
@@ -879,7 +1025,9 @@ export default function App() {
                 nextDoseText:
                   doses.find((d) => d.status === 'pending')
                     ? `Next: ${doses.find((d) => d.status === 'pending')?.medicineName}`
-                    : 'All doses completed',
+                    : doses.length > 0
+                    ? 'All doses completed'
+                    : 'No scheduled medications',
                 bloodGroup: activeProfile.bloodGroup,
                 allergies: activeProfile.allergies,
               });
@@ -905,17 +1053,6 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'alarms' && (
-          <AlarmsScreen
-            alarmsEnabled={alarmsEnabled}
-            onToggleAlarms={handleToggleAlarms}
-            onManualSync={handleManualSync}
-            isLiveConnected={isLiveConnected}
-            pendingSyncCount={pendingSyncCount}
-            doses={doses}
-          />
-        )}
-
         {activeTab === 'full_app' && (
           <ClinicalSuiteScreen
             activeProfile={activeProfile}
@@ -927,6 +1064,33 @@ export default function App() {
             onOpenAuthModal={() => setShowAuthModal(true)}
             onTakeDose={handleTakeDose}
             onToast={showToast}
+          />
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsScreen
+            activeProfile={activeProfile}
+            profiles={profiles}
+            sessionEmail={sessionEmail}
+            savedPin={savedPin}
+            onSetPin={handleSetPin}
+            onOpenProfilePicker={() => setShowProfilePickerModal(true)}
+            onSignOut={handleSignOut}
+            onManualSync={handleManualSync}
+            isLiveConnected={isLiveConnected}
+            pendingSyncCount={pendingSyncCount}
+            onToast={showToast}
+          />
+        )}
+
+        {activeTab === 'alarms' && (
+          <AlarmsScreen
+            alarmsEnabled={alarmsEnabled}
+            onToggleAlarms={handleToggleAlarms}
+            onManualSync={handleManualSync}
+            isLiveConnected={isLiveConnected}
+            pendingSyncCount={pendingSyncCount}
+            doses={doses}
           />
         )}
       </ScrollView>
@@ -974,3 +1138,78 @@ export default function App() {
     </SafeAreaView>
   );
 }
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppMain />
+    </ThemeProvider>
+  );
+}
+
+const lockStyles = StyleSheet.create({
+  lockContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    gap: 12,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  lockTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  lockSubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  pinDotsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 20,
+  },
+  pinDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+  },
+  numpadGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 250,
+    justifyContent: 'space-between',
+    gap: 14,
+  },
+  numpadKey: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numpadKeyText: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  forgotPinBtn: {
+    marginTop: 20,
+    padding: 10,
+  },
+  forgotPinText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+});

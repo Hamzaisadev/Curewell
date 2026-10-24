@@ -1,6 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { THEME } from '../constants';
+import { useTheme } from '../theme';
+import {
+  PillIcon,
+  HeartPulseIcon,
+  ShieldIcon,
+  StethoscopeIcon,
+  SettingsIcon,
+} from './icons';
 import { TabKey } from '../types';
 
 export interface TabBarProps {
@@ -9,9 +16,9 @@ export interface TabBarProps {
   pendingDosesCount: number;
 }
 
-interface TabItem {
+interface TabItemConfig {
   key: TabKey;
-  icon: string;
+  icon: React.FC<any>;
   label: string;
   badge?: number;
 }
@@ -21,43 +28,50 @@ export const TabBar: React.FC<TabBarProps> = ({
   onSelectTab,
   pendingDosesCount,
 }) => {
-  const tabs: TabItem[] = [
+  const { theme, isDark } = useTheme();
+
+  const tabs: TabItemConfig[] = [
     {
       key: 'schedule',
-      icon: '💊',
+      icon: PillIcon,
       label: 'Schedule',
       badge: pendingDosesCount > 0 ? pendingDosesCount : undefined,
     },
     {
       key: 'vitals',
-      icon: '🩸',
+      icon: HeartPulseIcon,
       label: 'Vitals',
     },
     {
       key: 'sos',
-      icon: '🚨',
+      icon: ShieldIcon,
       label: 'SOS',
     },
     {
-      key: 'alarms',
-      icon: '⏰',
-      label: 'Alarms',
+      key: 'full_app',
+      icon: StethoscopeIcon,
+      label: 'Clinical',
     },
     {
-      key: 'full_app',
-      icon: '🏥',
-      label: 'Clinical Suite',
+      key: 'settings',
+      icon: SettingsIcon,
+      label: 'Settings',
     },
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.line }]}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key;
+        const IconComponent = tab.icon;
+
         return (
           <TouchableOpacity
             key={tab.key}
-            style={[styles.tabButton, isActive && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              isActive && { backgroundColor: theme.surfaceAccent },
+            ]}
             onPress={() => onSelectTab(tab.key)}
             activeOpacity={0.7}
             accessibilityRole="tab"
@@ -65,9 +79,21 @@ export const TabBar: React.FC<TabBarProps> = ({
             accessibilityLabel={`${tab.label} tab`}
           >
             <View style={styles.iconWrapper}>
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
+              <IconComponent
+                size={20}
+                color={isActive ? theme.primary : theme.textMuted}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
               {tab.badge !== undefined && tab.badge > 0 && (
-                <View style={styles.badge}>
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      backgroundColor: theme.risk.dot,
+                      borderColor: theme.surface,
+                    },
+                  ]}
+                >
                   <Text style={styles.badgeText}>
                     {tab.badge > 99 ? '99+' : tab.badge}
                   </Text>
@@ -75,7 +101,13 @@ export const TabBar: React.FC<TabBarProps> = ({
               )}
             </View>
             <Text
-              style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+              style={[
+                styles.tabLabel,
+                {
+                  color: isActive ? theme.primary : theme.textMuted,
+                  fontWeight: isActive ? '800' : '600',
+                },
+              ]}
               numberOfLines={1}
             >
               {tab.label}
@@ -90,9 +122,7 @@ export const TabBar: React.FC<TabBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#0F172A',
     borderTopWidth: 1,
-    borderTopColor: '#1E293B',
     paddingVertical: 6,
     paddingHorizontal: 8,
     alignItems: 'center',
@@ -105,24 +135,18 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 2,
     borderRadius: 12,
-  },
-  tabButtonActive: {
-    backgroundColor: '#0D94881A',
+    minHeight: 48,
   },
   iconWrapper: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tabIcon: {
-    fontSize: 18,
-    lineHeight: 22,
+    height: 24,
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -12,
-    backgroundColor: THEME.risk,
+    top: -5,
+    right: -10,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
@@ -130,7 +154,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: '#0F172A',
   },
   badgeText: {
     color: '#FFFFFF',
@@ -140,15 +163,9 @@ const styles = StyleSheet.create({
     lineHeight: 11,
   },
   tabLabel: {
-    color: THEME.textMuted,
     fontSize: 10,
-    fontWeight: '700',
-    marginTop: 3,
+    marginTop: 4,
     textAlign: 'center',
-  },
-  tabLabelActive: {
-    color: '#2DD4BF',
-    fontWeight: '800',
   },
 });
 

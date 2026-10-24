@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './Button';
+import { IconButton } from './IconButton';
 import { Badge } from './Badge';
 import { SLOT_META } from './slotMeta';
 import { CheckIcon } from './icons';
@@ -315,7 +316,9 @@ export function DoseCard({
           )}
 
           {/* Dedicated Expand/Collapse Disclosure Chevron Button */}
-          <button
+          <IconButton
+            variant="ghost"
+            size="sm"
             type="button"
             onClick={toggleExpand}
             aria-expanded={isExpanded}
@@ -326,7 +329,7 @@ export function DoseCard({
             )}
           >
             <ChevronDown size={16} className={clsx('transition-transform duration-200', isExpanded && 'rotate-180')} />
-          </button>
+          </IconButton>
         </div>
       </div>
 

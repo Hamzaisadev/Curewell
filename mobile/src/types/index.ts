@@ -1,4 +1,4 @@
-export type TabKey = 'schedule' | 'vitals' | 'sos' | 'full_app' | 'alarms';
+export type TabKey = 'schedule' | 'vitals' | 'sos' | 'full_app' | 'alarms' | 'settings';
 
 export type TimeBucket = 'Morning' | 'Afternoon' | 'Evening' | 'Bedtime';
 

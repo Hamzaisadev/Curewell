@@ -7,7 +7,8 @@ import {
   View,
   ScrollView,
 } from 'react-native';
-import { THEME } from '../../constants';
+import { useTheme } from '../../theme';
+import { XIcon, CheckIcon, UserIcon, DropletIcon } from '../icons';
 import { PatientProfile } from '../../types';
 
 export interface ProfilePickerModalProps {
@@ -25,8 +26,10 @@ export const ProfilePickerModal: React.FC<ProfilePickerModalProps> = ({
   onSelectProfile,
   onClose,
 }) => {
+  const { theme, isDark } = useTheme();
+
   const getInitials = (name?: string): string => {
-    if (!name) return 'CW';
+    if (!name) return 'MF';
     const parts = name.replace(/\(.*?\)/g, '').trim().split(/\s+/);
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -35,103 +38,152 @@ export const ProfilePickerModal: React.FC<ProfilePickerModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.sheetContainer}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+        <View style={[styles.sheetContainer, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.headerRow}>
               <View>
-                <Text style={styles.eyebrow}>CAREGIVER MULTI-PATIENT VAULT</Text>
-                <Text style={styles.title}>Switch Active Patient Profile</Text>
+                <Text style={[styles.eyebrow, { color: theme.primary }]}>CAREGIVER MULTI-PATIENT VAULT</Text>
+                <Text style={[styles.title, { color: theme.textPrimary }]}>Switch Active Patient Profile</Text>
               </View>
               <TouchableOpacity
                 onPress={onClose}
-                style={styles.closeIconBtn}
+                style={[styles.closeIconBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
                 accessibilityLabel="Close profile picker"
               >
-                <Text style={styles.closeIconText}>✕</Text>
+                <XIcon size={16} color={theme.textMuted} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { color: theme.textMuted }]}>
               Switching profiles adapts medication schedules, offline alarms, home widget
               telemetry, and SOS medical ID.
             </Text>
 
             {/* Profile List */}
             <View style={styles.profilesList}>
-              {profiles.map((profile) => {
-                const isActive = profile.id === activeProfileId;
-                const initials = getInitials(profile.fullName);
+              {profiles.length === 0 ? (
+                <View style={[styles.emptyBox, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}>
+                  <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                    No additional profiles configured.
+                  </Text>
+                </View>
+              ) : (
+                profiles.map((profile) => {
+                  const isActive = profile.id === activeProfileId;
+                  const initials = getInitials(profile.fullName);
 
-                return (
-                  <TouchableOpacity
-                    key={profile.id}
-                    style={[styles.profileCard, isActive && styles.profileCardActive]}
-                    onPress={() => {
-                      onSelectProfile(profile);
-                      onClose();
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.cardTopRow}>
-                      <View style={[styles.avatarCircle, isActive && styles.avatarCircleActive]}>
-                        <Text style={styles.avatarText}>{initials}</Text>
-                      </View>
-
-                      <View style={styles.infoCol}>
-                        <View style={styles.nameRow}>
-                          <Text style={styles.fullNameText} numberOfLines={1}>
-                            {profile.fullName}
+                  return (
+                    <TouchableOpacity
+                      key={profile.id}
+                      style={[
+                        styles.profileCard,
+                        {
+                          backgroundColor: isActive ? theme.surfaceAccent : theme.surfaceSunken,
+                          borderColor: isActive ? theme.primary : theme.line,
+                        },
+                      ]}
+                      onPress={() => {
+                        onSelectProfile(profile);
+                        onClose();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.cardTopRow}>
+                        <View
+                          style={[
+                            styles.avatarCircle,
+                            {
+                              backgroundColor: isActive ? theme.primary : theme.line,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.avatarText,
+                              { color: isActive ? '#FFFFFF' : theme.textPrimary },
+                            ]}
+                          >
+                            {initials}
                           </Text>
                         </View>
 
-                        <View style={styles.badgesRow}>
-                          {/* Relationship Badge */}
-                          <View style={styles.relationBadge}>
-                            <Text style={styles.relationBadgeText}>{profile.relationship}</Text>
+                        <View style={styles.infoCol}>
+                          <View style={styles.nameRow}>
+                            <Text
+                              style={[
+                                styles.fullNameText,
+                                { color: theme.textPrimary },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {profile.fullName}
+                            </Text>
                           </View>
 
-                          {/* Blood Group Badge */}
-                          <View style={styles.bloodBadge}>
-                            <Text style={styles.bloodBadgeText}>🩸 {profile.bloodGroup}</Text>
-                          </View>
-
-                          {isActive && (
-                            <View style={styles.activePill}>
-                              <Text style={styles.activePillText}>ACTIVE</Text>
+                          <View style={styles.badgesRow}>
+                            <View
+                              style={[
+                                styles.relationBadge,
+                                { backgroundColor: theme.surface, borderColor: theme.line },
+                              ]}
+                            >
+                              <Text style={[styles.relationBadgeText, { color: theme.textMuted }]}>
+                                {profile.relationship}
+                              </Text>
                             </View>
-                          )}
+
+                            <View
+                              style={[
+                                styles.bloodBadge,
+                                { backgroundColor: theme.risk.bg, borderColor: theme.risk.border },
+                              ]}
+                            >
+                              <DropletIcon size={10} color={theme.risk.text} />
+                              <Text style={[styles.bloodBadgeText, { color: theme.risk.text }]}>
+                                {profile.bloodGroup || 'Unknown'}
+                              </Text>
+                            </View>
+
+                            {isActive && (
+                              <View style={[styles.activePill, { backgroundColor: theme.ok.bg }]}>
+                                <CheckIcon size={10} color={theme.ok.text} strokeWidth={2.5} />
+                                <Text style={[styles.activePillText, { color: theme.ok.text }]}>ACTIVE</Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
                       </View>
-                    </View>
 
-                    {/* Medical Subtext */}
-                    <View style={styles.medicalDetails}>
-                      {profile.chronicConditions ? (
-                        <Text style={styles.detailText} numberOfLines={1}>
-                          <Text style={styles.detailLabel}>Conditions: </Text>
-                          {profile.chronicConditions}
-                        </Text>
-                      ) : null}
+                      {/* Medical Subtext */}
+                      <View style={[styles.medicalDetails, { borderTopColor: theme.line }]}>
+                        {profile.chronicConditions ? (
+                          <Text style={[styles.detailText, { color: theme.textMuted }]} numberOfLines={1}>
+                            <Text style={{ fontWeight: '700', color: theme.textPrimary }}>Conditions: </Text>
+                            {profile.chronicConditions}
+                          </Text>
+                        ) : null}
 
-                      {profile.allergies ? (
-                        <Text style={styles.detailText} numberOfLines={1}>
-                          <Text style={styles.detailLabel}>Allergies: </Text>
-                          {profile.allergies}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+                        {profile.allergies ? (
+                          <Text style={[styles.detailText, { color: theme.textMuted }]} numberOfLines={1}>
+                            <Text style={{ fontWeight: '700', color: theme.textPrimary }}>Allergies: </Text>
+                            {profile.allergies}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </View>
 
             {/* Close Button */}
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-              <Text style={styles.closeBtnText}>Done</Text>
+            <TouchableOpacity
+              style={[styles.closeBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.closeBtnText, { color: theme.textPrimary }]}>Done</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -143,15 +195,13 @@ export const ProfilePickerModal: React.FC<ProfilePickerModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     padding: 16,
   },
   sheetContainer: {
-    backgroundColor: '#0F172A',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#334155',
     maxHeight: '85%',
     overflow: 'hidden',
   },
@@ -165,32 +215,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   eyebrow: {
-    color: '#2DD4BF',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   title: {
-    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '800',
     marginTop: 2,
   },
   closeIconBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#1E293B',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeIconText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '700',
-  },
   subtitle: {
-    color: '#94A3B8',
     fontSize: 12,
     lineHeight: 17,
   },
@@ -198,17 +240,20 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 4,
   },
+  emptyBox: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 12,
+  },
   profileCard: {
-    backgroundColor: '#020617',
     borderWidth: 1.5,
-    borderColor: '#1E293B',
     borderRadius: 14,
     padding: 14,
     gap: 8,
-  },
-  profileCardActive: {
-    borderColor: THEME.primary,
-    backgroundColor: '#0D948811',
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -216,22 +261,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarCircleActive: {
-    backgroundColor: THEME.primary,
-    borderColor: '#14B8A6',
-  },
   avatarText: {
-    color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '900',
   },
   infoCol: {
@@ -244,7 +281,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   fullNameText: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
   },
@@ -255,68 +291,57 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   relationBadge: {
-    backgroundColor: '#1E293B',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   relationBadgeText: {
-    color: '#CBD5E1',
     fontSize: 10,
     fontWeight: '700',
   },
   bloodBadge: {
-    backgroundColor: '#E11D4822',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E11D4866',
   },
   bloodBadgeText: {
-    color: '#FDA4AF',
     fontSize: 10,
     fontWeight: '800',
   },
   activePill: {
-    backgroundColor: '#064E3B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
   },
   activePillText: {
-    color: '#34D399',
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   medicalDetails: {
     borderTopWidth: 1,
-    borderTopColor: '#1E293B',
     paddingTop: 6,
     gap: 2,
   },
   detailText: {
-    color: '#94A3B8',
     fontSize: 11,
   },
-  detailLabel: {
-    color: '#64748B',
-    fontWeight: '700',
-  },
   closeBtn: {
-    backgroundColor: '#1E293B',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
     marginTop: 4,
   },
   closeBtnText: {
-    color: '#E2E8F0',
     fontSize: 13,
     fontWeight: '700',
   },

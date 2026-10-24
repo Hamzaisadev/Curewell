@@ -1,8 +1,25 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Vibration, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Vibration,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { useTheme } from '../theme';
+import {
+  HeartPulseIcon,
+  DropletIcon,
+  ActivityIcon,
+  ClockIcon,
+  CheckIcon,
+  PlusIcon,
+  AlertTriangleIcon,
+} from '../components/icons';
 import { VitalLog } from '../types';
 import { evaluateBP, evaluateGlucose } from '../domain/vitals';
-import { styles } from '../styles/commonStyles';
 import { VitalsTrendChart, TimeRangeOption } from '../components';
 
 export interface VitalsScreenProps {
@@ -13,96 +30,122 @@ export interface VitalsScreenProps {
 
 type GlucoseContextOption = 'Fasting' | 'After Meal' | 'Random';
 
-export const VitalsScreen: React.FC<VitalsScreenProps> = ({
-  vitals,
-  onSaveVital,
-  onToast,
-}) => {
+export const VitalsScreen: React.FC<VitalsScreenProps> = ({ vitals, onSaveVital, onToast }) => {
+  const { theme, isDark } = useTheme();
+
   const [vitalMode, setVitalMode] = useState<'bp' | 'glucose'>('bp');
-  const [systolic, setSystolic] = useState('120');
-  const [diastolic, setDiastolic] = useState('80');
-  const [pulse, setPulse] = useState('72');
-  const [glucose, setGlucose] = useState('95');
+
+  // EMPTY inputs by default — NO fake baseline values pre-populated (ADR 0004)
+  const [systolic, setSystolic] = useState('');
+  const [diastolic, setDiastolic] = useState('');
+  const [pulse, setPulse] = useState('');
+  const [glucose, setGlucose] = useState('');
   const [glucoseContext, setGlucoseContext] = useState<GlucoseContextOption>('Fasting');
   const [trendTimeRange, setTrendTimeRange] = useState<TimeRangeOption>('7d');
 
   const bpEvaluation = useMemo(() => {
     const s = parseInt(systolic, 10);
     const d = parseInt(diastolic, 10);
+    if (!s || !d) return null;
     return evaluateBP(s, d);
   }, [systolic, diastolic]);
 
   const glucoseEvaluation = useMemo(() => {
     const g = parseInt(glucose, 10);
+    if (!g) return null;
     return evaluateGlucose(g, glucoseContext);
   }, [glucose, glucoseContext]);
 
   const handleSave = () => {
-    Vibration.vibrate(50);
+    Vibration.vibrate(40);
 
     if (vitalMode === 'bp') {
       const s = parseInt(systolic, 10);
       const d = parseInt(diastolic, 10);
-      const p = parseInt(pulse, 10) || 72;
+      const p = parseInt(pulse, 10) || undefined;
 
       if (!s || !d) {
-        onToast('Please enter both Systolic and Diastolic values');
+        onToast('Please enter both Systolic and Diastolic numbers.');
         return;
       }
 
+      const evalResult = evaluateBP(s, d);
       onSaveVital({
         type: 'bp',
         primaryVal: s,
         secondaryVal: d,
         pulse: p,
-        classification: bpEvaluation.label,
-        tone: bpEvaluation.tone,
+        classification: evalResult.label,
+        tone: evalResult.tone,
       });
-      onToast(`BP ${s}/${d} mmHg recorded (${bpEvaluation.label})`);
+
+      // Clear input fields after save
+      setSystolic('');
+      setDiastolic('');
+      setPulse('');
+      onToast(`BP ${s}/${d} mmHg recorded (${evalResult.label}).`);
     } else {
       const g = parseInt(glucose, 10);
-
       if (!g) {
-        onToast('Please enter a valid glucose reading');
+        onToast('Please enter a valid blood glucose reading.');
         return;
       }
 
+      const evalResult = evaluateGlucose(g, glucoseContext);
       onSaveVital({
         type: 'glucose',
         primaryVal: g,
         context: glucoseContext,
-        classification: glucoseEvaluation.label,
-        tone: glucoseEvaluation.tone,
+        classification: evalResult.label,
+        tone: evalResult.tone,
       });
-      onToast(`Glucose ${g} mg/dL recorded (${glucoseContext})`);
+
+      setGlucose('');
+      onToast(`Glucose ${g} mg/dL recorded (${glucoseContext}).`);
     }
   };
 
+  const filteredVitals = useMemo(
+    () => vitals.filter((v) => (vitalMode === 'bp' ? v.type === 'bp' : v.type === 'glucose')),
+    [vitals, vitalMode]
+  );
+
   return (
-    <View style={styles.sectionStack}>
-      {/* Mode Switcher */}
-      <View style={styles.segmentedRow}>
+    <View style={styles.container}>
+      {/* MODE SELECTOR */}
+      <View style={[styles.segmentedBar, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}>
         <TouchableOpacity
-          style={[styles.segmentBtn, vitalMode === 'bp' && styles.segmentBtnActive]}
+          style={[
+            styles.segmentBtn,
+            vitalMode === 'bp' && [styles.segmentBtnActive, { backgroundColor: theme.surface }],
+          ]}
           onPress={() => setVitalMode('bp')}
+          activeOpacity={0.8}
         >
+          <ActivityIcon size={16} color={vitalMode === 'bp' ? theme.primary : theme.textMuted} />
           <Text
             style={[
               styles.segmentBtnText,
-              vitalMode === 'bp' && styles.segmentBtnTextActive,
+              { color: vitalMode === 'bp' ? theme.textPrimary : theme.textMuted },
             ]}
           >
             Blood Pressure (mmHg)
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.segmentBtn, vitalMode === 'glucose' && styles.segmentBtnActive]}
+          style={[
+            styles.segmentBtn,
+            vitalMode === 'glucose' && [styles.segmentBtnActive, { backgroundColor: theme.surface }],
+          ]}
           onPress={() => setVitalMode('glucose')}
+          activeOpacity={0.8}
         >
+          <DropletIcon size={16} color={vitalMode === 'glucose' ? theme.primary : theme.textMuted} />
           <Text
             style={[
               styles.segmentBtnText,
-              vitalMode === 'glucose' && styles.segmentBtnTextActive,
+              { color: vitalMode === 'glucose' ? theme.textPrimary : theme.textMuted },
             ]}
           >
             Blood Glucose (mg/dL)
@@ -110,36 +153,75 @@ export const VitalsScreen: React.FC<VitalsScreenProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* 10-Second Intake Card */}
-      <View style={styles.card}>
+      {/* 10-SECOND RAPID INTAKE CARD */}
+      <View style={[styles.intakeCard, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         {vitalMode === 'bp' ? (
           <>
-            <Text style={styles.cardTitle}>10-Second Blood Pressure Intake</Text>
+            <View style={styles.cardHeaderRow}>
+              <View>
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
+                  10-Second Blood Pressure Intake
+                </Text>
+                <Text style={[styles.cardSubtitle, { color: theme.textMuted }]}>
+                  Standard clinical arm cuff measurement
+                </Text>
+              </View>
+            </View>
+
             <View style={styles.vitalInputsRow}>
               <View style={styles.vitalInputBox}>
-                <Text style={styles.inputLabel}>SYSTOLIC</Text>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>SYSTOLIC</Text>
                 <TextInput
-                  style={styles.bigNumericInput}
+                  style={[
+                    styles.bigNumericInput,
+                    {
+                      backgroundColor: theme.surfaceSunken,
+                      borderColor: theme.lineStrong,
+                      color: theme.textPrimary,
+                    },
+                  ]}
+                  placeholder="120"
+                  placeholderTextColor={theme.textSubtle}
                   keyboardType="numeric"
                   value={systolic}
                   onChangeText={setSystolic}
                   maxLength={3}
                 />
               </View>
+
               <View style={styles.vitalInputBox}>
-                <Text style={styles.inputLabel}>DIASTOLIC</Text>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>DIASTOLIC</Text>
                 <TextInput
-                  style={styles.bigNumericInput}
+                  style={[
+                    styles.bigNumericInput,
+                    {
+                      backgroundColor: theme.surfaceSunken,
+                      borderColor: theme.lineStrong,
+                      color: theme.textPrimary,
+                    },
+                  ]}
+                  placeholder="80"
+                  placeholderTextColor={theme.textSubtle}
                   keyboardType="numeric"
                   value={diastolic}
                   onChangeText={setDiastolic}
                   maxLength={3}
                 />
               </View>
+
               <View style={styles.vitalInputBox}>
-                <Text style={styles.inputLabel}>PULSE (BPM)</Text>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>PULSE (BPM)</Text>
                 <TextInput
-                  style={styles.bigNumericInput}
+                  style={[
+                    styles.bigNumericInput,
+                    {
+                      backgroundColor: theme.surfaceSunken,
+                      borderColor: theme.lineStrong,
+                      color: theme.textPrimary,
+                    },
+                  ]}
+                  placeholder="72"
+                  placeholderTextColor={theme.textSubtle}
                   keyboardType="numeric"
                   value={pulse}
                   onChangeText={setPulse}
@@ -148,26 +230,72 @@ export const VitalsScreen: React.FC<VitalsScreenProps> = ({
               </View>
             </View>
 
-            <View
-              style={[
-                styles.stagingBanner,
-                bpEvaluation.tone === 'risk'
-                  ? styles.stagingRisk
-                  : bpEvaluation.tone === 'warn'
-                  ? styles.stagingWarn
-                  : styles.stagingOk,
-              ]}
-            >
-              <Text style={styles.stagingText}>AHA Stage: {bpEvaluation.label}</Text>
-            </View>
+            {bpEvaluation && (
+              <View
+                style={[
+                  styles.stagingBanner,
+                  {
+                    backgroundColor:
+                      bpEvaluation.tone === 'risk'
+                        ? theme.risk.bg
+                        : bpEvaluation.tone === 'warn'
+                        ? theme.warn.bg
+                        : theme.ok.bg,
+                    borderColor:
+                      bpEvaluation.tone === 'risk'
+                        ? theme.risk.border
+                        : bpEvaluation.tone === 'warn'
+                        ? theme.warn.border
+                        : theme.ok.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.stagingText,
+                    {
+                      color:
+                        bpEvaluation.tone === 'risk'
+                          ? theme.risk.text
+                          : bpEvaluation.tone === 'warn'
+                          ? theme.warn.text
+                          : theme.ok.text,
+                    },
+                  ]}
+                >
+                  AHA Staging: {bpEvaluation.label}
+                </Text>
+              </View>
+            )}
           </>
         ) : (
           <>
-            <Text style={styles.cardTitle}>10-Second Blood Glucose Intake</Text>
+            <View style={styles.cardHeaderRow}>
+              <View>
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
+                  10-Second Blood Glucose Intake
+                </Text>
+                <Text style={[styles.cardSubtitle, { color: theme.textMuted }]}>
+                  Fingerstick capillary or CGM reading
+                </Text>
+              </View>
+            </View>
+
             <View style={styles.vitalInputBox}>
-              <Text style={styles.inputLabel}>GLUCOSE READING (mg/dL)</Text>
+              <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                GLUCOSE READING (mg/dL)
+              </Text>
               <TextInput
-                style={styles.bigNumericInput}
+                style={[
+                  styles.bigNumericInput,
+                  {
+                    backgroundColor: theme.surfaceSunken,
+                    borderColor: theme.lineStrong,
+                    color: theme.textPrimary,
+                  },
+                ]}
+                placeholder="95"
+                placeholderTextColor={theme.textSubtle}
                 keyboardType="numeric"
                 value={glucose}
                 onChangeText={setGlucose}
@@ -175,223 +303,410 @@ export const VitalsScreen: React.FC<VitalsScreenProps> = ({
               />
             </View>
 
+            {/* Context Pills */}
             <View style={styles.contextPillsRow}>
-              {(['Fasting', 'After Meal', 'Random'] as const).map((ctx) => (
-                <TouchableOpacity
-                  key={ctx}
-                  style={[
-                    styles.contextPill,
-                    glucoseContext === ctx && styles.contextPillActive,
-                  ]}
-                  onPress={() => setGlucoseContext(ctx)}
-                >
-                  <Text
+              {(['Fasting', 'After Meal', 'Random'] as const).map((ctx) => {
+                const active = glucoseContext === ctx;
+                return (
+                  <TouchableOpacity
+                    key={ctx}
                     style={[
-                      styles.contextPillText,
-                      glucoseContext === ctx && styles.contextPillTextActive,
+                      styles.contextPill,
+                      {
+                        backgroundColor: active ? theme.primary : theme.surfaceSunken,
+                        borderColor: active ? theme.primary : theme.line,
+                      },
                     ]}
+                    onPress={() => setGlucoseContext(ctx)}
+                    activeOpacity={0.8}
                   >
-                    {ctx}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.contextPillText,
+                        { color: active ? '#FFFFFF' : theme.textMuted },
+                      ]}
+                    >
+                      {ctx}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
-            <View
-              style={[
-                styles.stagingBanner,
-                glucoseEvaluation.tone === 'risk'
-                  ? styles.stagingRisk
-                  : glucoseEvaluation.tone === 'warn'
-                  ? styles.stagingWarn
-                  : styles.stagingOk,
-              ]}
-            >
-              <Text style={styles.stagingText}>ADA Target: {glucoseEvaluation.label}</Text>
-            </View>
+            {glucoseEvaluation && (
+              <View
+                style={[
+                  styles.stagingBanner,
+                  {
+                    backgroundColor:
+                      glucoseEvaluation.tone === 'risk'
+                        ? theme.risk.bg
+                        : glucoseEvaluation.tone === 'warn'
+                        ? theme.warn.bg
+                        : theme.ok.bg,
+                    borderColor:
+                      glucoseEvaluation.tone === 'risk'
+                        ? theme.risk.border
+                        : glucoseEvaluation.tone === 'warn'
+                        ? theme.warn.border
+                        : theme.ok.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.stagingText,
+                    {
+                      color:
+                        glucoseEvaluation.tone === 'risk'
+                          ? theme.risk.text
+                          : glucoseEvaluation.tone === 'warn'
+                          ? theme.warn.text
+                          : theme.ok.text,
+                    },
+                  ]}
+                >
+                  ADA Target: {glucoseEvaluation.label}
+                </Text>
+              </View>
+            )}
           </>
         )}
 
-        <TouchableOpacity style={styles.saveVitalBtn} onPress={handleSave}>
-          <Text style={styles.saveVitalBtnText}>Record Reading Offline</Text>
+        <TouchableOpacity
+          style={[styles.saveVitalBtn, { backgroundColor: theme.primary }]}
+          onPress={handleSave}
+          activeOpacity={0.85}
+        >
+          <CheckIcon size={16} color="#FFFFFF" strokeWidth={2.5} />
+          <Text style={styles.saveVitalBtnText}>Record Reading to Health Vault</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Visual Trendlines & Rolling Averages */}
-      <View style={styles.card}>
-        <View style={screenStyles.chartHeaderRow}>
-          <Text style={styles.cardTitle}>Visual Trendlines &amp; Rolling Averages</Text>
-          <Text style={screenStyles.chartSubtitle}>
+      {/* TRENDLINES & HONEST EMPTY STATE */}
+      <View style={[styles.intakeCard, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+        <View style={styles.chartHeaderRow}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
+            Visual Trendlines &amp; Rolling Averages
+          </Text>
+          <Text style={[styles.cardSubtitle, { color: theme.textMuted }]}>
             {vitalMode === 'bp'
-              ? 'Blood Pressure Staging & Rolling Pulse'
+              ? 'Blood Pressure Staging & Pulse Continuity'
               : 'Blood Glucose Dynamics & Target Compliance'}
           </Text>
         </View>
 
-        {/* Time Range Toggle */}
-        <View style={screenStyles.rangeToggleBar}>
-          {(
-            [
-              { key: '7d', label: '7 Days' },
-              { key: '30d', label: '30 Days' },
-              { key: 'all', label: 'All Readings' },
-            ] as const
-          ).map((item) => {
-            const active = trendTimeRange === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[
-                  screenStyles.rangeToggleBtn,
-                  active && screenStyles.rangeToggleBtnActive,
-                ]}
-                onPress={() => {
-                  Vibration.vibrate(20);
-                  setTrendTimeRange(item.key);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    screenStyles.rangeToggleBtnText,
-                    active && screenStyles.rangeToggleBtnTextActive,
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <VitalsTrendChart
-          vitals={vitals}
-          mode={vitalMode}
-          timeRange={trendTimeRange}
-          onTimeRangeChange={setTrendTimeRange}
-          hideHeaderControls={true}
-        />
-      </View>
-
-      {/* Vitals History List */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Recent Logged Vitals ({vitals.length})</Text>
-        {vitals.length === 0 ? (
-          <Text style={styles.emptyText}>
-            No vitals recorded on this phone yet. Log a reading above.
-          </Text>
+        {filteredVitals.length === 0 ? (
+          <View style={styles.chartEmptyBox}>
+            <View style={[styles.chartEmptyIconCircle, { backgroundColor: theme.surfaceAccent }]}>
+              {vitalMode === 'bp' ? (
+                <ActivityIcon size={24} color={theme.primary} />
+              ) : (
+                <DropletIcon size={24} color={theme.primary} />
+              )}
+            </View>
+            <Text style={[styles.chartEmptyTitle, { color: theme.textPrimary }]}>
+              No {vitalMode === 'bp' ? 'Blood Pressure' : 'Glucose'} Logs Recorded
+            </Text>
+            <Text style={[styles.chartEmptyText, { color: theme.textMuted }]}>
+              Medfolio adheres to ADR 0004: we never render fake oscillating curves when no data
+              exists. Enter a reading above to plot your first clinical trendline.
+            </Text>
+          </View>
         ) : (
-          vitals.map((v) => (
-            <View key={v.id} style={styles.vitalHistoryRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.vitalHistoryValue}>
-                  {v.type === 'bp'
-                    ? `BP: ${v.primaryVal}/${v.secondaryVal} mmHg (${v.pulse} bpm)`
-                    : `Glucose: ${v.primaryVal} mg/dL (${v.context})`}
-                </Text>
-                <View style={screenStyles.badgeRow}>
-                  <View
+          <>
+            <View style={styles.rangeToggleBar}>
+              {(
+                [
+                  { key: '7d', label: '7 Days' },
+                  { key: '30d', label: '30 Days' },
+                  { key: 'all', label: 'All Readings' },
+                ] as const
+              ).map((item) => {
+                const active = trendTimeRange === item.key;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
                     style={[
-                      screenStyles.toneBadge,
-                      v.tone === 'risk'
-                        ? screenStyles.badgeRisk
-                        : v.tone === 'warn'
-                        ? screenStyles.badgeWarn
-                        : screenStyles.badgeOk,
+                      styles.rangeToggleBtn,
+                      {
+                        backgroundColor: active ? theme.primary : theme.surfaceSunken,
+                        borderColor: active ? theme.primary : theme.line,
+                      },
                     ]}
+                    onPress={() => setTrendTimeRange(item.key)}
+                    activeOpacity={0.8}
                   >
                     <Text
                       style={[
-                        screenStyles.badgeText,
-                        v.tone === 'risk'
-                          ? screenStyles.textRisk
-                          : v.tone === 'warn'
-                          ? screenStyles.textWarn
-                          : screenStyles.textOk,
+                        styles.rangeToggleBtnText,
+                        { color: active ? '#FFFFFF' : theme.textMuted },
                       ]}
                     >
-                      {v.classification}
+                      {item.label}
                     </Text>
-                  </View>
-                </View>
-              </View>
-              <Text style={styles.vitalHistoryTime}>{v.timestamp}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          ))
+
+            <VitalsTrendChart
+              vitals={filteredVitals}
+              mode={vitalMode}
+              timeRange={trendTimeRange}
+            />
+          </>
         )}
       </View>
+
+      {/* RECENT HISTORICAL LOGS */}
+      {filteredVitals.length > 0 && (
+        <View style={[styles.intakeCard, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Recorded Readings History</Text>
+          <View style={styles.historyList}>
+            {filteredVitals.slice(0, 10).map((v) => (
+              <View
+                key={v.id}
+                style={[styles.historyRow, { borderBottomColor: theme.line }]}
+              >
+                <View>
+                  <Text style={[styles.historyVal, { color: theme.textPrimary }]}>
+                    {v.type === 'bp'
+                      ? `${v.primaryVal}/${v.secondaryVal} mmHg`
+                      : `${v.primaryVal} mg/dL`}
+                    {v.pulse ? ` • ${v.pulse} bpm` : ''}
+                  </Text>
+                  <Text style={[styles.historyTimestamp, { color: theme.textMuted }]}>
+                    {v.context ? `${v.context} • ` : ''}
+                    {v.timestamp}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.historyBadge,
+                    {
+                      backgroundColor:
+                        v.tone === 'risk'
+                          ? theme.risk.bg
+                          : v.tone === 'warn'
+                          ? theme.warn.bg
+                          : theme.ok.bg,
+                      borderColor:
+                        v.tone === 'risk'
+                          ? theme.risk.border
+                          : v.tone === 'warn'
+                          ? theme.warn.border
+                          : theme.ok.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.historyBadgeText,
+                      {
+                        color:
+                          v.tone === 'risk'
+                            ? theme.risk.text
+                            : v.tone === 'warn'
+                            ? theme.warn.text
+                            : theme.ok.text,
+                      },
+                    ]}
+                  >
+                    {v.classification}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
-const screenStyles = StyleSheet.create({
-  chartHeaderRow: {
-    marginBottom: 4,
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
   },
-  chartSubtitle: {
-    color: '#94A3B8',
+  segmentedBar: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 4,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  segmentBtnActive: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  segmentBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  intakeCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 18,
+    gap: 14,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  cardSubtitle: {
     fontSize: 12,
     marginTop: 2,
-    fontWeight: '500',
+  },
+  vitalInputsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  vitalInputBox: {
+    flex: 1,
+    gap: 5,
+  },
+  inputLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  bigNumericInput: {
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  stagingBanner: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  stagingText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  contextPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  contextPill: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  contextPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  saveVitalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 12,
+    paddingVertical: 13,
+    marginTop: 4,
+  },
+  saveVitalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  chartHeaderRow: {
+    gap: 2,
   },
   rangeToggleBar: {
     flexDirection: 'row',
-    backgroundColor: '#020617',
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: '#1E293B',
-    marginBottom: 8,
+    gap: 8,
   },
   rangeToggleBtn: {
     flex: 1,
     paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
-    borderRadius: 7,
-  },
-  rangeToggleBtnActive: {
-    backgroundColor: '#0D9488',
   },
   rangeToggleBtnText: {
-    color: '#94A3B8',
     fontSize: 11,
     fontWeight: '700',
   },
-  rangeToggleBtnTextActive: {
-    color: '#FFFFFF',
+  chartEmptyBox: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  chartEmptyIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chartEmptyTitle: {
+    fontSize: 14,
     fontWeight: '800',
   },
-  badgeRow: {
-    marginTop: 3,
+  chartEmptyText: {
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+  },
+  historyList: {
+    gap: 4,
+  },
+  historyRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
-  toneBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+  historyVal: {
+    fontSize: 14,
+    fontWeight: '800',
   },
-  badgeOk: {
-    backgroundColor: '#064E3B44',
-  },
-  badgeWarn: {
-    backgroundColor: '#78350F44',
-  },
-  badgeRisk: {
-    backgroundColor: '#7F1D1D44',
-  },
-  badgeText: {
+  historyTimestamp: {
     fontSize: 11,
-    fontWeight: '700',
+    marginTop: 2,
   },
-  textOk: {
-    color: '#34D399',
+  historyBadge: {
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  textWarn: {
-    color: '#FBBF24',
-  },
-  textRisk: {
-    color: '#F87171',
+  historyBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
 });
-
-export default VitalsScreen;

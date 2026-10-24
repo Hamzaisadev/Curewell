@@ -87,4 +87,22 @@ REBUILD/
 # Temporary scratch scripts & files
 *.py
 *slop*
+
+# AI & Agent configurations, workflows, and skills
+.agent/
+.agents/
 .claude/
+.gemini/
+.gsd/
+.cursor/
+.cursorrules
+AGENTS.md
+**/AGENTS.md
+CLAUDE.md
+**/CLAUDE.md
+GEMINI.md
+**/GEMINI.md
+docs/agents/
+scripts/validate-agents.ps1
+scripts/validate-agents.sh
+

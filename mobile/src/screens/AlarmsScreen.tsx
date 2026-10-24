@@ -1,7 +1,17 @@
-import React from 'react';
-import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Switch, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useTheme } from '../theme';
+import {
+  BellIcon,
+  BellOffIcon,
+  SmartphoneIcon,
+  RefreshCwIcon,
+  CheckIcon,
+  SlidersIcon,
+  ClockIcon,
+} from '../components/icons';
+import { areNotificationsEnabled, openNotificationSettings } from '../native/CurewellNativeBridge';
 import { DoseSlot } from '../types';
-import { styles } from '../styles/commonStyles';
 
 export interface AlarmsScreenProps {
   alarmsEnabled: boolean;
@@ -20,244 +30,403 @@ export const AlarmsScreen: React.FC<AlarmsScreenProps> = ({
   pendingSyncCount,
   doses,
 }) => {
+  const { theme, isDark } = useTheme();
+
+  const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
   const pendingDoses = doses.filter((d) => d.status === 'pending');
   const nextDose = pendingDoses[0];
   const takenCount = doses.filter((d) => d.status === 'taken').length;
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const enabled = await areNotificationsEnabled();
+        setNotifGranted(enabled);
+      } catch {
+        setNotifGranted(false);
+      }
+    })();
+  }, []);
+
   return (
-    <View style={styles.sectionStack}>
-      {/* Android Home-Screen Widget Guide & Status Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>📱 Android Home-Screen Widget</Text>
-        <Text style={styles.cardBodyText}>
-          Curewell includes a native Android Home-Screen Widget that displays your real-time dose adherence and next scheduled pill directly on your phone launcher.
+    <View style={styles.container}>
+      {/* SECTION 1: ANDROID HOME-SCREEN WIDGET */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+        <View style={styles.cardHeaderRow}>
+          <View style={styles.headerTitleRow}>
+            <SmartphoneIcon size={18} color={theme.primary} />
+            <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
+              Android Home-Screen Widget
+            </Text>
+          </View>
+        </View>
+
+        <Text style={[styles.cardBodyText, { color: theme.textMuted }]}>
+          Medfolio includes an Android native home-screen widget displaying real-time daily
+          adherence and your next scheduled pill on your phone launcher.
         </Text>
 
-        <View style={screenStyles.widgetPreviewBox}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.eyebrowText}>WIDGET LIVE PREVIEW</Text>
-            <View style={screenStyles.widgetAdherenceBadge}>
-              <Text style={screenStyles.widgetAdherenceText}>
+        {/* Live Widget Preview Box */}
+        <View
+          style={[
+            styles.widgetPreviewBox,
+            { backgroundColor: theme.surfaceSunken, borderColor: theme.line },
+          ]}
+        >
+          <View style={styles.widgetHeaderRow}>
+            <Text style={[styles.widgetEyebrow, { color: theme.primary }]}>
+              WIDGET LIVE PREVIEW
+            </Text>
+            <View
+              style={[
+                styles.widgetAdherenceBadge,
+                { backgroundColor: theme.surfaceAccent, borderColor: theme.line },
+              ]}
+            >
+              <Text style={[styles.widgetAdherenceText, { color: theme.primary }]}>
                 {doses.length > 0 ? Math.round((takenCount / doses.length) * 100) : 0}% Done
               </Text>
             </View>
           </View>
-          <Text style={screenStyles.widgetNextDoseText}>
+
+          <Text style={[styles.widgetNextDoseText, { color: theme.textPrimary }]}>
             {nextDose
               ? `Next: ${nextDose.medicineName} ${nextDose.strength} at ${nextDose.scheduledTime}`
               : 'All scheduled doses completed today!'}
           </Text>
-          <Text style={screenStyles.widgetSubText}>
+
+          <Text style={[styles.widgetSubText, { color: theme.textMuted }]}>
             {doses.length} registered medications on daily schedule
           </Text>
         </View>
 
-        <View style={styles.stepBox}>
-          <Text style={styles.stepText}>1. Long-press an empty space on your Android Home Screen.</Text>
-          <Text style={styles.stepText}>2. Tap "Widgets" and find "Curewell".</Text>
-          <Text style={styles.stepText}>
-            3. Drag the "Curewell Daily Schedule" widget onto your home screen.
+        <View style={[styles.stepBox, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}>
+          <Text style={[styles.stepText, { color: theme.textPrimary }]}>
+            1. Long-press an empty space on your Android Home Screen.
+          </Text>
+          <Text style={[styles.stepText, { color: theme.textPrimary }]}>
+            2. Tap "Widgets" and find "Medfolio".
+          </Text>
+          <Text style={[styles.stepText, { color: theme.textPrimary }]}>
+            3. Drag the "Daily Schedule" widget onto your screen.
           </Text>
         </View>
       </View>
 
-      {/* Native Offline Lockscreen Alarms Toggle Card */}
-      <View style={styles.card}>
-        <View style={styles.rowBetween}>
+      {/* SECTION 2: NATIVE OFFLINE ALARM MANAGER */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+        <View style={styles.cardHeaderRow}>
           <View style={{ flex: 1, paddingRight: 8 }}>
-            <Text style={styles.cardTitle}>⏰ Native Offline Lock-Screen Alarms</Text>
-            <Text style={styles.cardBodyText}>
-              Uses Android native AlarmManager (RTC_WAKEUP) to ring alarms and display heads-up lockscreen alerts with zero internet requirement.
+            <View style={styles.headerTitleRow}>
+              <BellIcon size={18} color={theme.primary} />
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
+                Offline Lock-Screen Alarms
+              </Text>
+            </View>
+            <Text style={[styles.cardBodyText, { color: theme.textMuted, marginTop: 4 }]}>
+              Uses Android native AlarmManager (RTC_WAKEUP) to ring alarms with zero internet
+              dependency.
             </Text>
           </View>
           <Switch
             value={alarmsEnabled}
             onValueChange={onToggleAlarms}
-            trackColor={{ false: '#334155', true: '#0D9488' }}
-            thumbColor={alarmsEnabled ? '#2DD4BF' : '#94A3B8'}
+            trackColor={{ false: theme.line, true: theme.primary }}
+            thumbColor="#FFFFFF"
           />
         </View>
 
-        <View style={screenStyles.alarmStatsRow}>
-          <View style={screenStyles.alarmStatBox}>
-            <Text style={screenStyles.alarmStatNumber}>{doses.length}</Text>
-            <Text style={screenStyles.alarmStatLabel}>Armed Alarms</Text>
+        {/* Live Alarm Stats */}
+        <View style={styles.alarmStatsRow}>
+          <View
+            style={[
+              styles.alarmStatBox,
+              { backgroundColor: theme.surfaceSunken, borderColor: theme.line },
+            ]}
+          >
+            <Text style={[styles.alarmStatNumber, { color: theme.textPrimary }]}>
+              {doses.length}
+            </Text>
+            <Text style={[styles.alarmStatLabel, { color: theme.textMuted }]}>Armed Alarms</Text>
           </View>
-          <View style={screenStyles.alarmStatBox}>
-            <Text style={screenStyles.alarmStatNumber}>{pendingDoses.length}</Text>
-            <Text style={screenStyles.alarmStatLabel}>Pending Doses</Text>
+          <View
+            style={[
+              styles.alarmStatBox,
+              { backgroundColor: theme.surfaceSunken, borderColor: theme.line },
+            ]}
+          >
+            <Text style={[styles.alarmStatNumber, { color: theme.textPrimary }]}>
+              {pendingDoses.length}
+            </Text>
+            <Text style={[styles.alarmStatLabel, { color: theme.textMuted }]}>Pending Doses</Text>
           </View>
-          <View style={screenStyles.alarmStatBox}>
-            <Text style={screenStyles.alarmStatNumber}>
+          <View
+            style={[
+              styles.alarmStatBox,
+              { backgroundColor: theme.surfaceSunken, borderColor: theme.line },
+            ]}
+          >
+            <Text
+              style={[
+                styles.alarmStatNumber,
+                { color: alarmsEnabled ? theme.ok.text : theme.textMuted },
+              ]}
+            >
               {alarmsEnabled ? 'ACTIVE' : 'OFF'}
             </Text>
-            <Text style={screenStyles.alarmStatLabel}>Alarm Engine</Text>
+            <Text style={[styles.alarmStatLabel, { color: theme.textMuted }]}>Engine State</Text>
           </View>
         </View>
 
+        {/* Notification Status Banner */}
         <View
           style={[
-            styles.stagingBanner,
-            alarmsEnabled ? styles.stagingOk : styles.stagingWarn,
+            styles.notifStatusBanner,
+            {
+              backgroundColor: notifGranted ? theme.ok.bg : theme.warn.bg,
+              borderColor: notifGranted ? theme.ok.border : theme.warn.border,
+            },
           ]}
         >
-          <Text style={styles.stagingText}>
-            {alarmsEnabled
-              ? `✓ ${doses.length} alarms scheduled with Android RTC_WAKEUP engine`
-              : '⚠️ Alarms are currently disabled. Enable to receive dose reminders.'}
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.notifStatusTitle,
+                { color: notifGranted ? theme.ok.text : theme.warn.text },
+              ]}
+            >
+              {notifGranted
+                ? 'System Notification Permission Active'
+                : 'Notification Permission Needed'}
+            </Text>
+            <Text style={[styles.notifStatusSubtitle, { color: theme.textMuted }]}>
+              {notifGranted
+                ? 'Alarms will sound heads-up notifications with Take / Snooze actions.'
+                : 'Android requires notification permission to post dose alerts.'}
+            </Text>
+          </View>
+          {!notifGranted && (
+            <TouchableOpacity
+              style={[styles.openSettingsBtn, { backgroundColor: theme.warn.border }]}
+              onPress={() => void openNotificationSettings()}
+            >
+              <Text style={[styles.openSettingsBtnText, { color: theme.warn.text }]}>Settings</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Cloud & Real-time WebSocket Sync Card */}
-      <View style={styles.card}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>☁️ Cloud & Real-time WebSocket Sync</Text>
-          <View style={screenStyles.liveStatusRow}>
-            <View
-              style={[
-                screenStyles.liveDot,
-                { backgroundColor: isLiveConnected ? '#10B981' : '#F59E0B' },
-              ]}
-            />
-            <Text
-              style={[
-                screenStyles.liveStatusText,
-                { color: isLiveConnected ? '#10B981' : '#F59E0B' },
-              ]}
-            >
-              {isLiveConnected ? 'Live Cloud Synced' : 'Offline Mode'}
+      {/* SECTION 3: OFFLINE OUTBOX & CLOUD SYNC */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+        <View style={styles.cardHeaderRow}>
+          <View style={styles.headerTitleRow}>
+            <RefreshCwIcon size={18} color={theme.primary} />
+            <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
+              Offline Outbox Synchronization
             </Text>
           </View>
         </View>
 
-        <Text style={styles.cardBodyText}>
-          {isLiveConnected
-            ? 'Connected via live bi-directional WebSocket to Curewell Cloud. Local changes sync instantaneously.'
-            : 'Running offline with local storage. Changes are automatically queued and synced when connection returns.'}
+        <Text style={[styles.cardBodyText, { color: theme.textMuted }]}>
+          All dose actions taken without internet are queued in local encrypted storage. Once online,
+          updates flush automatically to the Medfolio Web App.
         </Text>
 
-        <View style={screenStyles.syncDetailsCard}>
-          <View style={styles.rowBetween}>
-            <Text style={screenStyles.syncDetailLabel}>Offline Queue Backlog:</Text>
-            <Text
+        <View
+          style={[
+            styles.syncStatusCard,
+            { backgroundColor: theme.surfaceSunken, borderColor: theme.line },
+          ]}
+        >
+          <View style={styles.syncStatusRow}>
+            <View
               style={[
-                screenStyles.syncDetailValue,
-                pendingSyncCount > 0 && { color: '#F59E0B' },
+                styles.syncDot,
+                { backgroundColor: isLiveConnected ? theme.ok.dot : theme.textSubtle },
               ]}
-            >
-              {pendingSyncCount} events pending
+            />
+            <Text style={[styles.syncStatusTitle, { color: theme.textPrimary }]}>
+              {isLiveConnected ? 'Real-Time WebSocket Sync Active' : 'Disconnected / Offline'}
             </Text>
           </View>
-          <View style={styles.rowBetween}>
-            <Text style={screenStyles.syncDetailLabel}>Local Storage Cache:</Text>
-            <Text style={screenStyles.syncDetailValue}>Device Local Storage Cache (AsyncStorage)</Text>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.primaryActionBtn}
-          onPress={onManualSync}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.primaryActionBtnText}>
-            {pendingSyncCount > 0
-              ? `Force Cloud Sync Now (${pendingSyncCount} Pending)`
-              : 'Force Cloud Sync Now'}
+          <Text style={[styles.syncStatusCount, { color: theme.textMuted }]}>
+            {pendingSyncCount === 0
+              ? 'Zero pending sync events in outbox queue.'
+              : `${pendingSyncCount} events waiting to flush to cloud.`}
           </Text>
-        </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.flushOutboxBtn, { backgroundColor: theme.primary }]}
+            onPress={onManualSync}
+            activeOpacity={0.85}
+          >
+            <RefreshCwIcon size={14} color="#FFFFFF" />
+            <Text style={styles.flushOutboxBtnText}>Flush Outbox to Cloud Now</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 };
 
-const screenStyles = StyleSheet.create({
-  widgetPreviewBox: {
-    backgroundColor: '#020617',
-    borderRadius: 12,
-    padding: 12,
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  card: {
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#334155',
+    padding: 18,
+    gap: 14,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  cardBodyText: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  widgetPreviewBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
     gap: 6,
   },
+  widgetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  widgetEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
   widgetAdherenceBadge: {
-    backgroundColor: '#0D948833',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#0D9488',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   widgetAdherenceText: {
-    color: '#2DD4BF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
   },
   widgetNextDoseText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 2,
   },
   widgetSubText: {
-    color: '#64748B',
     fontSize: 11,
+  },
+  stepBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 6,
+  },
+  stepText: {
+    fontSize: 11,
+    lineHeight: 16,
   },
   alarmStatsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginVertical: 4,
   },
   alarmStatBox: {
     flex: 1,
-    backgroundColor: '#020617',
-    borderRadius: 10,
-    padding: 10,
-    alignItems: 'center',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 2,
   },
   alarmStatNumber: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '900',
   },
   alarmStatLabel: {
-    color: '#94A3B8',
     fontSize: 10,
     fontWeight: '700',
-    marginTop: 2,
   },
-  liveStatusRow: {
+  notifStatusBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
   },
-  liveDot: {
+  notifStatusTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  notifStatusSubtitle: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  openSettingsBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  openSettingsBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  syncStatusCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 10,
+  },
+  syncStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  syncDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-  liveStatusText: {
-    fontSize: 11,
+  syncStatusTitle: {
+    fontSize: 13,
     fontWeight: '800',
   },
-  syncDetailsCard: {
-    backgroundColor: '#020617',
-    borderRadius: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#1E293B',
+  syncStatusCount: {
+    fontSize: 11,
+  },
+  flushOutboxBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
+    borderRadius: 10,
+    paddingVertical: 11,
+    marginTop: 2,
   },
-  syncDetailLabel: {
-    color: '#94A3B8',
-    fontSize: 12,
-  },
-  syncDetailValue: {
+  flushOutboxBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });
-
-export default AlarmsScreen;

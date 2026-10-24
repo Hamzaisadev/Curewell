@@ -407,24 +407,20 @@ export function LoginPage() {
               {signInMethod === 'credentials' ? (
                 <div className="space-y-3.5">
                   {/* Google OAuth One-Click Sign In */}
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    fullWidth
+                    size="md"
                     onClick={handleGoogleSignIn}
                     disabled={isLoading || isGoogleLoading}
-                    className="w-full h-11 rounded-xl bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2.5 shadow-2xs transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                    loading={isGoogleLoading}
+                    loadingText="Connecting to Google..."
+                    leftIcon={!isGoogleLoading && <GoogleIcon className="w-4 h-4 shrink-0" />}
+                    className="rounded-xl text-xs sm:text-sm font-semibold shadow-2xs"
                   >
-                    {isGoogleLoading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="w-4 h-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
-                        <span>Connecting to Google...</span>
-                      </span>
-                    ) : (
-                      <>
-                        <GoogleIcon className="w-4 h-4 shrink-0" />
-                        <span>Continue with Google</span>
-                      </>
-                    )}
-                  </button>
+                    Continue with Google
+                  </Button>
 
                   <div className="relative flex items-center justify-center my-3">
                     <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
@@ -579,14 +575,17 @@ export function LoginPage() {
                         </div>
 
                         {/* Full-width single-line button: never wraps, perfectly centered */}
-                        <button
+                        <Button
                           type="button"
+                          variant="primary"
+                          fullWidth
+                          size="md"
                           onClick={handleStartCameraScan}
-                          className="w-full h-11 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                          leftIcon={<Camera size={16} />}
+                          className="rounded-xl font-bold text-xs sm:text-sm shadow-xs"
                         >
-                          <Camera size={16} />
-                          <span>Scan QR Code with Camera</span>
-                        </button>
+                          Scan QR Code with Camera
+                        </Button>
 
                         {cameraError && (
                           <p className="text-xs text-amber-600 dark:text-amber-400 font-medium pt-1">{cameraError}</p>
@@ -634,23 +633,19 @@ export function LoginPage() {
                           </div>
                         </div>
 
-                        <button
+                        <Button
                           type="submit"
+                          variant="primary"
+                          fullWidth
+                          size="md"
                           disabled={isLoading || !qrInput.trim()}
-                          className="w-full h-11 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                          loading={isLoading}
+                          loadingText="Verifying code..."
+                          leftIcon={<CheckCircle2 size={16} />}
+                          className="rounded-xl font-bold text-xs sm:text-sm shadow-xs"
                         >
-                          {isLoading ? (
-                            <span className="flex items-center gap-2">
-                              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              <span>Verifying code...</span>
-                            </span>
-                          ) : (
-                            <>
-                              <CheckCircle2 size={16} />
-                              <span>Verify &amp; Sign In</span>
-                            </>
-                          )}
-                        </button>
+                          Verify &amp; Sign In
+                        </Button>
                       </form>
                     </div>
                   )}

@@ -1,6 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { THEME } from '../constants';
+import { useTheme } from '../theme';
+import {
+  LogoCrossIcon,
+  SunIcon,
+  MoonIcon,
+  UserIcon,
+  ChevronDownIcon,
+  RefreshCwIcon,
+} from './icons';
 import { PatientProfile } from '../types';
 
 export interface HeaderProps {
@@ -16,8 +24,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenProfilePicker,
   onOpenAuth,
 }) => {
+  const { theme, isDark, toggleTheme } = useTheme();
+
   const getInitials = (name?: string): string => {
-    if (!name) return 'CW';
+    if (!name) return 'MF';
     const parts = name.replace(/\(.*?\)/g, '').trim().split(/\s+/);
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -28,80 +38,97 @@ export const Header: React.FC<HeaderProps> = ({
     : 'Patient';
 
   return (
-    <View style={styles.container}>
-      {/* Top Bar: Eyebrow + Live Sync status */}
+    <View style={[styles.container, { backgroundColor: theme.surface, borderBottomColor: theme.line }]}>
+      {/* TOP ROW: EYEBROW & LIVE SYNC STATUS */}
       <View style={styles.topRow}>
         <View style={styles.eyebrowContainer}>
-          <Text style={styles.eyebrowText}>CUREWELL 4.0 CLINICAL OS</Text>
+          <Text style={[styles.eyebrowText, { color: theme.primary }]}>MEDFOLIO CLINICAL OS</Text>
         </View>
 
         <View
           style={[
             styles.syncPill,
-            isLiveConnected ? styles.syncPillConnected : styles.syncPillReconnecting,
+            {
+              backgroundColor: isLiveConnected ? theme.ok.bg : theme.surfaceSunken,
+              borderColor: isLiveConnected ? theme.ok.border : theme.line,
+            },
           ]}
         >
           <View
             style={[
               styles.syncDot,
-              isLiveConnected ? styles.syncDotConnected : styles.syncDotReconnecting,
+              { backgroundColor: isLiveConnected ? theme.ok.dot : theme.textSubtle },
             ]}
           />
           <Text
             style={[
               styles.syncText,
-              isLiveConnected ? styles.syncTextConnected : styles.syncTextReconnecting,
+              { color: isLiveConnected ? theme.ok.text : theme.textMuted },
             ]}
           >
-            {isLiveConnected ? 'Live Sync' : 'Reconnecting'}
+            {isLiveConnected ? 'Live Cloud Sync' : 'Offline / Standalone'}
           </Text>
         </View>
       </View>
 
-      {/* Main Header Row: Logo + App Title, Profile Switcher & Auth */}
+      {/* MAIN HEADER ROW */}
       <View style={styles.mainRow}>
+        {/* Brand Logo & Title */}
         <View style={styles.brandGroup}>
-          <View style={styles.logoMark}>
-            <Text style={styles.logoCross}>+</Text>
+          <View style={[styles.logoMark, { backgroundColor: theme.primary }]}>
+            <LogoCrossIcon size={20} color="#FFFFFF" strokeWidth={2.5} />
           </View>
           <View style={styles.titleColumn}>
-            <Text style={styles.appTitle}>Daily Health Vault</Text>
-            <Text style={styles.activeProfileSub} numberOfLines={1}>
-              {activeProfile?.relationship ? `${activeProfile.relationship} · ` : ''}
+            <Text style={[styles.appTitle, { color: theme.textPrimary }]}>Medfolio Vault</Text>
+            <Text style={[styles.activeProfileSub, { color: theme.textMuted }]} numberOfLines={1}>
+              {activeProfile?.relationship ? `${activeProfile.relationship} • ` : ''}
               {displayName}
             </Text>
           </View>
         </View>
 
+        {/* Action Controls: Theme Quick-Toggle, Profile Pill, Auth */}
         <View style={styles.actionsGroup}>
-          {/* Caregiver Active Profile Pill */}
+          {/* Quick Light/Dark Toggle */}
           <TouchableOpacity
-            style={styles.profilePill}
+            style={[styles.iconButton, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel="Toggle light and dark theme"
+          >
+            {isDark ? (
+              <SunIcon size={16} color={theme.primary} />
+            ) : (
+              <MoonIcon size={16} color={theme.textPrimary} />
+            )}
+          </TouchableOpacity>
+
+          {/* Profile Switcher Pill */}
+          <TouchableOpacity
+            style={[styles.profilePill, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
             onPress={onOpenProfilePicker}
             activeOpacity={0.7}
-            accessibilityLabel="Switch active profile"
-            accessibilityRole="button"
+            accessibilityLabel="Switch active patient profile"
           >
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>
+            <View style={[styles.profileAvatar, { backgroundColor: theme.primaryLight }]}>
+              <Text style={[styles.profileAvatarText, { color: theme.primaryDark }]}>
                 {getInitials(activeProfile?.fullName)}
               </Text>
             </View>
-            <Text style={styles.profilePillName} numberOfLines={1}>
+            <Text style={[styles.profilePillName, { color: theme.textPrimary }]} numberOfLines={1}>
               {displayName.split(' ')[0]}
             </Text>
-            <Text style={styles.switchIcon}>▾</Text>
+            <ChevronDownIcon size={12} color={theme.textMuted} />
           </TouchableOpacity>
 
-          {/* Sign In / Account Button */}
+          {/* Account / Pairing Button */}
           <TouchableOpacity
-            style={styles.authBtn}
+            style={[styles.iconButton, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
             onPress={onOpenAuth}
             activeOpacity={0.7}
-            accessibilityLabel="Open Account and Sign In modal"
-            accessibilityRole="button"
+            accessibilityLabel="Account and Pairing Settings"
           >
-            <Text style={styles.authBtnIcon}>👤</Text>
+            <UserIcon size={16} color={theme.textPrimary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -111,11 +138,9 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: THEME.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 12,
   },
   topRow: {
@@ -129,10 +154,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eyebrowText: {
-    color: '#2DD4BF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   syncPill: {
     flexDirection: 'row',
@@ -143,78 +167,48 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 5,
   },
-  syncPillConnected: {
-    backgroundColor: '#064E3B33',
-    borderColor: '#10B98155',
-  },
-  syncPillReconnecting: {
-    backgroundColor: '#78350F33',
-    borderColor: '#F59E0B55',
-  },
   syncDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  syncDotConnected: {
-    backgroundColor: '#10B981',
-  },
-  syncDotReconnecting: {
-    backgroundColor: '#F59E0B',
-  },
   syncText: {
     fontSize: 10,
     fontWeight: '700',
-  },
-  syncTextConnected: {
-    color: '#34D399',
-  },
-  syncTextReconnecting: {
-    color: '#FBBF24',
   },
   mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
   brandGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     gap: 10,
+    flex: 1,
   },
   logoMark: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
-    backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.primary,
+    shadowColor: '#0D9488',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  logoCross: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '900',
-    lineHeight: 24,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   titleColumn: {
     flex: 1,
-    justifyContent: 'center',
   },
   appTitle: {
-    color: THEME.textLight,
     fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+    fontWeight: '900',
+    letterSpacing: -0.3,
   },
   activeProfileSub: {
-    color: THEME.textMuted,
     fontSize: 11,
     fontWeight: '600',
     marginTop: 1,
@@ -222,57 +216,40 @@ const styles = StyleSheet.create({
   actionsGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+  },
+  iconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profilePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 20,
-    paddingVertical: 4,
-    paddingLeft: 4,
-    paddingRight: 8,
     gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    maxWidth: 120,
   },
   profileAvatar: {
     width: 22,
     height: 22,
-    borderRadius: 11,
-    backgroundColor: THEME.primaryDark,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileAvatarText: {
-    color: '#E2E8F0',
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   profilePillName: {
-    color: '#F1F5F9',
     fontSize: 11,
     fontWeight: '700',
-    maxWidth: 68,
-  },
-  switchIcon: {
-    color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  authBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  authBtnIcon: {
-    fontSize: 15,
+    maxWidth: 60,
   },
 });
-
-export default Header;

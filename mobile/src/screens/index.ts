@@ -12,3 +12,9 @@ export type { AlarmsScreenProps } from './AlarmsScreen';
 
 export { ClinicalSuiteScreen } from './ClinicalSuiteScreen';
 export type { ClinicalSuiteScreenProps } from './ClinicalSuiteScreen';
+
+export { PairingScreen } from './PairingScreen';
+export type { PairingScreenProps } from './PairingScreen';
+
+export { SettingsScreen } from './SettingsScreen';
+export type { SettingsScreenProps } from './SettingsScreen';

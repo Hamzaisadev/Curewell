@@ -79,6 +79,7 @@ export function UiCataloguePage() {
   const [demoSystolic, setDemoSystolic] = useState(120);
   const [demoDiastolic, setDemoDiastolic] = useState(80);
   const [demoPulse, setDemoPulse] = useState(72);
+  const [buttonLoadingDemo, setButtonLoadingDemo] = useState(false);
 
   return (
     <AppShell>
@@ -97,24 +98,93 @@ export function UiCataloguePage() {
 
       <div className="space-y-12">
         <section className="space-y-4">
-          <SectionHeader title="Buttons" />
-          <div className="flex flex-wrap items-center gap-3 p-5 rounded-[var(--radius-lg)] border border-line bg-surface-raised">
-            <Button variant="primary">Primary</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="subtle">Subtle</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="danger">Danger</Button>
-            <Button loading>Loading</Button>
-            <Button disabled>Disabled</Button>
-            <Button size="lg" leftIcon={<PlusIcon size={18} />}>
-              Large action
-            </Button>
-            <IconButton aria-label="Add item" variant="secondary">
-              <PlusIcon size={18} />
-            </IconButton>
-            <Button variant="secondary" onClick={() => setToastOpen(true)}>
-              Trigger toast
-            </Button>
+          <SectionHeader
+            title="Buttons & Micro-interactions"
+            meta="Tactile springs, zero layout shift, haptics, and polymorphism"
+          />
+          <div className="flex flex-col gap-4 p-5 rounded-[var(--radius-lg)] border border-line bg-surface-raised">
+            <div>
+              <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">Variants</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button variant="primary">Primary</Button>
+                <Button variant="secondary">Secondary</Button>
+                <Button variant="outline">Outline</Button>
+                <Button variant="subtle">Subtle</Button>
+                <Button variant="ghost">Ghost</Button>
+                <Button variant="danger">Danger</Button>
+                <Button disabled>Disabled</Button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">Sizes (xs to xl)</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button size="xs" variant="secondary">XS (32px)</Button>
+                <Button size="sm" variant="secondary">SM (40px)</Button>
+                <Button size="md" variant="secondary">MD (48px)</Button>
+                <Button size="lg" variant="secondary">LG (56px)</Button>
+                <Button size="xl" variant="secondary">XL (64px)</Button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">Zero-Layout-Shift Loading & Feedback</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="primary"
+                  loading={buttonLoadingDemo}
+                  loadingText="Processing..."
+                  onClick={() => {
+                    setButtonLoadingDemo(true);
+                    setTimeout(() => setButtonLoadingDemo(false), 2000);
+                  }}
+                >
+                  Click to Test Loading
+                </Button>
+                <Button
+                  variant="secondary"
+                  loading={buttonLoadingDemo}
+                  onClick={() => {
+                    setButtonLoadingDemo(true);
+                    setTimeout(() => setButtonLoadingDemo(false), 2000);
+                  }}
+                >
+                  Spinner Only
+                </Button>
+                <Button
+                  size="lg"
+                  variant="primary"
+                  leftIcon={<PlusIcon size={18} />}
+                  onClick={() => setToastOpen(true)}
+                >
+                  Add Record (With Toast)
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">Icon Buttons & Polymorphic Link</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <IconButton aria-label="Add item" variant="primary" size="md">
+                  <PlusIcon size={18} />
+                </IconButton>
+                <IconButton aria-label="Add item" variant="secondary" size="md">
+                  <PlusIcon size={18} />
+                </IconButton>
+                <IconButton aria-label="Add item" variant="outline" size="md">
+                  <PlusIcon size={18} />
+                </IconButton>
+                <IconButton aria-label="Add item" variant="ghost" size="md">
+                  <PlusIcon size={18} />
+                </IconButton>
+                <IconButton aria-label="Add item" variant="danger" size="md">
+                  <PlusIcon size={18} />
+                </IconButton>
+                <Button asChild variant="outline" size="sm">
+                  <a href="#vitals">Polymorphic Link (asChild)</a>
+                </Button>
+              </div>
+            </div>
           </div>
         </section>
 

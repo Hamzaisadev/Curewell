@@ -10,7 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { THEME } from '../../constants';
+import { useTheme } from '../../theme';
+import { PillIcon, XIcon, PlusIcon, ClockIcon } from '../icons';
 import { MealRelation, TimeBucket } from '../../types';
 
 export interface AddMedicineModalProps {
@@ -41,6 +42,8 @@ export const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
   onClose,
   onAddMedicine,
 }) => {
+  const { theme, isDark } = useTheme();
+
   const [medicineName, setMedicineName] = useState('');
   const [genericName, setGenericName] = useState('');
   const [strength, setStrength] = useState('');
@@ -49,7 +52,6 @@ export const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
   const [scheduledTime, setScheduledTime] = useState(DEFAULT_BUCKET_TIMES.Morning);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Reset form when modal opens
   useEffect(() => {
     if (visible) {
       setMedicineName('');
@@ -64,7 +66,6 @@ export const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
 
   const handleSelectBucket = (selectedBucket: TimeBucket) => {
     setBucket(selectedBucket);
-    // If the scheduledTime matches one of the defaults, update to new bucket default
     setScheduledTime(DEFAULT_BUCKET_TIMES[selectedBucket]);
   };
 
@@ -76,8 +77,8 @@ export const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
 
     onAddMedicine({
       medicineName: medicineName.trim(),
-      genericName: genericName.trim() || 'General Formulation',
-      strength: strength.trim() || 'Standard Dose',
+      genericName: genericName.trim() || 'Prescribed Regimen',
+      strength: strength.trim() || '1 tab',
       bucket,
       scheduledTime: scheduledTime.trim() || DEFAULT_BUCKET_TIMES[bucket],
       mealRelation,
@@ -92,84 +93,117 @@ export const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
         style={styles.backdrop}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.sheetContainer}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Modal Title & Header */}
+        <View style={[styles.sheetContainer, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* Modal Header */}
             <View style={styles.headerRow}>
               <View>
-                <Text style={styles.eyebrow}>PRESCRIPTION & FORMULATION</Text>
-                <Text style={styles.title}>Add Medicine to Schedule</Text>
+                <Text style={[styles.eyebrow, { color: theme.primary }]}>NEW MEDICATION</Text>
+                <Text style={[styles.title, { color: theme.textPrimary }]}>Add Prescribed Dose</Text>
               </View>
               <TouchableOpacity
                 onPress={onClose}
-                style={styles.closeIconBtn}
+                style={[styles.closeIconBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
                 accessibilityLabel="Close dialog"
               >
-                <Text style={styles.closeIconText}>✕</Text>
+                <XIcon size={16} color={theme.textMuted} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
 
+            {/* Error Banner */}
             {errorMsg && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>{errorMsg}</Text>
+              <View style={[styles.errorBanner, { backgroundColor: theme.risk.bg, borderColor: theme.risk.border }]}>
+                <Text style={[styles.errorText, { color: theme.risk.text }]}>{errorMsg}</Text>
               </View>
             )}
 
-            {/* Form Fields */}
+            {/* Medicine Name */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>MEDICINE / BRAND NAME *</Text>
+              <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                MEDICINE / BRAND NAME *
+              </Text>
               <TextInput
-                style={styles.input}
-                placeholder="e.g. Panadol, Risek, Glucophage"
-                placeholderTextColor="#64748B"
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: theme.surfaceSunken,
+                    borderColor: theme.lineStrong,
+                    color: theme.textPrimary,
+                  },
+                ]}
+                placeholder="e.g. Glucophage, Concor, Risek"
+                placeholderTextColor={theme.textSubtle}
                 value={medicineName}
-                onChangeText={(val) => {
-                  setMedicineName(val);
-                  if (errorMsg) setErrorMsg(null);
-                }}
-                autoCapitalize="words"
+                onChangeText={setMedicineName}
               />
             </View>
 
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>ACTIVE GENERIC SALT / COMPOSITION</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. Paracetamol, Omeprazole, Metformin"
-                placeholderTextColor="#64748B"
-                value={genericName}
-                onChangeText={setGenericName}
-                autoCapitalize="words"
-              />
+            {/* Strength & Generic Name Row */}
+            <View style={styles.rowTwoCols}>
+              <View style={[styles.fieldGroup, { flex: 1 }]}>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>STRENGTH / DOSE</Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: theme.surfaceSunken,
+                      borderColor: theme.lineStrong,
+                      color: theme.textPrimary,
+                    },
+                  ]}
+                  placeholder="500mg, 1 tab"
+                  placeholderTextColor={theme.textSubtle}
+                  value={strength}
+                  onChangeText={setStrength}
+                />
+              </View>
+
+              <View style={[styles.fieldGroup, { flex: 1.5 }]}>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>ACTIVE GENERIC SALT</Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: theme.surfaceSunken,
+                      borderColor: theme.lineStrong,
+                      color: theme.textPrimary,
+                    },
+                  ]}
+                  placeholder="e.g. Metformin HCl"
+                  placeholderTextColor={theme.textSubtle}
+                  value={genericName}
+                  onChangeText={setGenericName}
+                />
+              </View>
             </View>
 
+            {/* Time-of-Day Bucket Selector */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>STRENGTH / DOSAGE FORM</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 500mg, 20mg, 1 tablet, 5ml"
-                placeholderTextColor="#64748B"
-                value={strength}
-                onChangeText={setStrength}
-              />
-            </View>
-
-            {/* Time Bucket Selector */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>SCHEDULE TIME BUCKET</Text>
-              <View style={styles.pillsRow}>
+              <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                DAILY SCHEDULE SLOT
+              </Text>
+              <View style={styles.pillsGrid}>
                 {BUCKETS.map((b) => {
-                  const isSelected = bucket === b;
+                  const active = bucket === b;
                   return (
                     <TouchableOpacity
                       key={b}
-                      style={[styles.pill, isSelected && styles.pillActive]}
+                      style={[
+                        styles.pillOption,
+                        {
+                          backgroundColor: active ? theme.primary : theme.surfaceSunken,
+                          borderColor: active ? theme.primary : theme.line,
+                        },
+                      ]}
                       onPress={() => handleSelectBucket(b)}
+                      activeOpacity={0.8}
                     >
-                      <Text style={[styles.pillText, isSelected && styles.pillTextActive]}>
+                      <Text
+                        style={[
+                          styles.pillOptionText,
+                          { color: active ? '#FFFFFF' : theme.textMuted },
+                        ]}
+                      >
                         {b}
                       </Text>
                     </TouchableOpacity>
@@ -178,55 +212,77 @@ export const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
               </View>
             </View>
 
-            {/* Scheduled Time String Input */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>SPECIFIC DOSE TIME</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 08:00 AM"
-                placeholderTextColor="#64748B"
-                value={scheduledTime}
-                onChangeText={setScheduledTime}
-              />
-            </View>
+            {/* Scheduled Time & Food Timing */}
+            <View style={styles.rowTwoCols}>
+              <View style={[styles.fieldGroup, { flex: 1 }]}>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>ALARM TIME</Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: theme.surfaceSunken,
+                      borderColor: theme.lineStrong,
+                      color: theme.textPrimary,
+                    },
+                  ]}
+                  placeholder="08:00 AM"
+                  placeholderTextColor={theme.textSubtle}
+                  value={scheduledTime}
+                  onChangeText={setScheduledTime}
+                />
+              </View>
 
-            {/* Meal Relation Selector */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>MEAL RELATION</Text>
-              <View style={styles.pillsRow}>
-                {MEAL_RELATIONS.map((mr) => {
-                  const isSelected = mealRelation === mr;
-                  return (
-                    <TouchableOpacity
-                      key={mr}
-                      style={[styles.pill, isSelected && styles.pillActive]}
-                      onPress={() => setMealRelation(mr)}
-                    >
-                      <Text style={[styles.pillText, isSelected && styles.pillTextActive]}>
-                        {mr}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+              <View style={[styles.fieldGroup, { flex: 1.4 }]}>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>FOOD RELATION</Text>
+                <View style={styles.mealPillsRow}>
+                  {MEAL_RELATIONS.map((rel) => {
+                    const active = mealRelation === rel;
+                    return (
+                      <TouchableOpacity
+                        key={rel}
+                        style={[
+                          styles.mealPill,
+                          {
+                            backgroundColor: active ? theme.primary : theme.surfaceSunken,
+                            borderColor: active ? theme.primary : theme.line,
+                          },
+                        ]}
+                        onPress={() => setMealRelation(rel)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.mealPillText,
+                            { color: active ? '#FFFFFF' : theme.textMuted },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {rel}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             </View>
 
             {/* Action Buttons */}
-            <View style={styles.actionsRow}>
+            <View style={styles.actionButtons}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={[styles.secondaryBtn, { backgroundColor: theme.surfaceSunken, borderColor: theme.line }]}
                 onPress={onClose}
                 activeOpacity={0.7}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.secondaryBtnText, { color: theme.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.saveBtn}
+                style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
                 onPress={handleSave}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
-                <Text style={styles.saveBtnText}>Save Medicine</Text>
+                <PlusIcon size={16} color="#FFFFFF" strokeWidth={2.5} />
+                <Text style={styles.primaryBtnText}>Arm Offline Alarm</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -239,17 +295,20 @@ export const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     padding: 16,
   },
   sheetContainer: {
-    backgroundColor: '#0F172A',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#334155',
     maxHeight: '90%',
     overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   scrollContent: {
     padding: 20,
@@ -259,128 +318,112 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 4,
   },
   eyebrow: {
-    color: '#2DD4BF',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   title: {
-    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '800',
     marginTop: 2,
   },
   closeIconBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#1E293B',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeIconText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '700',
-  },
   errorBanner: {
-    backgroundColor: '#7F1D1D44',
-    borderWidth: 1,
-    borderColor: '#EF4444',
     borderRadius: 10,
+    borderWidth: 1,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
   errorText: {
-    color: '#FCA5A5',
     fontSize: 12,
     fontWeight: '700',
   },
   fieldGroup: {
     gap: 6,
   },
-  label: {
-    color: '#94A3B8',
+  rowTwoCols: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  inputLabel: {
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  input: {
-    backgroundColor: '#020617',
-    borderWidth: 1,
-    borderColor: '#334155',
+  textInput: {
     borderRadius: 12,
-    color: '#FFFFFF',
-    paddingHorizontal: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
   },
-  pillsRow: {
+  pillsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
-  pill: {
-    flexGrow: 1,
-    backgroundColor: '#020617',
-    borderWidth: 1,
-    borderColor: '#334155',
+  pillOption: {
+    flex: 1,
     paddingVertical: 9,
-    paddingHorizontal: 12,
     borderRadius: 10,
+    borderWidth: 1,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  pillActive: {
-    backgroundColor: THEME.primary,
-    borderColor: '#14B8A6',
-  },
-  pillText: {
-    color: '#94A3B8',
+  pillOptionText: {
     fontSize: 11,
-    fontWeight: '700',
-  },
-  pillTextActive: {
-    color: '#FFFFFF',
     fontWeight: '800',
   },
-  actionsRow: {
+  mealPillsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
+    gap: 4,
   },
-  cancelBtn: {
+  mealPill: {
     flex: 1,
-    backgroundColor: '#1E293B',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    alignItems: 'center',
+  },
+  mealPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  secondaryBtn: {
+    flex: 1,
     borderRadius: 12,
+    borderWidth: 1,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelBtnText: {
-    color: '#E2E8F0',
+  secondaryBtnText: {
     fontSize: 13,
     fontWeight: '700',
   },
-  saveBtn: {
+  primaryBtn: {
     flex: 2,
-    backgroundColor: THEME.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 6,
+    borderRadius: 12,
+    paddingVertical: 12,
   },
-  saveBtnText: {
+  primaryBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',

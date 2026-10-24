@@ -95,3 +95,23 @@ export async function clearNativeActionTakenDoses(): Promise<void> {
     console.warn('clearNativeActionTakenDoses warning:', err);
   }
 }
+
+export async function areNotificationsEnabled(): Promise<boolean> {
+  if (Platform.OS !== 'android' || !CurewellNative?.areNotificationsEnabled) return true;
+  try {
+    return await CurewellNative.areNotificationsEnabled();
+  } catch (err) {
+    console.warn('areNotificationsEnabled warning:', err);
+    return false;
+  }
+}
+
+export async function openNotificationSettings(): Promise<boolean> {
+  if (Platform.OS !== 'android' || !CurewellNative?.openNotificationSettings) return false;
+  try {
+    return await CurewellNative.openNotificationSettings();
+  } catch (err) {
+    console.warn('openNotificationSettings warning:', err);
+    return false;
+  }
+}
